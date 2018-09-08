@@ -1,6 +1,6 @@
 {
   "name": "text-versioncontrol",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Text Version Control",
   "scripts": {
     "test": "jest --config jestconfig.json",

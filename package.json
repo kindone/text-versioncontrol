@@ -1,7 +1,9 @@
 {
   "name": "text-versioncontrol",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Text Version Control",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "test": "jest --config jestconfig.json",
     "build": "tsc",

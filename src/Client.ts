@@ -1,5 +1,6 @@
-import { TextHistory, SyncResponse } from './TextHistory'
 import { Operation } from './Operation'
+import { ISyncResponse, TextHistory } from './TextHistory'
+
 
 export class Client {
     private history: TextHistory
@@ -11,31 +12,31 @@ export class Client {
         this.history = new TextHistory('client')
     }
 
-    apply(operations: Operation[]) {
+    public apply(operations: Operation[]) {
         this.history.apply(operations)
         this.pending = this.pending.concat(operations)
     }
 
-    sync(res: SyncResponse) {
+    public sync(response: ISyncResponse) {
         this.history.merge({
             baseRev: this.synchedClientRev,
-            operations: res.operations,
             branchName: 'server',
+            operations: response.operations
         })
-        this.synchedRev = res.revision
+        this.synchedRev = response.revision
         this.synchedClientRev = this.history.getCurrentRev()
         this.pending = []
     }
 
-    getSyncRequest() {
+    public getSyncRequest() {
         return {
             baseRev: this.synchedRev,
-            operations: this.pending,
             branchName: this.history.name,
+            operations: this.pending
         }
     }
 
-    getText() {
+    public getText() {
         return this.history.getText()
     }
 }

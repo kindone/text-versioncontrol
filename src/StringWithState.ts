@@ -1,48 +1,46 @@
+import * as _ from 'underscore'
 import { CharWithState } from './CharWithState'
 import { Operation } from './Operation'
-import * as _ from 'underscore'
 
-class Util {
-    static charsInsertedByBranch(branch: string, content: string) {
-        let chars: CharWithState[] = []
+export class StringWithState {
+    private static charsInsertedByBranch(branch: string, content: string) {
+        const chars: CharWithState[] = []
 
-        for (let i = 0; i < content.length; i++) {
-            chars.push(new CharWithState(content[i], branch))
+        for (const c of content) {
+            chars.push(new CharWithState(c, branch))
         }
 
         return chars
     }
-}
 
-export class StringWithState {
-    chars: CharWithState[] = []
+    public chars: CharWithState[] = []
 
     constructor(str: string) {
         for (let i = 0; i < str.length; i++) this.chars.push(new CharWithState(str.charAt(i)))
     }
 
-    branchPosToCharsPos(pos: number, branch: string) {
+    public branchPosToCharsPos(pos: number, branch: string) {
         for (let i = 0, iBranch = 0; i < this.chars.length; ) {
-            if (iBranch == pos) return i
+            if (iBranch === pos) return i
 
             if (this.chars[i].isVisibleTo(branch)) iBranch++
 
             i++
         }
 
-        //assert: somethings wrong if iBranch < from
+        // assert: somethings wrong if iBranch < from
         return this.chars.length
     }
 
-    findTiebreakIdxInChars(start: number, branch: string) {
+    public findTiebreakIdxInChars(start: number, branch: string) {
         for (let i = start; i < this.chars.length; i++) {
             if (!this.chars[i].shouldAdvanceForTiebreak(branch)) return i
         }
         return this.chars.length
     }
 
-    markDeletedBy(branch: string, from: number, numDeleted: number, content: string) {
-        const from_visible = _.reduce(
+    public markDeletedBy(branch: string, from: number, numDeleted: number, content: string) {
+        const fromVisible = _.reduce(
             this.chars.slice(0, from),
             (sum, char) => {
                 return char.isVisible() ? sum + 1 : sum
@@ -50,32 +48,32 @@ export class StringWithState {
             0,
         )
 
-        let i_visible = from_visible
-        const insert_op = new Operation(from_visible, 0, content)
+        let iVisible = fromVisible
+        const insertOp = new Operation(fromVisible, 0, content)
 
-        let deleted_idxs: number[] = []
+        const deletedIdxs: number[] = []
         let numMarkDeleted = 0
 
         for (let i = from; i < this.chars.length && numMarkDeleted < numDeleted; i++) {
             const char = this.chars[i]
-            const was_visible = char.isVisible()
+            const wasVisible = char.isVisible()
 
             if (char.isVisibleTo(branch)) {
                 char.setDeletedBy(branch)
                 numMarkDeleted++
             }
 
-            if (was_visible) {
+            if (wasVisible) {
                 // changed
-                if (!char.isVisible()) deleted_idxs.push(i_visible)
-                i_visible++
+                if (!char.isVisible()) deletedIdxs.push(iVisible)
+                iVisible++
             }
         }
 
-        let deletes: number[][] = []
+        const deletes: number[][] = []
         let acc: number[] = []
-        _.each(deleted_idxs, idx => {
-            if (acc.length > 0 && acc[acc.length - 1] == idx - 1) acc.push(idx)
+        _.each(deletedIdxs, idx => {
+            if (acc.length > 0 && acc[acc.length - 1] === idx - 1) acc.push(idx)
             else {
                 acc = [idx]
                 deletes.push(acc)
@@ -83,68 +81,65 @@ export class StringWithState {
         })
 
         let shift = 0
-        const del_ops = _.map(deletes, del => {
+        const delOps = _.map(deletes, del => {
             const op = new Operation(del[0] - shift, del.length, '')
             shift += del.length
             return op
-        }).concat(insert_op)
+        }).concat(insertOp)
 
-        return del_ops
+        return delOps
     }
 
-    apply(op: Operation, branch: string, debug = false) {
+    public apply(op: Operation, branch: string, debug = false) {
         const from = this.branchPosToCharsPos(op.from, branch)
-        const from_tiebreak = this.findTiebreakIdxInChars(from, branch)
+        const fromTiebreak = this.findTiebreakIdxInChars(from, branch)
 
-        let prefix = this.chars.slice(0, from_tiebreak)
-        let suffix = this.chars.slice(from_tiebreak)
+        const prefix = this.chars.slice(0, fromTiebreak)
+        const suffix = this.chars.slice(fromTiebreak)
 
-        const new_ops = this.markDeletedBy(branch, from_tiebreak, op.numDeleted, op.content)
-        let inserted_chars = Util.charsInsertedByBranch(branch, op.content)
+        const newOps = this.markDeletedBy(branch, fromTiebreak, op.numDeleted, op.content)
+        const insertedChars = StringWithState.charsInsertedByBranch(branch, op.content)
 
-        if (debug) console.log('prefix:', prefix, from, from_tiebreak, inserted_chars, suffix)
+        // if (debug) console.log('prefix:', prefix, from, fromTiebreak, insertedChars, suffix)
 
         // result
-        this.chars = prefix.concat(inserted_chars).concat(suffix)
+        this.chars = prefix.concat(insertedChars).concat(suffix)
 
-        return new_ops
+        return newOps
     }
 
-    clone() {
-        let ss = new StringWithState('')
-        for (let i = 0; i < this.chars.length; i++) {
-            let char = new CharWithState(this.chars[i].val, this.chars[i].insertedBy)
-            char.deletedBy = this.chars[i].deletedBy.slice(0)
+    public clone() {
+        const ss = new StringWithState('')
+        for (const cs of this.chars) {
+            const char = new CharWithState(cs.val, cs.insertedBy, cs.deletedBy.slice(0))
             ss.chars.push(char)
         }
-        if (!ss.equals(this)) throw 'error'
         return ss
     }
 
-    equals(ss: StringWithState) {
-        if (this.chars.length != ss.chars.length) return false
+    public equals(ss: StringWithState) {
+        if (this.chars.length !== ss.chars.length) return false
         for (let i = 0; i < this.chars.length; i++) {
             if (!ss.chars[i].equals(this.chars[i])) return false
         }
         return true
     }
 
-    toText() {
+    public toText() {
         let text = ''
-        for (let i = 0; i < this.chars.length; i++) {
-            if (this.chars[i].deletedBy.length == 0) text += this.chars[i].val
+        for (const char of this.chars) {
+            if (!char.isDeleted()) text += char.val
         }
         return text
     }
 
-    toHtml() {
+    public toHtml() {
         let html = ''
         let prevclassesstr = ''
-        for (let i = 0; i < this.chars.length; i++) {
-            const cs = this.chars[i]
-            let classes: string[] = []
-            let branches: { [id in string]: boolean } = {}
-            if (cs.deletedBy.length > 0) {
+        for (const cs of this.chars) {
+            const classes: string[] = []
+            const branches: { [id in string]: boolean } = {}
+            if (cs.isDeleted()) {
                 classes.push('deleted')
                 for (const key of cs.deletedBy) {
                     branches[key] = true
@@ -160,28 +155,31 @@ export class StringWithState {
 
             if (classes.length > 0) {
                 const classesstr = classes.join(' ')
-                if (classesstr == prevclassesstr) {
+                if (classesstr === prevclassesstr) {
                     html += cs.val
                 } else {
-                    if (prevclassesstr != '') html += '</span>'
+                    if (prevclassesstr !== '') html += '</span>'
                     html += `<span class='${classesstr}'>${cs.val}`
                 }
 
                 prevclassesstr = classesstr
             } else {
-                if (prevclassesstr != '') html += '</span>'
+                if (prevclassesstr !== '') html += '</span>'
                 html += cs.val
                 prevclassesstr = ''
             }
         }
 
-        if (prevclassesstr != '') html += '</span>'
+        if (prevclassesstr !== '') html += '</span>'
 
         return html
     }
 
-    toString() {
+    public toString() {
         // console.log(this.chars)
         return this.chars
     }
+
+
+
 }

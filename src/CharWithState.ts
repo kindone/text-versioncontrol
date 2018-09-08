@@ -1,47 +1,48 @@
 export class CharWithState {
-    val: string
-    insertedBy?: string
-    deletedBy: string[] = []
+    public readonly val: string
+    public readonly insertedBy?: string
+    public readonly deletedBy: string[] = []
 
-    constructor(val: string, insertedBy?: string) {
+    constructor(val: string, insertedBy?: string, deletedBy:string[] = []) {
         this.val = val
         this.insertedBy = insertedBy
+        this.deletedBy = deletedBy
     }
 
-    isDeletedBy(branch: string) {
+    public isDeletedBy(branch: string) {
         return (
             this.deletedBy.find(by => {
-                return by == branch
-            }) != undefined
+                return by === branch
+            }) !== undefined
         )
     }
 
-    isInsertedBy(branch: string) {
-        return this.insertedBy && this.insertedBy == branch
+    public isInsertedBy(branch: string) {
+        return this.insertedBy && this.insertedBy === branch
     }
 
-    isInsertedByOther(branch: string) {
-        return this.insertedBy && this.insertedBy != branch
+    public isInsertedByOther(branch: string) {
+        return this.insertedBy && this.insertedBy !== branch
     }
 
-    isVisibleTo(branch: string) {
+    public isVisibleTo(branch: string) {
         return !this.isDeletedBy(branch) && !this.isInsertedByOther(branch)
     }
 
-    isVisible() {
+    public isVisible() {
         return !this.isDeleted()
     }
 
-    shouldAdvanceForTiebreak(branch: string) {
+    public shouldAdvanceForTiebreak(branch: string) {
         // use tiebreaking string comparison on inserted branch
         return this.insertedBy && this.insertedBy < branch
     }
 
-    isDeleted() {
+    public isDeleted() {
         return this.deletedBy.length > 0
     }
 
-    setDeletedBy(branch: string) {
+    public setDeletedBy(branch: string) {
         let firstDelete = false
 
         if (!this.isDeleted()) firstDelete = true
@@ -51,16 +52,16 @@ export class CharWithState {
         return firstDelete
     }
 
-    equals(cs: CharWithState) {
-        if (this.deletedBy.length != cs.deletedBy.length) return false
+    public equals(cs: CharWithState) {
+        if (this.deletedBy.length !== cs.deletedBy.length) return false
 
         this.deletedBy.sort()
         cs.deletedBy.sort()
 
         for (let i = 0; i < this.deletedBy.length; i++) {
-            if (this.deletedBy[i] != cs.deletedBy[i]) return false
+            if (this.deletedBy[i] !== cs.deletedBy[i]) return false
         }
 
-        return this.val == cs.val && cs.insertedBy == cs.insertedBy
+        return this.val === cs.val && cs.insertedBy === cs.insertedBy
     }
 }

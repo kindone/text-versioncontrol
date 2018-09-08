@@ -1,52 +1,72 @@
 import { Operation } from './Operation'
 import { StringWithState } from './StringWithState'
 
-type Savepoint = { rev: number; text: string }
-export type MergeRequest = {
+interface ISavepoint
+{
+    rev: number
+    text: string
+}
+
+export interface ISyncRequest {
     branchName: string
     baseRev: number
     operations: Operation[]
 }
 
-export type SyncResponse = {
+export interface ISyncResponse {
     operations: Operation[]
     revision: number
 }
 
 export class TextHistory {
-    static MIN_SAVEPOINT_RATE = 20
-
-    savepoints: Savepoint[] = []
-    operations: Operation[] = []
-    name: string = ''
+    public static readonly MIN_SAVEPOINT_RATE = 20
+    public readonly name: string = ''
+    private savepoints: ISavepoint[] = []
+    private operations: Operation[] = []
 
     constructor(name: string, initialText: string = '') {
         this.name = name
         this.doSavepoint(0, initialText)
     }
 
-    apply(operations: Operation[], name?: string): Operation[] {
+    public apply(operations: Operation[], name?: string): Operation[] {
         return this.applyAt(this.getCurrentRev(), operations, name)
     }
 
-    merge(mergeRequest: MergeRequest): Operation[] {
+    public merge(mergeRequest: ISyncRequest): Operation[] {
         return this.applyAt(mergeRequest.baseRev, mergeRequest.operations, mergeRequest.branchName)
     }
 
+
+    public getCurrentRev(): number {
+        return this.operations.length
+    }
+
+    public getText(): string {
+        return this.getTextForRev(this.getCurrentRev())
+    }
+
+    public getTextForRev(rev: number): string {
+        const savepoint = this.getNearestSavepointForRev(rev)
+        const ss = new StringWithState(savepoint.text)
+        for (let i = savepoint.rev; i < rev; i++) ss.apply(this.operations[i], '_')
+
+        return ss.toText()
+    }
+
     private applyAt(baseRev: number, operations: Operation[], name?: string): Operation[] {
-        const base_to_curr = this.operations.slice(baseRev)
+        const baseToCurr = this.operations.slice(baseRev)
         const result = this.simulate(name ? name : this.name, baseRev, operations)
-        // console.debug('result', result)
 
         this.operations = this.operations.concat(result.operations)
 
         if (this.getLatestSavepointRev() + TextHistory.MIN_SAVEPOINT_RATE < this.operations.length) {
             this.doSavepoint(this.operations.length, result.text)
-            // console.debug('savepointed at rev: ' + this.operations.length)
+
             this.checkSavepoints()
         }
 
-        return base_to_curr
+        return baseToCurr
     }
 
     private simulate(
@@ -54,27 +74,27 @@ export class TextHistory {
         baseRev: number,
         operations: Operation[],
     ): { operations: Operation[]; text: string } {
-        let baseRevText = this.getTextForRev(baseRev)
-        let ss = new StringWithState(baseRevText)
-        let new_ops: Operation[] = []
+        const baseRevText = this.getTextForRev(baseRev)
+        const ss = new StringWithState(baseRevText)
+        let newOps: Operation[] = []
         for (let i = baseRev; i < this.operations.length; i++) ss.apply(this.operations[i], this.name)
 
-        for (let i = 0; i < operations.length; i++) new_ops = new_ops.concat(ss.apply(operations[i], name))
+        for (const op of operations) newOps = newOps.concat(ss.apply(op, name))
 
-        return { operations: new_ops, text: ss.toText() }
+        return { operations: newOps, text: ss.toText() }
     }
 
     private checkSavepoints(): void {
         const initial = this.savepoints[0]
-        if (initial.rev != 0) throw 'initial savepoint rev must be 0'
+        if (initial.rev !== 0) throw new Error('initial savepoint rev must be 0')
 
         const ss = new StringWithState(initial.text)
         let j = 0
         for (let rev = 0; rev < this.operations.length; rev++) {
             if (rev > this.getLatestSavepointRev()) break
 
-            if (rev == this.savepoints[j].rev) {
-                if (ss.toText() != this.savepoints[j].text) throw 'savepoint is not correct at (' + rev + ',' + j + ')'
+            if (rev === this.savepoints[j].rev) {
+                if (ss.toText() !== this.savepoints[j].text) throw new Error('savepoint is not correct at (' + rev + ',' + j + ')')
                 j++
             }
             ss.apply(this.operations[rev], '_')
@@ -85,35 +105,17 @@ export class TextHistory {
         this.savepoints.push({ rev, text })
     }
 
-    getCurrentRev(): number {
-        return this.operations.length
-    }
-
     private getLatestSavepointRev(): number {
         return this.savepoints[this.savepoints.length - 1].rev
     }
 
-    private getNearestSavepointForRev(rev: number): Savepoint {
-        let nearest_savepoint = this.savepoints[0]
-        for (let i = 0; i < this.savepoints.length; i++) {
-            const savepoint = this.savepoints[i]
+    private getNearestSavepointForRev(rev: number): ISavepoint {
+        let nearestSavepoint = this.savepoints[0]
+        for (const savepoint of this.savepoints) {
             if (rev <= savepoint.rev) break
-            nearest_savepoint = savepoint
+            nearestSavepoint = savepoint
         }
-        // if(nearest_savepoint != this.savepoints[0])
-        //     console.debug('using non-zero rev savepoint rev: ' + nearest_savepoint.rev)
-        return nearest_savepoint
-    }
 
-    getText(): string {
-        return this.getTextForRev(this.getCurrentRev())
-    }
-
-    getTextForRev(rev: number): string {
-        let savepoint = this.getNearestSavepointForRev(rev)
-        let ss = new StringWithState(savepoint.text)
-        for (let i = savepoint.rev; i < rev; i++) ss.apply(this.operations[i], '_')
-
-        return ss.toText()
+        return nearestSavepoint
     }
 }

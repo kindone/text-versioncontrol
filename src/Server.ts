@@ -1,18 +1,16 @@
-import { TextHistory, MergeRequest, SyncResponse } from './TextHistory'
+import { ISyncRequest, ISyncResponse, TextHistory } from './TextHistory'
 
 export class Server {
-    history: TextHistory = new TextHistory('server')
+    private history: TextHistory = new TextHistory('server')
 
-    constructor() {}
-
-    merge(mergeRequest: MergeRequest): SyncResponse {
-        const operations = this.history.merge(mergeRequest)
+    public merge(syncRequest: ISyncRequest): ISyncResponse {
+        const operations = this.history.merge(syncRequest)
         const revision = this.history.getCurrentRev()
 
         return { operations, revision }
     }
 
-    getText() {
+    public getText() {
         return this.history.getText()
     }
 }

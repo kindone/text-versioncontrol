@@ -1,7 +1,7 @@
 export class Operation {
-    from: number
-    numDeleted: number
-    content: string
+    public readonly from: number
+    public readonly numDeleted: number
+    public readonly content: string
 
     constructor(from: number, numDeleted: number, content: string) {
         this.from = from

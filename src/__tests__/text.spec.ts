@@ -4,7 +4,6 @@ import { StringWithState } from "../StringWithState"
 import { randomInt, randomStringWithState, randomUserOperations } from "./random"
 
 
-
 describe("hand-made scenarios", () => {
     it("scenario 1", () => {
         const str = new StringWithState("world")

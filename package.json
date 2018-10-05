@@ -18,7 +18,10 @@
   "repository": "https://github.com/kindone/text-versioncontrol.git",
   "author": "Won-Wook Hong <jradoo@gmail.com>",
   "license": "MIT",
-  "keywords": ["CRDT", "OT"],
+  "keywords": [
+    "CRDT",
+    "OT"
+  ],
   "devDependencies": {
     "@types/jest": "^23.3.2",
     "@types/underscore": "^1.8.9",
@@ -29,5 +32,8 @@
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.0.3",
     "underscore": "^1.9.1"
+  },
+  "dependencies": {
+    "quill-delta": "^4.0.1"
   }
 }

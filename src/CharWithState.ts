@@ -1,67 +1,48 @@
+import { ModAttr } from "./ModAttr";
+
 export class CharWithState {
     public readonly val: string
-    public readonly insertedBy?: string
-    public readonly deletedBy: string[] = []
+    public readonly mod:ModAttr
 
-    constructor(val: string, insertedBy?: string, deletedBy:string[] = []) {
+    constructor(val: string, insertedBy?: string, deletedBy:Set<string> = new Set()) {
         this.val = val
-        this.insertedBy = insertedBy
-        this.deletedBy = deletedBy
+        this.mod = new ModAttr(insertedBy, deletedBy)
     }
 
     public isDeletedBy(branch: string) {
-        return (
-            this.deletedBy.find(by => {
-                return by === branch
-            }) !== undefined
-        )
+        return this.mod.isDeletedBy(branch)
     }
 
     public isInsertedBy(branch: string) {
-        return this.insertedBy && this.insertedBy === branch
+        return this.mod.isInsertedBy(branch)
     }
 
     public isInsertedByOther(branch: string) {
-        return this.insertedBy && this.insertedBy !== branch
+        return this.mod.isInsertedByOther(branch)
     }
 
     public isVisibleTo(branch: string) {
-        return !this.isDeletedBy(branch) && !this.isInsertedByOther(branch)
+        return this.mod.isVisibleTo(branch)
     }
 
     public isVisible() {
-        return !this.isDeleted()
+        return this.mod.isVisible()
     }
 
     public shouldAdvanceForTiebreak(branch: string) {
         // use tiebreaking string comparison on inserted branch
-        return this.insertedBy && this.insertedBy < branch
+        return this.mod.shouldAdvanceForTiebreak(branch)
     }
 
     public isDeleted() {
-        return this.deletedBy.length > 0
+        return this.mod.isDeleted()
     }
 
     public setDeletedBy(branch: string) {
-        let firstDelete = false
-
-        if (!this.isDeleted()) firstDelete = true
-
-        if (!this.isDeletedBy(branch)) this.deletedBy.push(branch)
-
-        return firstDelete
+        return this.mod.setDeletedBy(branch)
     }
 
     public equals(cs: CharWithState) {
-        if (this.deletedBy.length !== cs.deletedBy.length) return false
-
-        this.deletedBy.sort()
-        cs.deletedBy.sort()
-
-        for (let i = 0; i < this.deletedBy.length; i++) {
-            if (this.deletedBy[i] !== cs.deletedBy[i]) return false
-        }
-
-        return this.val === cs.val && cs.insertedBy === cs.insertedBy
+        return this.val === cs.val && this.mod.equals(cs.mod)
     }
 }

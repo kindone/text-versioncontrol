@@ -4,10 +4,10 @@ export class Server {
     private history: TextHistory = new TextHistory('server')
 
     public merge(syncRequest: ISyncRequest): ISyncResponse {
-        const operations = this.history.merge(syncRequest)
+        const deltas = this.history.merge(syncRequest)
         const revision = this.history.getCurrentRev()
 
-        return { operations, revision }
+        return { deltas, revision }
     }
 
     public getText() {

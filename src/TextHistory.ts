@@ -1,20 +1,23 @@
-import { Operation } from './Operation'
+import Delta = require('quill-delta')
+import * as _ from 'underscore'
+import { expectEqual } from './JSONStringify'
 import { StringWithState } from './StringWithState'
+
 
 interface ISavepoint
 {
     rev: number
-    text: string
+    content: Delta
 }
 
 export interface ISyncRequest {
     branchName: string
     baseRev: number
-    operations: Operation[]
+    deltas: Delta[]
 }
 
 export interface ISyncResponse {
-    operations: Operation[]
+    deltas: Delta[]
     revision: number
 }
 
@@ -22,24 +25,27 @@ export class TextHistory {
     public static readonly MIN_SAVEPOINT_RATE = 20
     public readonly name: string = ''
     private savepoints: ISavepoint[] = []
-    private operations: Operation[] = []
+    private deltas: Delta[] = []
 
     constructor(name: string, initialText: string = '') {
         this.name = name
-        this.doSavepoint(0, initialText)
+        if(initialText === '')
+            this.doSavepoint(0, new Delta([]))
+        else
+            this.doSavepoint(0, new Delta([{insert: initialText}]))
     }
 
-    public apply(operations: Operation[], name?: string): Operation[] {
-        return this.applyAt(this.getCurrentRev(), operations, name)
+    public apply(deltas: Delta[], name?: string): Delta[] {
+        return this.applyAt(this.getCurrentRev(), deltas, name)
     }
 
-    public merge(mergeRequest: ISyncRequest): Operation[] {
-        return this.applyAt(mergeRequest.baseRev, mergeRequest.operations, mergeRequest.branchName)
+    public merge(mergeRequest: ISyncRequest): Delta[] {
+        return this.applyAt(mergeRequest.baseRev, mergeRequest.deltas, mergeRequest.branchName)
     }
 
 
     public getCurrentRev(): number {
-        return this.operations.length
+        return this.deltas.length
     }
 
     public getText(): string {
@@ -48,20 +54,34 @@ export class TextHistory {
 
     public getTextForRev(rev: number): string {
         const savepoint = this.getNearestSavepointForRev(rev)
-        const ss = new StringWithState(savepoint.text)
-        for (let i = savepoint.rev; i < rev; i++) ss.apply(this.operations[i], '_')
+        const ss = StringWithState.fromDelta(savepoint.content)
+        for (let i = savepoint.rev; i < rev; i++)
+            ss.apply(this.deltas[i], '_')
 
         return ss.toText()
     }
 
-    private applyAt(baseRev: number, operations: Operation[], name?: string): Operation[] {
-        const baseToCurr = this.operations.slice(baseRev)
-        const result = this.simulate(name ? name : this.name, baseRev, operations)
+    public getContent(): Delta {
+        return this.getContentForRev(this.getCurrentRev())
+    }
 
-        this.operations = this.operations.concat(result.operations)
+    public getContentForRev(rev: number): Delta {
+        const savepoint = this.getNearestSavepointForRev(rev)
+        const ss = StringWithState.fromDelta(savepoint.content)
+        for (let i = savepoint.rev; i < rev; i++)
+            ss.apply(this.deltas[i], '_')
 
-        if (this.getLatestSavepointRev() + TextHistory.MIN_SAVEPOINT_RATE < this.operations.length) {
-            this.doSavepoint(this.operations.length, result.text)
+        return ss.toDelta()
+    }
+
+    private applyAt(baseRev: number, deltas: Delta[], name?: string): Delta[] {
+        const baseToCurr = this.deltas.slice(baseRev)
+        const result = this.simulate(name ? name : this.name, baseRev, deltas)
+
+        this.deltas = this.deltas.concat(result.deltas)
+
+        if (this.getLatestSavepointRev() + TextHistory.MIN_SAVEPOINT_RATE < this.deltas.length) {
+            this.doSavepoint(this.deltas.length, result.content)
 
             this.checkSavepoints()
         }
@@ -72,37 +92,39 @@ export class TextHistory {
     private simulate(
         name: string,
         baseRev: number,
-        operations: Operation[],
-    ): { operations: Operation[]; text: string } {
-        const baseRevText = this.getTextForRev(baseRev)
-        const ss = new StringWithState(baseRevText)
-        let newOps: Operation[] = []
-        for (let i = baseRev; i < this.operations.length; i++) ss.apply(this.operations[i], this.name)
+        deltas: Delta[],
+    ): { deltas: Delta[]; content: Delta } {
+        const baseRevText = this.getContentForRev(baseRev)
+        const ss = StringWithState.fromDelta(baseRevText)
+        let newDeltas: Delta[] = []
+        for (let i = baseRev; i < this.deltas.length; i++)
+            ss.apply(this.deltas[i], this.name)
 
-        for (const op of operations) newOps = newOps.concat(ss.apply(op, name))
+        for (const delta of deltas)
+            newDeltas = newDeltas.concat(ss.apply(delta, name))
 
-        return { operations: newOps, text: ss.toText() }
+        return { deltas: newDeltas, content: ss.toDelta() }
     }
 
     private checkSavepoints(): void {
         const initial = this.savepoints[0]
         if (initial.rev !== 0) throw new Error('initial savepoint rev must be 0')
 
-        const ss = new StringWithState(initial.text)
+        const ss = StringWithState.fromDelta(initial.content)
         let j = 0
-        for (let rev = 0; rev < this.operations.length; rev++) {
+        for (let rev = 0; rev < this.deltas.length; rev++) {
             if (rev > this.getLatestSavepointRev()) break
 
             if (rev === this.savepoints[j].rev) {
-                if (ss.toText() !== this.savepoints[j].text) throw new Error('savepoint is not correct at (' + rev + ',' + j + ')')
+                expectEqual(ss.toDelta(), this.savepoints[j].content, 'savepoint is not correct at (' + rev + ',' + j + '):')
                 j++
             }
-            ss.apply(this.operations[rev], '_')
+            ss.apply(this.deltas[rev], '_')
         }
     }
 
-    private doSavepoint(rev: number, text: string): void {
-        this.savepoints.push({ rev, text })
+    private doSavepoint(rev: number, content: Delta): void {
+        this.savepoints.push({ rev, content })
     }
 
     private getLatestSavepointRev(): number {
@@ -110,6 +132,7 @@ export class TextHistory {
     }
 
     private getNearestSavepointForRev(rev: number): ISavepoint {
+        // return this.savepoints[0]
         let nearestSavepoint = this.savepoints[0]
         for (const savepoint of this.savepoints) {
             if (rev <= savepoint.rev) break

@@ -1,4 +1,11 @@
-export class ModAttr
+export enum Status {
+    INITIAL = 0,
+    DELETED,
+    INSERTED,
+    INSERTED_THEN_DELETED
+}
+
+export class Modification
 {
     public readonly insertedBy?: string
     public readonly deletedBy: Set<string>
@@ -7,6 +14,14 @@ export class ModAttr
     {
         this.insertedBy = insertedBy
         this.deletedBy = deletedBy
+    }
+
+    public get status():Status {
+        if(this.insertedBy)
+        {
+            return this.isDeleted() ? Status.INSERTED_THEN_DELETED : Status.INSERTED
+        }
+        return this.isDeleted() ? Status.DELETED : Status.INITIAL
     }
 
     public isDeletedBy(branch: string) {
@@ -18,7 +33,7 @@ export class ModAttr
     }
 
     public isInsertedByOther(branch: string) {
-        return this.insertedBy && this.insertedBy !== branch
+        return this.insertedBy !== undefined && this.insertedBy !== branch
     }
 
     public isVisibleTo(branch: string) {
@@ -38,12 +53,16 @@ export class ModAttr
         return this.deletedBy.size > 0
     }
 
-    public setDeletedBy(branch: string) {
-        this.deletedBy.add(branch)
-        return this.deletedBy.size === 1
+    public isDeletedByOther(branch: string) {
+        return this.isDeleted() && !this.deletedBy.has(branch)
     }
 
-    public equals(md: ModAttr) {
+    // public setDeletedBy(branch: string) {
+    //     this.deletedBy.add(branch)
+    //     return this.deletedBy.size === 1
+    // }
+
+    public equals(md: Modification) {
         if(this.deletedBy.size !== md.deletedBy.size) {
             return false
         }

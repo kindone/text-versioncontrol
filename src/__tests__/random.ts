@@ -1,3 +1,4 @@
+import Delta = require('quill-delta')
 import { Operation } from "../Operation"
 import { StringWithState } from "../StringWithState"
 
@@ -20,6 +21,10 @@ export function randomOperation(length: number) {
     else return new Operation(from, numDeleted, randomString(randomInt(2) + 1))
 }
 
+export function randomDelta(length: number):Delta {
+    return randomOperation(length).toDelta()
+}
+
 export function randomUserOperations(baseLength: number, numOps = 0) {
     let length = baseLength
     const ops: Operation[] = []
@@ -32,6 +37,11 @@ export function randomUserOperations(baseLength: number, numOps = 0) {
     return ops
 }
 
+export function randomUserDeltas(baseLength: number, numOps = 0) {
+    const userOps = randomUserOperations(baseLength, numOps)
+    return userOps.map((userop) => userop.toDelta())
+}
+
 export function randomStringWithState() {
-    return new StringWithState(randomString(randomInt(5) + 1))
+    return StringWithState.fromString(randomString(randomInt(5) + 1))
 }

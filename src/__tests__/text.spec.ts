@@ -63,6 +63,28 @@ describe("hand-made scenarios", () => {
         // console.log(str.toHtml())
         // console.log(str.toString())
     })
+
+    it("scenario 4 delete", () => {
+        const str = StringWithState.fromString("abcde")
+        const deltas:Delta[] = []
+        let delta = str.apply(new Delta().retain(2).delete(1).insert("f"), "user2") // ab[c]fde
+        deltas.push(delta)
+        console.log(JSONStringify(delta))
+        delta = str.apply(new Delta().delete(3), "user1") // [ab][c]fde
+        deltas.push(delta)
+        console.log(JSONStringify(delta))
+        delta = str.apply(new Delta().retain(1).insert("gh"), "user1") // [ab][c]fdghe
+        deltas.push(delta)
+        console.log(JSONStringify(delta))
+        expect(str.toText()).toBe("fdghe")
+
+        const str2 = StringWithState.fromString("abcde")
+        for(const del of deltas) {
+            str2.apply(del, "merged")
+            console.log(JSONStringify(str2))
+        }
+        expect(str2.toText()).toBe("fdghe")
+    })
 })
 
 function combineRandom(deltasForUsers: Delta[][]) {
@@ -151,7 +173,7 @@ describe("commutativity", () => {
         for (let j = 0; j < 200; j++) {
             const ss = randomStringWithState()
             const user1Deltas = randomUserDeltas(ss.toText().length,2)
-            const user2Deltas = randomUserDeltas(ss.toText().length,2)
+            const user2Deltas = randomUserDeltas(ss.toText().length,1)
             const user3Deltas = randomUserDeltas(ss.toText().length)
 
             for (let i = 0; i < 60; i++) {

@@ -116,6 +116,7 @@ export class FragmentIterator
             fragments = fragments.concat(advresult.fragments)
             ops = ops.concat(advresult.ops)
             diff += advresult.diff
+            amount += diff
         }
 
         while(amount > 0 && this.hasNext()) {
@@ -146,6 +147,7 @@ export class FragmentIterator
                 fragments = fragments.concat(advresult.fragments)
                 ops = ops.concat(advresult.ops)
                 diff += advresult.diff
+                amount += diff
             }
         }
 

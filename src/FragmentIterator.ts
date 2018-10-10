@@ -78,30 +78,28 @@ export class FragmentIterator
 
     private nextVisible():IResult {
         const fragments:Fragment[] = []
-        let diff = 0
+        const ops:Op[] = []
+        let deleted = 0
 
-        while(this.hasNext() && !this.current().isVisibleTo(this.branch))
+        while(this.hasNext() && !(this.current().isVisibleTo(this.branch)))
         {
             // take rest of current fragment
             fragments.push(this.current().slice(this.offsetAtFragment))
 
-            // inserted by other, diff should be added
+            // inserted by other, retain added
             if(this.current().isInsertedByOther(this.branch)) {
                 if(!this.current().isDeleted()) {
-                    diff += (this.current().size() - this.offsetAtFragment)
+                    ops.push({retain: this.current().size() - this.offsetAtFragment})
                 }
-            } // deleted by other
+            } // deleted by other, diff
             else if(this.current().isDeletedByOther(this.branch)) {
-                diff -= (this.current().size() - this.offsetAtFragment)
+                deleted += (this.current().size() - this.offsetAtFragment)
             }
             // go to next fragment
             this.nextFragment()
         }
 
-        if(diff > 0)
-            return {fragments, ops: [{retain: diff}], diff: 0}
-        else
-            return {fragments, ops:[], diff}
+        return {fragments, ops, diff: -deleted}
     }
 
     private mapCurrent<T=undefined>(
@@ -111,7 +109,7 @@ export class FragmentIterator
         let ops:Op[] = []
         let diff = 0
 
-        if(this.hasNext() && !this.current().isVisibleTo(this.branch)) {
+        {
             const advresult = this.nextVisible()
             fragments = fragments.concat(advresult.fragments)
             ops = ops.concat(advresult.ops)
@@ -146,6 +144,7 @@ export class FragmentIterator
                 const advresult = this.nextVisible()
                 fragments = fragments.concat(advresult.fragments)
                 ops = ops.concat(advresult.ops)
+                console.log(advresult)
                 diff += advresult.diff
                 amount += diff
             }
@@ -169,15 +168,15 @@ export class FragmentIterator
 
     private nextForInsert():IResult {
         const fragments:Fragment[] = []
-        let diff = 0
+        let retain = 0
         // if it's not visible, should advancefor tiebreak
         while(this.hasNext() && this.current().shouldAdvanceForTiebreak(this.branch))
         {
             fragments.push(this.current().slice(this.offsetAtFragment))
-            diff += this.current().size()
+            retain += this.current().size()
             this.nextFragment()
         }
-        const ops:Op[] = diff > 0 ? [{retain: diff}] : []
+        const ops:Op[] = retain > 0 ? [{retain}] : []
         return {fragments, ops, diff: 0}
     }
 }

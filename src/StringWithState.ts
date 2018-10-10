@@ -49,7 +49,7 @@ export class StringWithState {
                     diff = result.diff
                 }
                 else
-                    diff = retain
+                    diff += op.retain
             }
             // delete
             else if(op.delete) {
@@ -62,7 +62,7 @@ export class StringWithState {
                     diff = result.diff
                 }
                 else
-                    diff = del
+                    diff += op.delete
             }
             else if(op.insert) {
                 let result:IResult = {fragments:[], ops:[], diff:0}

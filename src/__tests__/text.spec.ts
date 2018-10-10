@@ -66,16 +66,23 @@ describe("hand-made scenarios", () => {
 
     it("scenario 4 delete", () => {
         const str = StringWithState.fromString("abcde")
+        expect(str.toText()).toBe("abcde")
         const deltas:Delta[] = []
-        let delta = str.apply(new Delta().retain(2).delete(1).insert("f"), "user2") // ab[c]fde
+        // NOTE:
+        // new Delta().retain(2).delete(1).insert("f"))) is saved as {"ops":[{"retain":2},{"insert":"f"},{"delete":1}]}
+        let delta = str.apply(new Delta().retain(2).delete(1).insert("f"), "user2") // ab(f)[c]de
         deltas.push(delta)
-        console.log(JSONStringify(delta))
-        delta = str.apply(new Delta().delete(3), "user1") // [ab][c]fde
+        console.log(JSONStringify(delta), JSONStringify(str))
+        expect(str.toText()).toBe("abfde")
+
+        delta = str.apply(new Delta().delete(3), "user1") // [ab](f)[c]de
         deltas.push(delta)
-        console.log(JSONStringify(delta))
-        delta = str.apply(new Delta().retain(1).insert("gh"), "user1") // [ab][c]fdghe
+        console.log(JSONStringify(delta), JSONStringify(str))
+        expect(str.toText()).toBe("fde")
+
+        delta = str.apply(new Delta().retain(1).insert("gh"), "user1") // [ab](f)[c]dghe
         deltas.push(delta)
-        console.log(JSONStringify(delta))
+        console.log(JSONStringify(delta), JSONStringify(str))
         expect(str.toText()).toBe("fdghe")
 
         const str2 = StringWithState.fromString("abcde")

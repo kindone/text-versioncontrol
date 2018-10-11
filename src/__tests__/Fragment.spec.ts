@@ -5,7 +5,6 @@ import { FragmentIterator } from "../FragmentIterator";
 describe("hand-made scenarios", () => {
     it("fragment 1", () => {
         const fragment = Fragment.insert("hello", "me")
-
         const newFragment = fragment.sliceWithDelete("me", 0)
         console.log(fragment)
         console.log(newFragment)
@@ -14,7 +13,7 @@ describe("hand-made scenarios", () => {
     it("fragment iterator 1", () => {
         const fragment = Fragment.insert("hello", "me")
         const iter = new FragmentIterator("me", [fragment])
-        const fragments = iter.delete(4).fragments
+        const fragments = iter.delete(4)
         console.log(fragments)
         console.log(fragments.concat(iter.rest()))
     })
@@ -23,7 +22,7 @@ describe("hand-made scenarios", () => {
         const fragment = Fragment.insert("hello", "me")
         const iter = new FragmentIterator("you", [fragment])
         // console.log(iter.current().isVisibleTo("you"), iter.current().shouldAdvanceForTiebreak("you"))
-        const fragments = iter.insert(" world").fragments
+        const fragments = iter.insert(" world")
         console.log(fragments)
         console.log(fragments.concat(iter.rest()))
     })
@@ -32,7 +31,7 @@ describe("hand-made scenarios", () => {
         const fragment = Fragment.insert("hello", "you")
         const iter = new FragmentIterator("me", [fragment])
         // console.log(iter.current().isVisibleTo("me"), iter.current().shouldAdvanceForTiebreak("me"))
-        const fragments = iter.insert(" world").fragments
+        const fragments = iter.insert(" world")
         console.log(fragments)
         console.log(fragments.concat(iter.rest()))
     })

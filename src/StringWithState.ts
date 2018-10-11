@@ -1,10 +1,9 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { DeltaIterator, OpsWithDiff } from './DeltaIterator'
 import { Fragment } from './Fragment'
 import { FragmentIterator, IResult } from './FragmentIterator';
-
-
 
 export class StringWithState {
     public static fromString(str: string) {
@@ -18,74 +17,86 @@ export class StringWithState {
 
     public apply(delta: Delta, branch: string, debug = false):Delta {
         const fragmentIter = new FragmentIterator(branch, this.fragments)
+        const deltaIter = new DeltaIterator(branch, this.fragments)
 
-        let fragments:Fragment[] = []
-        let opsTransformed:Op[] = []
+        let newFragments:Fragment[] = []
+        let newOps:Op[] = []
         let diff = 0 // always <= 0
 
         for(const op of delta.ops)
         {
             // update attributes
             if(op.retain && op.attributes) {
+                const fragments = fragmentIter.attribute(op.retain, op.attributes)
+                newFragments = newFragments.concat(fragments)
+
                 const retain = op.retain + diff
                 if(retain > 0)
                 {
-                    const result = fragmentIter.attribute(retain, op.attributes)
-                    fragments = fragments.concat(result.fragments)
-                    opsTransformed = opsTransformed.concat(result.ops)
-                    diff = result.diff
+                    const opsWithDiff = deltaIter.attribute(retain, op.attributes)
+                    newOps = newOps.concat(opsWithDiff.ops)
+                    diff = opsWithDiff.diff
                 }
                 else
                     diff = retain
             }
             // retain
             else if(op.retain) {
+                newFragments = newFragments.concat(fragmentIter.retain(op.retain))
+
                 const retain = op.retain + diff
                 if(retain > 0)
                 {
-                    const result = fragmentIter.retain(retain)
-                    fragments = fragments.concat(result.fragments)
-                    opsTransformed = opsTransformed.concat(result.ops)
-                    diff = result.diff
+                    const opsWithDiff = deltaIter.retain(retain)
+                    newOps = newOps.concat(opsWithDiff.ops)
+                    diff = opsWithDiff.diff
                 }
                 else
                     diff += op.retain
             }
             // delete
             else if(op.delete) {
+                newFragments = newFragments.concat(fragmentIter.delete(op.delete))
                 const del = op.delete + diff
                 if(del > 0)
                 {
-                    const result = fragmentIter.delete(op.delete)
-                    fragments = fragments.concat(result.fragments)
-                    opsTransformed = opsTransformed.concat(result.ops)
-                    diff = result.diff
+                    const opsWithDiff = deltaIter.delete(del)
+                    newOps = newOps.concat(opsWithDiff.ops)
+                    diff = opsWithDiff.diff
                 }
                 else
                     diff += op.delete
             }
             else if(op.insert) {
-                let result:IResult = {fragments:[], ops:[], diff:0}
+                let fragments:Fragment[] = []
+                let ops:Op[] = []
                 if(op.attributes) {
-                    if(typeof op.insert === 'string')
-                        result = fragmentIter.insertWithAttribute(op.insert, op.attributes)
-                    else
-                        result = fragmentIter.embedWithAttribute(op.insert, op.attributes)
+                    if(typeof op.insert === 'string') {
+                        fragments = fragmentIter.insertWithAttribute(op.insert, op.attributes)
+                        ops = deltaIter.insertWithAttribute(op.insert, op.attributes)
+                    }
+                    else {
+                        fragments = fragmentIter.embedWithAttribute(op.insert, op.attributes)
+                        ops = deltaIter.embedWithAttribute(op.insert, op.attributes)
+                    }
                 }
                 else {
-                    if(typeof op.insert === 'string')
-                        result = fragmentIter.insert(op.insert)
-                    else
-                        result = fragmentIter.embed(op.insert)
+                    if(typeof op.insert === 'string') {
+                        fragments = fragmentIter.insert(op.insert)
+                        ops = deltaIter.insert(op.insert)
+                    }
+                    else {
+                        fragments = fragmentIter.embed(op.insert)
+                        ops = deltaIter.embed(op.insert)
+                    }
                 }
-                fragments = fragments.concat(result.fragments)
-                opsTransformed = opsTransformed.concat(result.ops)
-                diff += result.diff
+                newFragments = newFragments.concat(fragments)
+                newOps = newOps.concat(ops)
             }
         }
 
-        this.fragments = fragments.concat(fragmentIter.rest())
-        return new Delta(this.normalizeOps(opsTransformed))
+        this.fragments = newFragments.concat(fragmentIter.rest())
+        return new Delta(this.normalizeOps(newOps))
     }
 
     public clone() {

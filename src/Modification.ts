@@ -49,6 +49,10 @@ export class Modification
         return this.insertedBy !== undefined && this.insertedBy < branch
     }
 
+    public isInserted() {
+        return this.insertedBy !== undefined
+    }
+
     public isDeleted() {
         return this.deletedBy.size > 0
     }

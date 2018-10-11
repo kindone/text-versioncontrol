@@ -157,11 +157,11 @@ function testCombination(
     expect(ssInitial.equals(ssClient1)).toBe(false)
 
     if (!ssClient1.equals(ssClient2)) {
-        console.log(JSONStringify(ssInitial))
-        console.log(JSONStringify(combined1))
-        console.log(JSONStringify(combined2))
-        console.log(JSONStringify(ssClient1))
-        console.log(JSONStringify(ssClient2))
+        // console.log(JSONStringify(ssInitial))
+        // console.log(JSONStringify(combined1))
+        // console.log(JSONStringify(combined2))
+        // console.log(JSONStringify(ssClient1))
+        // console.log(JSONStringify(ssClient2))
         expect(ssClient1).toBe(ssClient2)
     }
 

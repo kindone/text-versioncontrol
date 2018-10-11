@@ -62,6 +62,7 @@ export class Fragment {
         return this.mod.isInsertedBy(branch)
     }
 
+
     public isInsertedByOther(branch: string) {
         return this.mod.isInsertedByOther(branch)
     }
@@ -77,6 +78,10 @@ export class Fragment {
     public shouldAdvanceForTiebreak(branch: string) {
         // use tiebreaking string comparison on inserted branch
         return this.mod.shouldAdvanceForTiebreak(branch)
+    }
+
+    public isInserted() {
+        return this.mod.isInserted()
     }
 
     public isDeleted() {

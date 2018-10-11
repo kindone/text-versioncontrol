@@ -1,4 +1,4 @@
 {
    "extends": ["tslint:recommended", "tslint-config-prettier"],
-   "rules": { "curly": false}
+   "rules": { "curly": false, "interface-name": false}
 }

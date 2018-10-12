@@ -179,12 +179,12 @@ describe("commutativity", () => {
     it("scenario 1", () => {
         for (let j = 0; j < 200; j++) {
             const ss = randomStringWithState()
-            const user1Deltas = randomUserDeltas(ss.toText().length,2)
-            const user2Deltas = randomUserDeltas(ss.toText().length,1)
-            const user3Deltas = randomUserDeltas(ss.toText().length)
+            const user1Deltas = randomUserDeltas(ss.toText().length,4)
+            const user2Deltas = randomUserDeltas(ss.toText().length,4)
+            const user3Deltas = randomUserDeltas(ss.toText().length,3)
 
             for (let i = 0; i < 60; i++) {
-                testCombination(ss, user1Deltas, user2Deltas)// , user3Deltas)
+                testCombination(ss, user1Deltas, user2Deltas, user3Deltas)
             }
         }
     })

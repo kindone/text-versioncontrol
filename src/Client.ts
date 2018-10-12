@@ -32,7 +32,7 @@ export class Client {
         return {
             baseRev: this.synchedRev,
             branchName: this.history.name,
-            operations: this.pending
+            deltas: this.pending
         }
     }
 

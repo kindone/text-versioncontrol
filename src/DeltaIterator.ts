@@ -73,7 +73,7 @@ export class DeltaIterator
             //     deleted += (this.current().size() - this.offsetAtFragment)
             // }
             // inserted by other, retain added
-            if(this.current().isInsertedByOther(this.branch)) {
+            if(this.current().isInsertedByOther(this.branch) && !this.current().isDeleted()) {
                 ops.push({retain: this.current().size() - this.offsetAtFragment})
             }
             // else: deleted by me: do nothing
@@ -137,7 +137,8 @@ export class DeltaIterator
         // if it's not visible, should advancefor tiebreak
         while(this.hasNext() && this.current().shouldAdvanceForTiebreak(this.branch))
         {
-            retain += (this.current().size() - this.offsetAtFragment)
+            if(!this.current().isDeleted())
+                retain += (this.current().size() - this.offsetAtFragment)
             this.nextFragment()
         }
         return retain > 0 ? [{retain}] : []

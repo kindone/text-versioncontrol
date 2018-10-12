@@ -1,9 +1,10 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
+import Delta = require('quill-delta')
 import { Client } from "../Client"
-import { Operation } from "../Operation"
 import { Server } from "../Server"
 import { TextHistory } from "../TextHistory"
-import { randomUserOperations } from "./random"
+import { randomUserDeltas } from "./random"
+
 
 
 describe("server-client scenarios", () => {
@@ -12,8 +13,8 @@ describe("server-client scenarios", () => {
         const client1 = new Client()
         const client2 = new Client()
 
-        client1.apply([new Operation(0, 0, "client1 text")])
-        client2.apply([new Operation(0, 0, "Hello world")])
+        client1.apply([new Delta().insert("client1 text")])
+        client2.apply([new Delta().insert("Hello world")])
 
         // console.log(server.getText(), "-", client1.getText(), "-", client2.getText())
 
@@ -40,7 +41,7 @@ describe("server-client scenarios", () => {
         expect(client1.getText()).toBe(client2.getText())
         expect(client1.getText()).toBe(server.getText())
 
-        client1.apply([new Operation(0, 3, "replace")])
+        client1.apply([new Delta().delete(3).insert("replace")])
         client1.sync(server.merge(client1.getSyncRequest()))
 
         client2.sync(server.merge(client2.getSyncRequest()))
@@ -56,23 +57,23 @@ describe("hand-made scenarios", () => {
         const serverHistory = new TextHistory("server", initialText)
         const clientHistory = new TextHistory("client1", initialText)
 
-        const set1 = [new Operation(7, 0, " text"), new Operation(0, 0, "The ")]
+        const set1 = [new Delta().retain(7).insert(" text"), new Delta().insert("The ")]
         serverHistory.apply(set1)
         // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getText())
 
-        const set2 = [new Operation(7, 0, " string"), new Operation(0, 0, "An ")]
+        const set2 = [new Delta().retain(7).insert(" string"), new Delta().insert("An ")]
         clientHistory.apply(set2)
         // console.log(clientHistory.name, clientHistory.getCurrentRev(), clientHistory.getText())
 
         const set1ForClient = serverHistory.merge({
             baseRev: 0,
             branchName: clientHistory.name,
-            operations: set2
+            deltas: set2
         })
         clientHistory.merge({
             baseRev: 0,
             branchName: serverHistory.name,
-            operations: set1ForClient
+            deltas: set1ForClient
         })
 
         expect(clientHistory.getText()).toBe(serverHistory.getText())
@@ -83,23 +84,23 @@ describe("hand-made scenarios", () => {
         const serverHistory = new TextHistory("server", initialText)
         const c1History = new TextHistory("client1", initialText)
 
-        const serverSet = [new Operation(7, 0, " text"), new Operation(0, 0, "The ")]
+        const serverSet = [new Delta().retain(7).insert(" text"), new Delta().insert("The ")]
         serverHistory.apply(serverSet)
         // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getText())
 
-        const client1Set = [new Operation(7, 0, " string"), new Operation(0, 0, "An ")]
+        const client1Set = [new Delta().retain(7).insert(" string"), new Delta().insert("An ")]
         c1History.apply(client1Set)
         // console.log(c1History.name, c1History.getCurrentRev(), c1History.getText())
 
         const serverSetForClient1 = serverHistory.merge({
             baseRev: 0,
             branchName: c1History.name,
-            operations: client1Set
+            deltas: client1Set
         })
         c1History.merge({
             baseRev: 0,
             branchName: serverHistory.name,
-            operations: serverSetForClient1
+            deltas: serverSetForClient1
         })
 
         expect(c1History.getText()).toBe(serverHistory.getText())
@@ -120,10 +121,10 @@ describe("generated scenarios", () => {
         const serverHistory = new TextHistory(initialText)
         const clientHistory = new TextHistory(initialText)
 
-        const set1 = randomUserOperations(initialText.length, 30)
+        const set1 = randomUserDeltas(initialText.length, 30)
         serverHistory.apply(set1)
 
-        const set2 = randomUserOperations(initialText.length, 30)
+        const set2 = randomUserDeltas(initialText.length, 30)
         clientHistory.apply(set2)
 
         // apply to both
@@ -135,21 +136,21 @@ describe("generated scenarios", () => {
         let serverRev = serverHistory.getCurrentRev()
         let clientRev = clientHistory.getCurrentRev()
 
-        const set3 = randomUserOperations(serverHistory.getText().length, 30)
+        const set3 = randomUserDeltas(serverHistory.getText().length, 30)
         serverHistory.apply(set3)
 
-        const set4 = randomUserOperations(clientHistory.getText().length, 30)
+        const set4 = randomUserDeltas(clientHistory.getText().length, 30)
         clientHistory.apply(set4)
 
         const set3ForClient = serverHistory.merge({
             baseRev: serverRev,
             branchName: "client",
-            operations: set4
+            deltas: set4
         })
         clientHistory.merge({
             baseRev: clientRev,
             branchName: "server",
-            operations: set3ForClient
+            deltas: set3ForClient
         })
 
         expect(clientHistory.getText()).toBe(serverHistory.getText())
@@ -157,21 +158,21 @@ describe("generated scenarios", () => {
         serverRev = serverHistory.getCurrentRev()
         clientRev = clientHistory.getCurrentRev()
 
-        const set5 = randomUserOperations(serverHistory.getText().length, 30)
+        const set5 = randomUserDeltas(serverHistory.getText().length, 30)
         serverHistory.apply(set5)
 
-        const set6 = randomUserOperations(clientHistory.getText().length, 30)
+        const set6 = randomUserDeltas(clientHistory.getText().length, 30)
         clientHistory.apply(set6)
 
         const set5ForClient = serverHistory.merge({
             baseRev: serverRev,
             branchName: "client",
-            operations: set6
+            deltas: set6
         })
         clientHistory.merge({
             baseRev: clientRev,
             branchName: "server",
-            operations: set5ForClient
+            deltas: set5ForClient
         })
 
         expect(clientHistory.getText()).toBe(serverHistory.getText())

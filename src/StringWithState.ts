@@ -9,6 +9,19 @@ export class StringWithState {
     public static fromString(str: string) {
         return new StringWithState([new Fragment(str)])
     }
+
+    public static fromDelta(delta:Delta) {
+        const fs = _.reduce(delta.ops, (fragments:Fragment[], op) => {
+            if(typeof op.insert === 'string')
+                fragments.push(Fragment.initial(op.insert, op.attributes))
+            else if(op.insert)
+                fragments.push(Fragment.initialEmbedded(op.insert, op.attributes))
+            return fragments
+        },[])
+
+        return new StringWithState(fs)
+    }
+
     public fragments: Fragment[]
 
     constructor(fragments:Fragment[]) {
@@ -121,6 +134,14 @@ export class StringWithState {
         },"")
     }
 
+    public toDelta():Delta {
+        const ops = _.reduce(this.fragments, (result:Op[], fragment) => {
+            return result.concat(fragment.toOp())
+        },[])
+
+        return new Delta(ops)
+    }
+
     public toHtml() {
         return _.reduce(this.fragments, (result:string, fragment) => {
             return result.concat(fragment.toHtml())
@@ -161,8 +182,10 @@ export class StringWithState {
     }
 
     private normalizeTwoOps(op1:Op, op2:Op):Op[] {
-        if(op1.insert && op2.insert && !op1.attributes && !op2.attributes)
+        if(typeof op1.insert === 'string' && typeof op2.insert === 'string' && !op1.attributes && !op2.attributes) {
             return [{insert: (op1.insert as string).concat(op2.insert as string)}]
+        }
+
         if(op1.delete && op2.delete)
             return [{delete: op1.delete + op2.delete}]
         if(op1.retain && op2.retain && !op1.attributes && !op2.attributes)

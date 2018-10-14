@@ -37,7 +37,7 @@ export class FragmentIterator
             amount)
     }
 
-    public attribute(amount:number, attr:object):Fragment[] {
+    public attribute(amount:number, attr:{[name:string]:any}):Fragment[] {
         return this.mapCurrent(
             (fragment, unused, begin, end) => fragment.sliceWithAttribute(attr, this.branch, begin, end),
             amount)
@@ -55,7 +55,7 @@ export class FragmentIterator
         return this.inserted(Fragment.insert(str, this.branch))
     }
 
-    public insertWithAttribute(str:string, attr:object):Fragment[] {
+    public insertWithAttribute(str:string, attr:{[name:string]:object}):Fragment[] {
         return this.inserted(Fragment.insertWithAttribute(str, attr, this.branch))
     }
 
@@ -63,7 +63,7 @@ export class FragmentIterator
         return this.inserted(Fragment.embed(obj, this.branch))
     }
 
-    public embedWithAttribute(obj:object, attr:object):Fragment[] {
+    public embedWithAttribute(obj:object, attr:{[name:string]:object}):Fragment[] {
         return this.inserted(Fragment.embedWithAttribute(obj, attr, this.branch))
     }
 

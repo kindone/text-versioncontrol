@@ -68,10 +68,6 @@ export class DeltaIterator
         // deleted by other + deleted by me
         while(this.hasNext() && !this.current().isVisibleTo(this.branch))
         {
-            // // already deleted by other (but not own deleted)
-            // if(this.current().isDeletedByOther(this.branch) && !this.current().isInserted()) {
-            //     deleted += (this.current().size() - this.offsetAtFragment)
-            // }
             // inserted by other, retain added
             if(this.current().isInsertedByOther(this.branch) && !this.current().isDeleted()) {
                 ops.push({retain: this.current().size() - this.offsetAtFragment})

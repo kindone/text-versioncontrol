@@ -1,17 +1,10 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
 import { StringWithState } from "../StringWithState"
+import { expectEqual, JSONStringify } from './JSONStringify'
 import { randomInt, randomStringWithState, randomUserDeltas } from "./random"
 
 
-function JSONStringify(obj:any) {
-    return JSON.stringify(obj, (key:string, value:any) => {
-        if (typeof value === 'object' && value instanceof Set) {
-            return [...Array.from(value)]
-        }
-        return value
-    })
-}
 
 describe("hand-made scenarios", () => {
     it("scenario 1", () => {
@@ -140,10 +133,9 @@ function testCombination(
     const combined1 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
     const combined2 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
 
-    let mergedDeltas: Delta[] = []
+    const mergedDeltas: Delta[] = []
     for (const comb of combined1) {
-        const mergedDeltaParts = ssClient1.apply(comb.delta, comb.branch)
-        mergedDeltas = mergedDeltas.concat(mergedDeltaParts)
+        mergedDeltas.push(ssClient1.apply(comb.delta, comb.branch))
     }
 
     for (const comb of combined2) {
@@ -154,24 +146,24 @@ function testCombination(
         ssServer.apply(mergedDelta, "merged")
     }
 
-    expect(ssInitial.equals(ssClient1)).toBe(false)
+    // expect(ssInitial.equals(ssClient1)).toBe(false)
 
-    if (!ssClient1.equals(ssClient2)) {
-        // console.log(JSONStringify(ssInitial))
-        // console.log(JSONStringify(combined1))
-        // console.log(JSONStringify(combined2))
-        // console.log(JSONStringify(ssClient1))
-        // console.log(JSONStringify(ssClient2))
-        expect(ssClient1).toBe(ssClient2)
-    }
-
-    if (ssClient1.toText() !== ssServer.toText()) {
+    if (JSONStringify(ssClient1.toDelta()) !== JSONStringify(ssClient2.toDelta())) {
         console.log(JSONStringify(ssInitial))
         console.log(JSONStringify(combined1))
-        console.log(JSONStringify(mergedDeltas))
+        console.log(JSONStringify(combined2))
         console.log(JSONStringify(ssClient1))
-        console.log(JSONStringify(ssServer))
-        expect(ssClient1.toText()).toEqual(ssServer.toText())
+        console.log(JSONStringify(ssClient2))
+        expectEqual(ssClient1.toDelta(), ssClient2.toDelta())
+    }
+
+    if (JSONStringify(ssClient1.toDelta()) !== JSONStringify(ssServer.toDelta())) {
+        console.error(JSONStringify(ssInitial))
+        console.error(JSONStringify(combined1))
+        console.error(JSONStringify(mergedDeltas))
+        console.error(JSONStringify(ssClient1))
+        console.error(JSONStringify(ssServer))
+        expectEqual(ssClient1.toDelta(), ssServer.toDelta())
     }
 }
 
@@ -179,12 +171,12 @@ describe("commutativity", () => {
     it("scenario 1", () => {
         for (let j = 0; j < 200; j++) {
             const ss = randomStringWithState()
-            const user1Deltas = randomUserDeltas(ss.toText().length,4)
-            const user2Deltas = randomUserDeltas(ss.toText().length,4)
-            const user3Deltas = randomUserDeltas(ss.toText().length,3)
+            const user1Deltas = randomUserDeltas(ss.toText().length,2)
+            const user2Deltas = randomUserDeltas(ss.toText().length,2)
+            // const user3Deltas = randomUserDeltas(ss.toText().length,5)
 
             for (let i = 0; i < 60; i++) {
-                testCombination(ss, user1Deltas, user2Deltas, user3Deltas)
+                testCombination(ss, user1Deltas, user2Deltas)// , user3Deltas)
             }
         }
     })

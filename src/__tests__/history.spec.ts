@@ -3,7 +3,9 @@ import Delta = require('quill-delta')
 import { Client } from "../Client"
 import { Server } from "../Server"
 import { TextHistory } from "../TextHistory"
+import { expectEqual } from './JSONStringify'
 import { randomUserDeltas } from "./random"
+
 
 
 
@@ -131,7 +133,7 @@ describe("generated scenarios", () => {
         const set1ForClient = serverHistory.apply(set2)
         clientHistory.apply(set1ForClient)
 
-        expect(clientHistory.getText() === serverHistory.getText())
+        expectEqual(clientHistory.getContent(), serverHistory.getContent())
 
         let serverRev = serverHistory.getCurrentRev()
         let clientRev = clientHistory.getCurrentRev()
@@ -153,7 +155,7 @@ describe("generated scenarios", () => {
             deltas: set3ForClient
         })
 
-        expect(clientHistory.getText()).toBe(serverHistory.getText())
+        expectEqual(clientHistory.getContent(), serverHistory.getContent())
 
         serverRev = serverHistory.getCurrentRev()
         clientRev = clientHistory.getCurrentRev()
@@ -175,6 +177,6 @@ describe("generated scenarios", () => {
             deltas: set5ForClient
         })
 
-        expect(clientHistory.getText()).toBe(serverHistory.getText())
+        expectEqual(clientHistory.getContent(), serverHistory.getContent())
     })
 })

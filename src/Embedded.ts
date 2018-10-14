@@ -5,10 +5,10 @@ export class Embedded {
     }
 
     public slice(begin?:number, end?:number):Embedded {
-        return this
+        return new Embedded({...this.value})
     }
 
-    public concat() {
-        return this
+    public concat():Embedded {
+        return new Embedded({...this.value})
     }
 }

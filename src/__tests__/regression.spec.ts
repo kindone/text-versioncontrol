@@ -167,11 +167,11 @@ describe("text spec regression", () => {
         ]
 
         const server = StringWithState.fromString(initial)
-        console.log(JSONStringify(server))
+        console.log(JSONStringify(server.fragments))
         for(const c of combined) {
             const newDelta = client1.apply(new Delta(c.ops), c.branch)
             server.apply(newDelta, "merged")
-            console.log(JSONStringify(c.ops))
+            console.log(JSONStringify(c.ops), c.branch)
             console.log(JSONStringify(client1.fragments))
             console.log(JSONStringify(newDelta.ops))
             console.log(JSONStringify(server.fragments))

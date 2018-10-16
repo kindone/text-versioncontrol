@@ -1,9 +1,9 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
 import Delta = require('quill-delta')
 import { Client } from "../Client"
+import { expectEqual } from '../JSONStringify'
 import { Server } from "../Server"
 import { TextHistory } from "../TextHistory"
-import { expectEqual } from './JSONStringify'
 import { randomUserDeltas } from "./random"
 
 

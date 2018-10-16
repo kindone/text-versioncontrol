@@ -34,6 +34,8 @@
     "underscore": "^1.9.1"
   },
   "dependencies": {
+    "@types/deep-equal": "^1.0.1",
+    "deep-equal": "^1.0.1",
     "quill-delta": "^4.0.1"
   }
 }

@@ -1,7 +1,7 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
+import { expectEqual, JSONStringify } from '../JSONStringify'
 import { StringWithState } from "../StringWithState"
-import { expectEqual, JSONStringify } from './JSONStringify'
 import { randomInt, randomStringWithState, randomUserDeltas } from "./random"
 
 
@@ -148,7 +148,7 @@ function testCombination(
 
     // expect(ssInitial.equals(ssClient1)).toBe(false)
 
-    if (JSONStringify(ssClient1.toDelta()) !== JSONStringify(ssClient2.toDelta())) {
+    if (!_.isEqual(JSON.parse(JSONStringify(ssClient1.toDelta())), JSON.parse(JSONStringify(ssClient2.toDelta())))) {
         console.log(JSONStringify(ssInitial))
         console.log(JSONStringify(combined1))
         console.log(JSONStringify(combined2))
@@ -157,7 +157,7 @@ function testCombination(
         expectEqual(ssClient1.toDelta(), ssClient2.toDelta())
     }
 
-    if (JSONStringify(ssClient1.toDelta()) !== JSONStringify(ssServer.toDelta())) {
+    if (!_.isEqual(JSON.parse(JSONStringify(ssClient1.toDelta())), JSON.parse(JSONStringify(ssServer.toDelta())))) {
         console.error(JSONStringify(ssInitial))
         console.error(JSONStringify(combined1))
         console.error(JSONStringify(mergedDeltas))
@@ -171,12 +171,12 @@ describe("commutativity", () => {
     it("scenario 1", () => {
         for (let j = 0; j < 200; j++) {
             const ss = randomStringWithState()
-            const user1Deltas = randomUserDeltas(ss.toText().length,2)
-            const user2Deltas = randomUserDeltas(ss.toText().length,1)
-            // const user3Deltas = randomUserDeltas(ss.toText().length,5)
+            const user1Deltas = randomUserDeltas(ss.toText().length,4)
+            const user2Deltas = randomUserDeltas(ss.toText().length,4)
+            const user3Deltas = randomUserDeltas(ss.toText().length,5)
 
             for (let i = 0; i < 60; i++) {
-                testCombination(ss, user1Deltas, user2Deltas)// , user3Deltas)
+                testCombination(ss, user1Deltas, user2Deltas, user3Deltas)
             }
         }
     })

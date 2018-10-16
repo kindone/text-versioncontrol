@@ -104,7 +104,7 @@ export function randomUserDeltasFromOperations(baseLength: number, numOps = 0) {
     return userOps.map((userop) => userop.toDelta())
 }
 
-export function randomUserDeltas(baseLength: number, numOps:number, withAttr = false) {
+export function randomUserDeltas(baseLength: number, numOps:number, withAttr = true) {
     const deltas:Delta[] = []
     for(let i = 0; i < numOps; i++) {
         const delta = new Delta(baseLength > 0 ? randomUserOps(baseLength, withAttr) : [randomInsert(withAttr)])

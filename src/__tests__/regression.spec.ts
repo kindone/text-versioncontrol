@@ -1,9 +1,8 @@
-
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from "underscore"
+import { expectEqual, JSONStringify } from '../JSONStringify'
 import { StringWithState } from "../StringWithState"
-import { expectEqual, JSONStringify } from './JSONStringify'
 
 
 describe("text spec regression", () => {
@@ -164,6 +163,113 @@ describe("text spec regression", () => {
             {ops: [{"retain":1},{"delete":2},{"delete":1}], branch:  "user1"},
             {ops: [{"insert":{"x":"ds"}},{"retain":1},{"insert":{"x":"qj"}},{"retain":1}], branch: "user2"},
             {ops: [{"retain":2},{"delete":1},{"delete":1}], branch: "user2"}
+        ]
+
+        const server = StringWithState.fromString(initial)
+        console.log(JSONStringify(server.fragments))
+        for(const c of combined) {
+            const newDelta = client1.apply(new Delta(c.ops), c.branch)
+            server.apply(newDelta, "merged")
+            console.log(JSONStringify(c.ops), c.branch)
+            console.log(JSONStringify(client1.fragments))
+            console.log(JSONStringify(newDelta.ops))
+            console.log(JSONStringify(server.fragments))
+        }
+
+        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        expectEqual(client1.toDelta(), server.toDelta())
+    })
+
+
+    it("case 9 with attr", () => {
+        const initial = "ux"
+        const client1 = StringWithState.fromString(initial)
+        const combined:Array<{ops:Op[], branch:string}> = [
+            {ops: [{"insert":{"y":"u8"}},{"retain":1,"attributes":{"b":1}},{"retain":1,"attributes":{"b":1,"i":1}},{"insert":"h6","attributes":{"b":null}}], branch:"user2"},
+            {ops: [{"delete":1},{"retain":1}], branch: "user1"},
+            {ops: [{"insert":"xm","attributes":{"b":null,"i":1}},{"retain":1}], branch: "user1"}
+        ]
+
+        const server = StringWithState.fromString(initial)
+        console.log(JSONStringify(server.fragments))
+        for(const c of combined) {
+            const newDelta = client1.apply(new Delta(c.ops), c.branch)
+            server.apply(newDelta, "merged")
+            console.log(JSONStringify(c.ops), c.branch)
+            console.log(JSONStringify(client1.fragments))
+            console.log(JSONStringify(newDelta.ops))
+            console.log(JSONStringify(server.fragments))
+        }
+
+        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        expectEqual(client1.toDelta(), server.toDelta())
+    })
+
+
+    it("case 10 with attr", () => {
+        const initial = "rd"
+        const client1 = StringWithState.fromString(initial)
+        const combined:Array<{ops:Op[], branch:string}> = [
+            {ops: [{"retain":1},{"retain":1,"attributes":{"b":null}}], branch: "user1"},
+            {ops: [{"retain":1,"attributes":{"i":1}},{"retain":1}], branch: "user1"},
+            {ops: [{"retain":1},{"retain":1,"attributes":{"b":1}}], branch: "user2"}
+        ]
+
+        const server = StringWithState.fromString(initial)
+        console.log(JSONStringify(server.fragments))
+        for(const c of combined) {
+            const newDelta = client1.apply(new Delta(c.ops), c.branch)
+            server.apply(newDelta, "merged")
+            console.log(JSONStringify(c.ops), c.branch)
+            console.log(JSONStringify(client1.fragments))
+            console.log(JSONStringify(newDelta.ops))
+            console.log(JSONStringify(server.fragments))
+        }
+
+        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        expectEqual(client1.toDelta(), server.toDelta())
+    })
+
+    it("case 11 with attr", () => {
+        const initial = "gr"
+        const client1 = StringWithState.fromString(initial)
+        const combined:Array<{ops:Op[], branch:string}> = [
+            {ops: [{"insert":{"y":"iw"},"attributes":{"b":null,"i":null}},{"retain":1},{"retain":1},{"insert":"o4","attributes":{"i":1}}], branch: "user1"},
+            {ops: [{"retain":1},{"retain":1,"attributes":{"b":null,"i":null}}], branch: "user2"},
+            {ops: [{"retain":2,"attributes":{"b":null,"i":null}},{"retain":1,"attributes":{"b":1}},{"retain":1,"attributes":{"i":1}},{"retain":1}], branch: "user1"}
+        ]
+
+        const server = StringWithState.fromString(initial)
+        console.log(JSONStringify(server.fragments))
+        for(const c of combined) {
+            const newDelta = client1.apply(new Delta(c.ops), c.branch)
+            server.apply(newDelta, "merged")
+            console.log(JSONStringify(c.ops), c.branch)
+            console.log(JSONStringify(client1.fragments))
+            console.log(JSONStringify(newDelta.ops))
+            console.log(JSONStringify(server.fragments))
+        }
+
+        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        expectEqual(client1.toDelta(), server.toDelta())
+    })
+
+    it("case 12 with long attr", () => {
+        const initial = "gr"
+        const client1 = StringWithState.fromString(initial)
+        const combined:Array<{ops:Op[], branch:string}> = [
+            {ops: [{"retain":1,"attributes":{"i":1}},{"delete":1}], branch: "user1"},
+            {ops: [{"retain":1,"attributes":{"b":null}},{"delete":1}], branch: "user3"},
+            {ops: [{"insert":{"y":"wi"}},{"retain":1},{"retain":1},{"insert":{"y":"3m"},"attributes":{"b":null,"i":1}}], branch: "user2"},
+            {ops: [{"insert":"ia"},{"delete":3},{"retain":1,"attributes":{"b":1,"i":1}}], branch: "user2"},
+            {ops: [{"insert":"r7"},{"delete":1},{"insert":"ga"}], branch: "user3"},
+            {ops: [{"retain":1},{"retain":1},{"delete":1}], branch: "user2"},
+            {ops: [{"delete":1},{"delete":1}], branch: "user2"},
+            {ops: [{"insert":"2m","attributes":{"b":null}},{"delete":1},{"insert":"ub","attributes":{"b":null,"i":1}}], branch: "user1"},
+            {ops: [{"retain":2},{"retain":1},{"retain":1,"attributes":{"i":1}}], branch: "user1"},
+            {ops: [{"insert":{"x":"fk"},"attributes":{"b":1,"i":1}},{"retain":1},{"retain":1},{"insert":"kx","attributes":{"b":1}},{"delete":1},{"insert":"00","attributes":{"i":null}},{"delete":1}], branch: "user3"},
+            {ops: [{"retain":2,"attributes":{"i":null}},{"retain":4},{"delete":1}], branch: "user3"},
+            {ops: [{"insert":{"x":"nm"},"attributes":{"i":null}},{"retain":5,"attributes":{"b":null,"i":1}},{"insert":{"y":"gx"}},{"retain":1},{"insert":{"y":"xb"}}], branch: "user3"}
         ]
 
         const server = StringWithState.fromString(initial)

@@ -1,10 +1,53 @@
+import AttributeMap from "quill-delta/dist/AttributeMap"
 import Op from "quill-delta/dist/Op"
-import { Fragment } from "./Fragment"
+import * as _ from 'underscore'
+import { AttributeFragment, Fragment } from "./Fragment"
 
 // result fragments and transformed ops
 export interface OpsWithDiff {
     ops:Op[]
     diff:number
+}
+
+function shadowedAttributes(mod: {[branch: string]: AttributeMap}, branches:string[])
+{
+    const projected:AttributeMap = {}
+    for(const branch of branches.sort())
+    {
+        const branchMod = mod[branch]
+        for(const field of Object.keys(branchMod))
+            projected[field] = branchMod[field]
+    }
+    return projected
+}
+
+function calculateAttributeDelta(attr:AttributeMap, branch:string, attrFragment?:AttributeFragment):AttributeMap | undefined
+{
+    if(!attrFragment)
+        return attr
+
+    const delta:AttributeMap = {}
+
+    // filtered by branches with higher priority
+    let shadowed:AttributeMap = {}
+    if(attrFragment.mod) {
+        const higherBranches = _.filter(Object.keys(attrFragment.mod), (br) => {
+            return br > branch
+        })
+        shadowed = shadowedAttributes(attrFragment.mod, higherBranches)
+    }
+
+    for(const field of Object.keys(attr)) {
+        // 1. check if the field is different in attrFragment's val
+        // 2. check if the field is not shadowed by branch with higher priority
+
+        const valField = attrFragment.val ? attrFragment.val[field] : undefined
+
+        if(attr[field] !== valField && !shadowed.hasOwnProperty(field))
+            delta[field] = attr[field]
+    }
+
+    return _.isEmpty(delta) ? undefined : delta
 }
 
 export class DeltaIterator
@@ -21,8 +64,12 @@ export class DeltaIterator
     }
 
     public attribute(amount:number, attr:object):OpsWithDiff {
+        // priority of attribute setting by branch name
         return this.mapCurrent(
-            (amnt)  => ({retain: amnt, attributes: attr}),
+            (amnt, attrFragment)  => {
+                const attrDelta = calculateAttributeDelta(attr, this.branch, attrFragment)
+                return attrDelta ? {retain: amnt, attributes: attrDelta} : {retain: amnt}
+            },
             amount)
     }
 
@@ -80,7 +127,7 @@ export class DeltaIterator
     }
 
     private mapCurrent<T=undefined>(
-        deltaGen:(amount:number) => Op,
+        deltaGen:(amount:number, attrFragment?:AttributeFragment) => Op,
         amount:number, arg?:T):OpsWithDiff
     {
         let ops:Op[] = []
@@ -97,7 +144,7 @@ export class DeltaIterator
             if(remaining > 0) {
                 // take some of current and finish
                 if(!this.current().isDeletedByOther(this.branch))
-                    ops.push(deltaGen(amount))
+                    ops.push(deltaGen(amount, this.current().attrs))
                 this.offsetAtFragment += amount
                 return {ops, diff: 0}
             }
@@ -105,7 +152,7 @@ export class DeltaIterator
             {
                 // take rest of current and finish
                 if(!this.current().isDeletedByOther(this.branch))
-                    ops.push(deltaGen(this.current().size() - this.offsetAtFragment))
+                    ops.push(deltaGen(this.current().size() - this.offsetAtFragment, this.current().attrs))
                 this.nextFragment()
                 return {ops, diff: 0}
             }
@@ -113,7 +160,7 @@ export class DeltaIterator
                 // first take rest of current
                 const takeAmount = this.current().size() - this.offsetAtFragment
                 if(!this.current().isDeletedByOther(this.branch))
-                    ops.push(deltaGen(takeAmount))
+                    ops.push(deltaGen(takeAmount, this.current().attrs))
                 // adjust amount
                 amount -= takeAmount // > 0 by condition
                 this.nextFragment()

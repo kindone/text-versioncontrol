@@ -190,12 +190,17 @@ export class StringWithState {
             return [{insert: (op1.insert as string).concat(op2.insert as string)}]
         }
 
+        if(typeof op1.insert === 'string' && typeof op2.insert === 'string' && op1.attributes && op2.attributes) {
+            if(_.isEqual(op1.attributes, op2.attributes))
+                return [{insert: (op1.insert as string).concat(op2.insert as string), attributes: op1.attributes}]
+        }
+
         if(op1.delete && op2.delete)
             return [{delete: op1.delete + op2.delete}]
         if(op1.retain && op2.retain && !op1.attributes && !op2.attributes)
             return [{retain: op1.retain + op2.retain}]
         if(op1.retain && op2.retain && op1.attributes && op2.attributes &&
-            [JSON.stringify(op1.attributes) === JSON.stringify(op2.attributes)]) {
+            _.isEqual(op1.attributes, op2.attributes)) {
             return [{retain: op1.retain + op2.retain, attributes: op1.attributes}]
         }
         return [op1, op2]

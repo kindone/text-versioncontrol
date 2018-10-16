@@ -1,5 +1,7 @@
 import Delta = require('quill-delta')
+import * as _ from 'underscore'
 import { StringWithState } from './StringWithState'
+import { expectEqual } from './JSONStringify';
 
 interface ISavepoint
 {
@@ -109,10 +111,7 @@ export class TextHistory {
             if (rev > this.getLatestSavepointRev()) break
 
             if (rev === this.savepoints[j].rev) {
-                if (JSON.stringify(ss.toDelta()) !== JSON.stringify(this.savepoints[j].content))
-                {
-                    throw new Error('savepoint is not correct at (' + rev + ',' + j + '):'  + JSON.stringify(ss.toDelta()) + " and " + JSON.stringify(this.savepoints[j].content))
-                }
+                expectEqual(ss.toDelta(), this.savepoints[j].content, 'savepoint is not correct at (' + rev + ',' + j + '):')
                 j++
             }
             ss.apply(this.deltas[rev], '_')

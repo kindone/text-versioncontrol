@@ -172,7 +172,7 @@ describe("commutativity", () => {
         for (let j = 0; j < 200; j++) {
             const ss = randomStringWithState()
             const user1Deltas = randomUserDeltas(ss.toText().length,2)
-            const user2Deltas = randomUserDeltas(ss.toText().length,2)
+            const user2Deltas = randomUserDeltas(ss.toText().length,1)
             // const user3Deltas = randomUserDeltas(ss.toText().length,5)
 
             for (let i = 0; i < 60; i++) {

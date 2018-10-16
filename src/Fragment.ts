@@ -131,7 +131,6 @@ export class Fragment {
             else
                 return {insert: this.val.value, attributes: this.getAttributes()}
         }
-
     }
 
     public toText():string {

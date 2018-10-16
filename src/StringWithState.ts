@@ -136,7 +136,11 @@ export class StringWithState {
 
     public toDelta():Delta {
         const ops = _.reduce(this.fragments, (result:Op[], fragment) => {
-            return result.concat(fragment.toOp())
+            const op = fragment.toOp()
+            if(!fragment.isDeleted())
+                return result.concat(fragment.toOp())
+            else
+                return result
         },[])
 
         return new Delta(ops)

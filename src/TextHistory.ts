@@ -26,7 +26,10 @@ export class TextHistory {
 
     constructor(name: string, initialText: string = '') {
         this.name = name
-        this.doSavepoint(0, new Delta([{insert: initialText}]))
+        if(initialText === '')
+            this.doSavepoint(0, new Delta([]))
+        else
+            this.doSavepoint(0, new Delta([{insert: initialText}]))
     }
 
     public apply(deltas: Delta[], name?: string): Delta[] {

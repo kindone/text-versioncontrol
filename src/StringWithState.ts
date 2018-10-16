@@ -137,13 +137,13 @@ export class StringWithState {
     public toDelta():Delta {
         const ops = _.reduce(this.fragments, (result:Op[], fragment) => {
             const op = fragment.toOp()
-            if(!fragment.isDeleted())
+            if(!fragment.isDeleted() && op.insert !== "")
                 return result.concat(fragment.toOp())
             else
                 return result
         },[])
 
-        return new Delta(ops)
+        return new Delta(this.normalizeOps(ops))
     }
 
     public toHtml() {

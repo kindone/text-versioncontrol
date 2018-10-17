@@ -281,10 +281,11 @@ describe("text spec regression", () => {
             console.log(JSONStringify(client1.fragments))
             console.log(JSONStringify(newDelta.ops))
             console.log(JSONStringify(server.fragments))
+            expectEqual(client1.toDelta(), server.toDelta())
         }
 
         console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
-        expectEqual(client1.toDelta(), server.toDelta())
+
     })
 
 })

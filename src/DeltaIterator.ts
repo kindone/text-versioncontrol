@@ -9,9 +9,9 @@ export interface OpsWithDiff {
     diff:number
 }
 
-function shadowedAttributes(mod: {[branch: string]: AttributeMap}, branches:string[])
+function shadowedAttributes(base: AttributeMap, mod: {[branch: string]: AttributeMap}, branches:string[])
 {
-    const projected:AttributeMap = {}
+    const projected:AttributeMap = {...base}
     for(const branch of branches.sort())
     {
         const branchMod = mod[branch]
@@ -30,20 +30,24 @@ function calculateAttributeDelta(attr:AttributeMap, branch:string, attrFragment?
 
     // filtered by branches with higher priority
     let shadowed:AttributeMap = {}
+    let compared:AttributeMap = {}
     if(attrFragment.mod) {
-        const higherBranches = _.filter(Object.keys(attrFragment.mod), (br) => {
-            return br > branch
+        const groups:{[higher:string]:string[]} = _.groupBy(Object.keys(attrFragment.mod), (br) => {
+            return br > branch ? 'T' : 'F'
         })
-        shadowed = shadowedAttributes(attrFragment.mod, higherBranches)
+        const higherBranches:string[] = groups['T'] ? groups['T'] : []
+        const lowerBranches:string[] = groups['F'] ? groups['F'] : []
+        shadowed = shadowedAttributes({}, attrFragment.mod, higherBranches)
+        compared = shadowedAttributes(attrFragment.val ? attrFragment.val : {}, attrFragment.mod, lowerBranches)
     }
 
     for(const field of Object.keys(attr)) {
-        // 1. check if the field is different in attrFragment's val
-        // 2. check if the field is not shadowed by branch with higher priority
+        // 1. check if the field is not shadowed by branch with higher priority
+        // 1. check if the field is different from mods by a branch with lower and equal priority
 
         const valField = attrFragment.val ? attrFragment.val[field] : undefined
 
-        if(attr[field] !== valField && !shadowed.hasOwnProperty(field))
+        if(!shadowed.hasOwnProperty(field) && (!compared.hasOwnProperty(field) || compared[field] !== attr[field]))
             delta[field] = attr[field]
     }
 

@@ -1,7 +1,7 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
 import Delta = require('quill-delta')
 import { Client } from "../Client"
-import { expectEqual } from '../JSONStringify'
+import { expectEqual, JSONStringify } from '../JSONStringify'
 import { Server } from "../Server"
 import { TextHistory } from "../TextHistory"
 import { randomUserDeltas } from "./random"
@@ -123,20 +123,20 @@ describe("generated scenarios", () => {
         const serverHistory = new TextHistory(initialText)
         const clientHistory = new TextHistory(initialText)
 
-        const set1 = randomUserDeltas(initialText.length, 30)
-        serverHistory.apply(set1)
-
-        const set2 = randomUserDeltas(initialText.length, 30)
-        clientHistory.apply(set2)
-
-        // apply to both
-        const set1ForClient = serverHistory.apply(set2)
-        clientHistory.apply(set1ForClient)
-
-        expectEqual(clientHistory.getContent(), serverHistory.getContent())
-
         let serverRev = serverHistory.getCurrentRev()
         let clientRev = clientHistory.getCurrentRev()
+
+        // const set1 = randomUserDeltas(initialText.length, 30)
+        // serverHistory.apply(set1)
+
+        // const set2 = randomUserDeltas(initialText.length, 30)
+        // clientHistory.apply(set2)
+
+        // // apply to both
+        // const set1ForClient = serverHistory.apply(set2)
+        // clientHistory.apply(set1ForClient)
+
+        expectEqual(clientHistory.getContent(), serverHistory.getContent()) // , "<" + JSONStringify(set1) + " and " + JSONStringify(set2) + " and " + JSONStringify(set1ForClient) + ">")
 
         const set3 = randomUserDeltas(serverHistory.getText().length, 30)
         serverHistory.apply(set3)
@@ -155,7 +155,7 @@ describe("generated scenarios", () => {
             deltas: set3ForClient
         })
 
-        expectEqual(clientHistory.getContent(), serverHistory.getContent())
+        expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set3) + " and " + JSONStringify(set4) + " and " + JSONStringify(set3ForClient))
 
         serverRev = serverHistory.getCurrentRev()
         clientRev = clientHistory.getCurrentRev()
@@ -177,6 +177,6 @@ describe("generated scenarios", () => {
             deltas: set5ForClient
         })
 
-        expectEqual(clientHistory.getContent(), serverHistory.getContent())
+        expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set5) + " and " + JSONStringify(set6) + " and " + JSONStringify(set5ForClient))
     })
 })

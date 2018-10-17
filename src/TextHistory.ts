@@ -1,7 +1,8 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
+import { expectEqual } from './JSONStringify'
 import { StringWithState } from './StringWithState'
-import { expectEqual } from './JSONStringify';
+
 
 interface ISavepoint
 {
@@ -54,7 +55,8 @@ export class TextHistory {
     public getTextForRev(rev: number): string {
         const savepoint = this.getNearestSavepointForRev(rev)
         const ss = StringWithState.fromDelta(savepoint.content)
-        for (let i = savepoint.rev; i < rev; i++) ss.apply(this.deltas[i], '_')
+        for (let i = savepoint.rev; i < rev; i++)
+            ss.apply(this.deltas[i], '_')
 
         return ss.toText()
     }
@@ -66,7 +68,8 @@ export class TextHistory {
     public getContentForRev(rev: number): Delta {
         const savepoint = this.getNearestSavepointForRev(rev)
         const ss = StringWithState.fromDelta(savepoint.content)
-        for (let i = savepoint.rev; i < rev; i++) ss.apply(this.deltas[i], '_')
+        for (let i = savepoint.rev; i < rev; i++)
+            ss.apply(this.deltas[i], '_')
 
         return ss.toDelta()
     }
@@ -94,9 +97,11 @@ export class TextHistory {
         const baseRevText = this.getContentForRev(baseRev)
         const ss = StringWithState.fromDelta(baseRevText)
         let newDeltas: Delta[] = []
-        for (let i = baseRev; i < this.deltas.length; i++) ss.apply(this.deltas[i], this.name)
+        for (let i = baseRev; i < this.deltas.length; i++)
+            ss.apply(this.deltas[i], this.name)
 
-        for (const op of deltas) newDeltas = newDeltas.concat(ss.apply(op, name))
+        for (const delta of deltas)
+            newDeltas = newDeltas.concat(ss.apply(delta, name))
 
         return { deltas: newDeltas, content: ss.toDelta() }
     }
@@ -127,6 +132,7 @@ export class TextHistory {
     }
 
     private getNearestSavepointForRev(rev: number): ISavepoint {
+        // return this.savepoints[0]
         let nearestSavepoint = this.savepoints[0]
         for (const savepoint of this.savepoints) {
             if (rev <= savepoint.rev) break

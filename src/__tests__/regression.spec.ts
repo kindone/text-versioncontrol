@@ -115,7 +115,7 @@ describe("text spec regression", () => {
         server.apply(delta3, "merged")
         server.apply(delta4, "merged")
 
-        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        // console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
         expectEqual(client1.toDelta(), server.toDelta())
     })
 
@@ -146,12 +146,12 @@ describe("text spec regression", () => {
         deltas.push(client1.apply(new Delta().insert({"y":"7a"}).delete(1).delete(1).delete(1).insert("etw").delete(1).retain(1).insert({"x":"m4"}), "user1"))
         deltas.push(client1.apply(new Delta().delete(5).delete(1), "user1"))
 
-        console.log(JSONStringify(deltas))
+        // console.log(JSONStringify(deltas))
         const server = StringWithState.fromString(initial)
         for(const delta of deltas)
             server.apply(delta, "merged")
 
-        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        // console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
         expectEqual(client1.toDelta(), server.toDelta())
     })
 
@@ -166,17 +166,17 @@ describe("text spec regression", () => {
         ]
 
         const server = StringWithState.fromString(initial)
-        console.log(JSONStringify(server.fragments))
+        // console.log(JSONStringify(server.fragments))
         for(const c of combined) {
             const newDelta = client1.apply(new Delta(c.ops), c.branch)
             server.apply(newDelta, "merged")
-            console.log(JSONStringify(c.ops), c.branch)
-            console.log(JSONStringify(client1.fragments))
-            console.log(JSONStringify(newDelta.ops))
-            console.log(JSONStringify(server.fragments))
+            // console.log(JSONStringify(c.ops), c.branch)
+            // console.log(JSONStringify(client1.fragments))
+            // console.log(JSONStringify(newDelta.ops))
+            // console.log(JSONStringify(server.fragments))
         }
 
-        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        // console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
         expectEqual(client1.toDelta(), server.toDelta())
     })
 
@@ -191,14 +191,14 @@ describe("text spec regression", () => {
         ]
 
         const server = StringWithState.fromString(initial)
-        console.log(JSONStringify(server.fragments))
+        // console.log(JSONStringify(server.fragments))
         for(const c of combined) {
             const newDelta = client1.apply(new Delta(c.ops), c.branch)
             server.apply(newDelta, "merged")
-            console.log(JSONStringify(c.ops), c.branch)
-            console.log(JSONStringify(client1.fragments))
-            console.log(JSONStringify(newDelta.ops))
-            console.log(JSONStringify(server.fragments))
+            // console.log(JSONStringify(c.ops), c.branch)
+            // console.log(JSONStringify(client1.fragments))
+            // console.log(JSONStringify(newDelta.ops))
+            // console.log(JSONStringify(server.fragments))
         }
 
         console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
@@ -216,17 +216,17 @@ describe("text spec regression", () => {
         ]
 
         const server = StringWithState.fromString(initial)
-        console.log(JSONStringify(server.fragments))
+        // console.log(JSONStringify(server.fragments))
         for(const c of combined) {
             const newDelta = client1.apply(new Delta(c.ops), c.branch)
             server.apply(newDelta, "merged")
-            console.log(JSONStringify(c.ops), c.branch)
-            console.log(JSONStringify(client1.fragments))
-            console.log(JSONStringify(newDelta.ops))
-            console.log(JSONStringify(server.fragments))
+            // console.log(JSONStringify(c.ops), c.branch)
+            // console.log(JSONStringify(client1.fragments))
+            // console.log(JSONStringify(newDelta.ops))
+            // console.log(JSONStringify(server.fragments))
         }
 
-        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        // console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
         expectEqual(client1.toDelta(), server.toDelta())
     })
 
@@ -240,14 +240,14 @@ describe("text spec regression", () => {
         ]
 
         const server = StringWithState.fromString(initial)
-        console.log(JSONStringify(server.fragments))
+        // console.log(JSONStringify(server.fragments))
         for(const c of combined) {
             const newDelta = client1.apply(new Delta(c.ops), c.branch)
             server.apply(newDelta, "merged")
-            console.log(JSONStringify(c.ops), c.branch)
-            console.log(JSONStringify(client1.fragments))
-            console.log(JSONStringify(newDelta.ops))
-            console.log(JSONStringify(server.fragments))
+            // console.log(JSONStringify(c.ops), c.branch)
+            // console.log(JSONStringify(client1.fragments))
+            // console.log(JSONStringify(newDelta.ops))
+            // console.log(JSONStringify(server.fragments))
         }
 
         console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
@@ -273,18 +273,18 @@ describe("text spec regression", () => {
         ]
 
         const server = StringWithState.fromString(initial)
-        console.log(JSONStringify(server.fragments))
+        // console.log(JSONStringify(server.fragments))
         for(const c of combined) {
             const newDelta = client1.apply(new Delta(c.ops), c.branch)
             server.apply(newDelta, "merged")
-            console.log(JSONStringify(c.ops), c.branch)
-            console.log(JSONStringify(client1.fragments))
-            console.log(JSONStringify(newDelta.ops))
-            console.log(JSONStringify(server.fragments))
+            // console.log(JSONStringify(c.ops), c.branch)
+            // console.log(JSONStringify(client1.fragments))
+            // console.log(JSONStringify(newDelta.ops))
+            // console.log(JSONStringify(server.fragments))
             expectEqual(client1.toDelta(), server.toDelta())
         }
 
-        console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
+        // console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
 
     })
 

@@ -169,7 +169,7 @@ function testCombination(
 
 describe("commutativity", () => {
     it("scenario 1", () => {
-        for (let j = 0; j < 200; j++) {
+        for (let j = 0; j < 50; j++) {
             const ss = randomStringWithState()
             const user1Deltas = randomUserDeltas(ss.toText().length,4)
             const user2Deltas = randomUserDeltas(ss.toText().length,4)

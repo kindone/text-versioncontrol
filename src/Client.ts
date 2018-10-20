@@ -1,18 +1,20 @@
 import Delta = require('quill-delta')
+import { IDelta } from './IDelta'
 import { ISyncResponse, TextHistory } from './TextHistory'
+
 
 
 export class Client {
     private history: TextHistory
     private synchedRev: number = 0
     private synchedClientRev: number = 0
-    private pending: Delta[] = []
+    private pending: IDelta[] = []
 
     constructor() {
         this.history = new TextHistory('client')
     }
 
-    public apply(deltas: Delta[]) {
+    public apply(deltas: IDelta[]) {
         this.history.apply(deltas)
         this.pending = this.pending.concat(deltas)
     }

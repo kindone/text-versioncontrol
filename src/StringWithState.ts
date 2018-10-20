@@ -4,13 +4,14 @@ import * as _ from 'underscore'
 import { DeltaIterator, OpsWithDiff } from './DeltaIterator'
 import { Fragment } from './Fragment'
 import { FragmentIterator, IResult } from './FragmentIterator';
+import { IDelta } from './IDelta';
 
 export class StringWithState {
     public static fromString(str: string) {
         return new StringWithState([new Fragment(str)])
     }
 
-    public static fromDelta(delta:Delta) {
+    public static fromDelta(delta:IDelta) {
         const fs = _.reduce(delta.ops, (fragments:Fragment[], op) => {
             if(typeof op.insert === 'string')
                 fragments.push(Fragment.initial(op.insert, op.attributes))
@@ -28,7 +29,7 @@ export class StringWithState {
         this.fragments = fragments
     }
 
-    public apply(delta: Delta, branch: string, debug = false):Delta {
+    public apply(delta: IDelta, branch: string, debug = false):IDelta {
         const fragmentIter = new FragmentIterator(branch, this.fragments)
         const deltaIter = new DeltaIterator(branch, this.fragments)
 
@@ -128,13 +129,17 @@ export class StringWithState {
         return true
     }
 
+    public size() {
+        this.toDelta()
+    }
+
     public toText() {
         return _.reduce(this.fragments, (result:string, fragment) => {
             return result.concat(fragment.toText())
         },"")
     }
 
-    public toDelta():Delta {
+    public toDelta():IDelta {
         const ops = _.reduce(this.fragments, (result:Op[], fragment) => {
             const op = fragment.toOp()
             if(!fragment.isDeleted() && op.insert !== "")

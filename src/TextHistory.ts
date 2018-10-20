@@ -1,5 +1,6 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
+import { IDelta } from './IDelta'
 import { expectEqual } from './JSONStringify'
 import { StringWithState } from './StringWithState'
 
@@ -7,17 +8,17 @@ import { StringWithState } from './StringWithState'
 interface ISavepoint
 {
     rev: number
-    content: Delta
+    content: IDelta
 }
 
 export interface ISyncRequest {
     branchName: string
     baseRev: number
-    deltas: Delta[]
+    deltas: IDelta[]
 }
 
 export interface ISyncResponse {
-    deltas: Delta[]
+    deltas: IDelta[]
     revision: number
 }
 
@@ -25,7 +26,7 @@ export class TextHistory {
     public static readonly MIN_SAVEPOINT_RATE = 20
     public readonly name: string = ''
     private savepoints: ISavepoint[] = []
-    private deltas: Delta[] = []
+    private deltas: IDelta[] = []
 
     constructor(name: string, initialText: string = '') {
         this.name = name
@@ -35,11 +36,11 @@ export class TextHistory {
             this.doSavepoint(0, new Delta([{insert: initialText}]))
     }
 
-    public apply(deltas: Delta[], name?: string): Delta[] {
+    public apply(deltas: IDelta[], name?: string): IDelta[] {
         return this.applyAt(this.getCurrentRev(), deltas, name)
     }
 
-    public merge(mergeRequest: ISyncRequest): Delta[] {
+    public merge(mergeRequest: ISyncRequest): IDelta[] {
         return this.applyAt(mergeRequest.baseRev, mergeRequest.deltas, mergeRequest.branchName)
     }
 
@@ -61,11 +62,11 @@ export class TextHistory {
         return ss.toText()
     }
 
-    public getContent(): Delta {
+    public getContent(): IDelta {
         return this.getContentForRev(this.getCurrentRev())
     }
 
-    public getContentForRev(rev: number): Delta {
+    public getContentForRev(rev: number): IDelta {
         const savepoint = this.getNearestSavepointForRev(rev)
         const ss = StringWithState.fromDelta(savepoint.content)
         for (let i = savepoint.rev; i < rev; i++)
@@ -74,7 +75,7 @@ export class TextHistory {
         return ss.toDelta()
     }
 
-    private applyAt(baseRev: number, deltas: Delta[], name?: string): Delta[] {
+    private applyAt(baseRev: number, deltas: IDelta[], name?: string): IDelta[] {
         const baseToCurr = this.deltas.slice(baseRev)
         const result = this.simulate(name ? name : this.name, baseRev, deltas)
 
@@ -92,11 +93,11 @@ export class TextHistory {
     private simulate(
         name: string,
         baseRev: number,
-        deltas: Delta[],
-    ): { deltas: Delta[]; content: Delta } {
+        deltas: IDelta[],
+    ): { deltas: IDelta[]; content: IDelta } {
         const baseRevText = this.getContentForRev(baseRev)
         const ss = StringWithState.fromDelta(baseRevText)
-        let newDeltas: Delta[] = []
+        let newDeltas: IDelta[] = []
         for (let i = baseRev; i < this.deltas.length; i++)
             ss.apply(this.deltas[i], this.name)
 
@@ -123,7 +124,7 @@ export class TextHistory {
         }
     }
 
-    private doSavepoint(rev: number, content: Delta): void {
+    private doSavepoint(rev: number, content: IDelta): void {
         this.savepoints.push({ rev, content })
     }
 

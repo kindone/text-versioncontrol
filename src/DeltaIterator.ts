@@ -26,7 +26,7 @@ function calculateAttributeDelta(attr:AttributeMap, branch:string, attrFragment?
     if(!attrFragment)
         return attr
 
-    const delta:AttributeMap = {}
+    const attrDelta:AttributeMap = {}
 
     // filtered by branches with higher priority
     let shadowed:AttributeMap = {}
@@ -35,8 +35,8 @@ function calculateAttributeDelta(attr:AttributeMap, branch:string, attrFragment?
         const groups:{[higher:string]:string[]} = _.groupBy(Object.keys(attrFragment.mod), (br) => {
             return br > branch ? 'T' : 'F'
         })
-        const higherBranches:string[] = groups['T'] ? groups['T'] : []
-        const lowerBranches:string[] = groups['F'] ? groups['F'] : []
+        const higherBranches:string[] = groups.T ? groups.T : []
+        const lowerBranches:string[] = groups.F ? groups.F : []
         shadowed = shadowedAttributes({}, attrFragment.mod, higherBranches)
         compared = shadowedAttributes(attrFragment.val ? attrFragment.val : {}, attrFragment.mod, lowerBranches)
     }
@@ -48,10 +48,10 @@ function calculateAttributeDelta(attr:AttributeMap, branch:string, attrFragment?
         const valField = attrFragment.val ? attrFragment.val[field] : undefined
 
         if(!shadowed.hasOwnProperty(field) && (!compared.hasOwnProperty(field) || compared[field] !== attr[field]))
-            delta[field] = attr[field]
+            attrDelta[field] = attr[field]
     }
 
-    return _.isEmpty(delta) ? undefined : delta
+    return _.isEmpty(attrDelta) ? undefined : attrDelta
 }
 
 export class DeltaIterator
@@ -131,7 +131,7 @@ export class DeltaIterator
     }
 
     private mapCurrent<T=undefined>(
-        deltaGen:(amount:number, attrFragment?:AttributeFragment) => Op,
+        opGen:(amount:number, attrFragment?:AttributeFragment) => Op,
         amount:number, arg?:T):OpsWithDiff
     {
         let ops:Op[] = []
@@ -148,7 +148,7 @@ export class DeltaIterator
             if(remaining > 0) {
                 // take some of current and finish
                 if(!this.current().isDeletedByOther(this.branch))
-                    ops.push(deltaGen(amount, this.current().attrs))
+                    ops.push(opGen(amount, this.current().attrs))
                 this.offsetAtFragment += amount
                 return {ops, diff: 0}
             }
@@ -156,7 +156,7 @@ export class DeltaIterator
             {
                 // take rest of current and finish
                 if(!this.current().isDeletedByOther(this.branch))
-                    ops.push(deltaGen(this.current().size() - this.offsetAtFragment, this.current().attrs))
+                    ops.push(opGen(this.current().size() - this.offsetAtFragment, this.current().attrs))
                 this.nextFragment()
                 return {ops, diff: 0}
             }
@@ -164,7 +164,7 @@ export class DeltaIterator
                 // first take rest of current
                 const takeAmount = this.current().size() - this.offsetAtFragment
                 if(!this.current().isDeletedByOther(this.branch))
-                    ops.push(deltaGen(takeAmount, this.current().attrs))
+                    ops.push(opGen(takeAmount, this.current().attrs))
                 // adjust amount
                 amount -= takeAmount // > 0 by condition
                 this.nextFragment()

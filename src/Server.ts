@@ -1,7 +1,11 @@
-import { ISyncRequest, ISyncResponse, TextHistory } from './TextHistory'
+import { History, IHistory, ISyncRequest, ISyncResponse } from './History'
 
 export class Server {
-    private history: TextHistory = new TextHistory('server')
+    private history: IHistory
+
+    constructor(history:IHistory = new History('server')) {
+        this.history = history
+    }
 
     public merge(syncRequest: ISyncRequest): ISyncResponse {
         const deltas = this.history.merge(syncRequest)

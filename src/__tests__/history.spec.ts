@@ -1,9 +1,9 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
 import Delta = require('quill-delta')
 import { Client } from "../Client"
+import { History } from "../History"
 import { expectEqual, JSONStringify } from '../JSONStringify'
 import { Server } from "../Server"
-import { TextHistory } from "../TextHistory"
 import { randomUserDeltas } from "./random"
 
 
@@ -56,8 +56,8 @@ describe("server-client scenarios", () => {
 describe("hand-made scenarios", () => {
     it("scenario 1", () => {
         const initialText = "initial"
-        const serverHistory = new TextHistory("server", initialText)
-        const clientHistory = new TextHistory("client1", initialText)
+        const serverHistory = new History("server", initialText)
+        const clientHistory = new History("client1", initialText)
 
         const set1 = [new Delta().retain(7).insert(" text"), new Delta().insert("The ")]
         serverHistory.apply(set1)
@@ -83,8 +83,8 @@ describe("hand-made scenarios", () => {
 
     it("scenario 2", () => {
         const initialText = "initial"
-        const serverHistory = new TextHistory("server", initialText)
-        const c1History = new TextHistory("client1", initialText)
+        const serverHistory = new History("server", initialText)
+        const c1History = new History("client1", initialText)
 
         const serverSet = [new Delta().retain(7).insert(" text"), new Delta().insert("The ")]
         serverHistory.apply(serverSet)
@@ -120,8 +120,8 @@ describe("hand-made scenarios", () => {
 describe("generated scenarios", () => {
     it("scenario 1", () => {
         const initialText = "initial"
-        const serverHistory = new TextHistory(initialText)
-        const clientHistory = new TextHistory(initialText)
+        const serverHistory = new History(initialText)
+        const clientHistory = new History(initialText)
 
         let serverRev = serverHistory.getCurrentRev()
         let clientRev = clientHistory.getCurrentRev()

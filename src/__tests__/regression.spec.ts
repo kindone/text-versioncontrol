@@ -1,8 +1,10 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from "underscore"
+import { IDelta } from '../IDelta';
 import { expectEqual, JSONStringify } from '../JSONStringify'
 import { StringWithState } from "../StringWithState"
+
 
 
 describe("text spec regression", () => {
@@ -122,7 +124,7 @@ describe("text spec regression", () => {
     it("case 6", () => {
         const initial = "ye"
         const client1 = StringWithState.fromString(initial)
-        const deltas:Delta[] = []
+        const deltas:IDelta[] = []
         deltas.push(client1.apply(new Delta().delete(1).delete(1), "user2"))
         deltas.push(client1.apply(new Delta().insert({x:"lv"}), "user2"))
         deltas.push(client1.apply(new Delta().retain(1).delete(1), "user1"))
@@ -140,7 +142,7 @@ describe("text spec regression", () => {
     it("case 7", () => {
         const initial = "9zxh9"
         const client1 = StringWithState.fromString(initial)
-        const deltas:Delta[] = []
+        const deltas:IDelta[] = []
         deltas.push(client1.apply(new Delta().insert("u4t").delete(2).delete(1).delete(1).delete(1), "user2"))
         deltas.push(client1.apply(new Delta().insert("29l").retain(1).delete(1).retain(1), "user2"))
         deltas.push(client1.apply(new Delta().insert({"y":"7a"}).delete(1).delete(1).delete(1).insert("etw").delete(1).retain(1).insert({"x":"m4"}), "user1"))

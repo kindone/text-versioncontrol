@@ -1,6 +1,6 @@
 export { Client } from "./Client"
 export { Server } from "./Server"
-export { TextHistory } from "./TextHistory"
+export { IHistory, History } from "./History"
 export { Fragment } from "./Fragment"
 export { StringWithState } from "./StringWithState"
 export { IDelta } from "./IDelta"

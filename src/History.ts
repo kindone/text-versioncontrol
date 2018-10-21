@@ -4,8 +4,7 @@ import { IDelta } from './IDelta'
 import { expectEqual } from './JSONStringify'
 import { StringWithState } from './StringWithState'
 
-
-interface ISavepoint
+export interface ISavepoint
 {
     rev: number
     content: IDelta
@@ -22,9 +21,20 @@ export interface ISyncResponse {
     revision: number
 }
 
-export class TextHistory {
+export interface IHistory {
+    readonly name:string
+    apply(deltas: IDelta[], name?: string): IDelta[]
+    merge(mergeRequest: ISyncRequest): IDelta[]
+    getCurrentRev(): number
+    getText(): string
+    getTextForRev(rev: number): string
+    getContent(): IDelta
+}
+
+export class History implements IHistory {
     public static readonly MIN_SAVEPOINT_RATE = 20
     public readonly name: string = ''
+
     private savepoints: ISavepoint[] = []
     private deltas: IDelta[] = []
 
@@ -81,7 +91,7 @@ export class TextHistory {
 
         this.deltas = this.deltas.concat(result.deltas)
 
-        if (this.getLatestSavepointRev() + TextHistory.MIN_SAVEPOINT_RATE < this.deltas.length) {
+        if (this.getLatestSavepointRev() + History.MIN_SAVEPOINT_RATE < this.deltas.length) {
             this.doSavepoint(this.deltas.length, result.content)
 
             this.checkSavepoints()

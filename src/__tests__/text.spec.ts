@@ -1,8 +1,10 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
+import { IDelta } from '../IDelta';
 import { expectEqual, JSONStringify } from '../JSONStringify'
 import { StringWithState } from "../StringWithState"
 import { randomInt, randomStringWithState, randomUserDeltas } from "./random"
+
 
 
 
@@ -60,7 +62,7 @@ describe("hand-made scenarios", () => {
     it("scenario 4 delete", () => {
         const str = StringWithState.fromString("abcde")
         expect(str.toText()).toBe("abcde")
-        const deltas:Delta[] = []
+        const deltas:IDelta[] = []
         // NOTE:
         // new Delta().retain(2).delete(1).insert("f"))) is saved as {"ops":[{"retain":2},{"insert":"f"},{"delete":1}]}
         let delta = str.apply(new Delta().retain(2).delete(1).insert("f"), "user2") // ab(f)[c]de
@@ -87,12 +89,12 @@ describe("hand-made scenarios", () => {
     })
 })
 
-function combineRandom(deltasForUsers: Delta[][]) {
+function combineRandom(deltasForUsers: IDelta[][]) {
     const cpDeltasForUsers = _.map(deltasForUsers, deltas => {
         return deltas.slice(0)
     })
 
-    const combined: Array<{ delta: Delta; branch: string }> = []
+    const combined: Array<{ delta: IDelta; branch: string }> = []
 
     while (
         _.reduce(
@@ -118,9 +120,9 @@ function combineRandom(deltasForUsers: Delta[][]) {
 
 function testCombination(
     ssInitial: StringWithState,
-    user1Deltas: Delta[],
-    user2Deltas: Delta[],
-    user3Deltas: Delta[] = []
+    user1Deltas: IDelta[],
+    user2Deltas: IDelta[],
+    user3Deltas: IDelta[] = []
 ) {
     const ssClient1 = ssInitial.clone()
     const ssClient2 = ssInitial.clone()
@@ -133,7 +135,7 @@ function testCombination(
     const combined1 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
     const combined2 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
 
-    const mergedDeltas: Delta[] = []
+    const mergedDeltas: IDelta[] = []
     for (const comb of combined1) {
         mergedDeltas.push(ssClient1.apply(comb.delta, comb.branch))
     }

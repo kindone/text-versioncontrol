@@ -143,8 +143,8 @@ export class History implements IHistory {
         const baseRevText = this.getContentForRev(baseRev)
         const ss = StringWithState.fromDelta(baseRevText)
         let newDeltas: IDelta[] = []
-        for (let i = baseRev; i < this.getCurrentRev(); i++)
-            ss.apply(this.deltas[i - this.initialRev], this.name)
+        for (let rev = baseRev; rev < this.getCurrentRev(); rev++)
+            ss.apply(this.deltas[rev - this.initialRev], this.name)
 
         for (const delta of remoteDeltas)
             newDeltas = newDeltas.concat(ss.apply(delta, name))
@@ -164,8 +164,8 @@ export class History implements IHistory {
         for (const delta of remoteDeltas)
             ss.apply(delta, name)
 
-        for (let i = baseRev; i < this.getCurrentRev(); i++)
-            newDeltas = newDeltas.concat(ss.apply(this.deltas[i - this.initialRev], this.name))
+        for (let rev = baseRev; rev < this.getCurrentRev(); rev++)
+            newDeltas = newDeltas.concat(ss.apply(this.deltas[rev - this.initialRev], this.name))
 
         return { deltas: newDeltas, content: ss.toDelta() }
     }

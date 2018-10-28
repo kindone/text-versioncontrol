@@ -140,8 +140,8 @@ describe("generated scenarios", () => {
         for(let i = 0; i < 40; i++)
         {
             const initialText = "initial"
-            const serverHistory = new History(initialText)
-            const clientHistory = new History(initialText)
+            const serverHistory = new History("server", initialText, 5)
+            const clientHistory = new History("client", initialText, 125)
 
             let serverRev = serverHistory.getCurrentRev()
             let clientRev = clientHistory.getCurrentRev()

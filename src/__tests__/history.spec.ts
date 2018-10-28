@@ -3,12 +3,10 @@ import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { History } from "../History"
-import { expectEqual, JSONStringify } from '../JSONStringify'
 import { Client } from "../service/Client"
 import { Server } from "../service/Server"
+import { deltaLength, expectEqual, JSONStringify } from '../util'
 import { randomUserDeltas } from "./random"
-
-
 
 
 describe("server-client scenarios", () => {
@@ -160,10 +158,10 @@ describe("generated scenarios", () => {
 
             expectEqual(clientHistory.getContent(), serverHistory.getContent()) // , "<" + JSONStringify(set1) + " and " + JSONStringify(set2) + " and " + JSONStringify(set1ForClient) + ">")
 
-            const set3 = randomUserDeltas(serverHistory.getText().length, 30)
+            const set3 = randomUserDeltas(serverHistory.getText().length, 2)
             serverHistory.append(set3)
 
-            const set4 = randomUserDeltas(clientHistory.getText().length, 30)
+            const set4 = randomUserDeltas(clientHistory.getText().length, 2)
             clientHistory.append(set4)
 
             const set3ForClient = serverHistory.merge({
@@ -182,10 +180,10 @@ describe("generated scenarios", () => {
             serverRev = serverHistory.getCurrentRev()
             clientRev = clientHistory.getCurrentRev()
 
-            const set5 = randomUserDeltas(serverHistory.getText().length, 30)
+            const set5 = randomUserDeltas(deltaLength(serverHistory.getContent()), 2)
             serverHistory.append(set5)
 
-            const set6 = randomUserDeltas(clientHistory.getText().length, 30)
+            const set6 = randomUserDeltas(deltaLength(clientHistory.getContent()), 2)
             clientHistory.append(set6)
 
             const set5ForClient = serverHistory.merge({

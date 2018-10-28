@@ -1,8 +1,8 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { expectEqual } from './JSONStringify'
 import { IDelta } from './primitive/IDelta'
 import { StringWithState } from './primitive/StringWithState'
+import { expectEqual } from './util'
 
 export interface ISavepoint
 {

@@ -1,10 +1,9 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from "underscore"
-import { expectEqual, JSONStringify } from '../JSONStringify'
-import { IDelta } from '../primitive/IDelta';
+import { IDelta } from '../primitive/IDelta'
 import { StringWithState } from '../primitive/StringWithState';
-
+import { expectEqual, JSONStringify } from '../util'
 
 describe("text spec regression", () => {
     it("case 1", () => {

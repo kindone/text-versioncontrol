@@ -1,4 +1,5 @@
 import * as _ from 'underscore'
+import { IDelta } from './primitive/IDelta';
 
 export function JSONStringify(obj:any) {
     return JSON.stringify(obj, (key:string, value:any) => {
@@ -16,4 +17,15 @@ export function expectEqual(obj1:any, obj2:any, msg:string = "Not equal: ") {
     {
         throw new Error(msg +  ": ( " + JSONStringify(obj1) + " and " + JSONStringify(obj2) +" )")
     }
+}
+
+export function deltaLength(delta:IDelta):number {
+    return _.reduce(delta.ops, (len, op) => {
+        if(typeof op.insert === 'string')
+            return len + op.insert.length
+        else if(op.insert)
+            return len + 1
+        else
+            return len
+    }, 0)
 }

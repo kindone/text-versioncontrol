@@ -1,6 +1,6 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
-import { expectEqual } from '../JSONStringify';
+import { expectEqual } from '../util';
 
 describe("Quill Delta basic operations", () => {
     it("length", () => {

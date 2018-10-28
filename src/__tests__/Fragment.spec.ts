@@ -1,8 +1,7 @@
 import * as _ from 'underscore'
-import { expectEqual } from "../JSONStringify";
 import { Fragment } from "../primitive/Fragment";
 import { FragmentIterator } from "../primitive/FragmentIterator";
-
+import { expectEqual } from "../util";
 
 
 describe("hand-made scenarios", () => {

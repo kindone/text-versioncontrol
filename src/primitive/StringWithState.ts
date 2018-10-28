@@ -129,10 +129,6 @@ export class StringWithState {
         return true
     }
 
-    public size() {
-        this.toDelta()
-    }
-
     public toText() {
         return _.reduce(this.fragments, (result:string, fragment) => {
             return result.concat(fragment.toText())

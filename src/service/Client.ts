@@ -1,6 +1,6 @@
 import Delta = require('quill-delta')
-import { History, IHistory, ISyncResponse } from './History'
-import { IDelta } from './IDelta'
+import { History, IHistory, ISyncResponse } from '../History'
+import { IDelta } from '../primitive/IDelta'
 
 export class Client {
     private history: IHistory
@@ -13,7 +13,7 @@ export class Client {
     }
 
     public apply(deltas: IDelta[]) {
-        this.history.apply(deltas)
+        this.history.append(deltas)
         this.pending = this.pending.concat(deltas)
     }
 

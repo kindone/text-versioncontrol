@@ -1,4 +1,4 @@
-import { History, IHistory, ISyncRequest, ISyncResponse } from './History'
+import { History, IHistory, ISyncRequest, ISyncResponse } from '../History'
 
 export class Server {
     private history: IHistory

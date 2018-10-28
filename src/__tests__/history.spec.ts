@@ -1,9 +1,11 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
+import jsc = require('jsverify')
 import Delta = require('quill-delta')
-import { Client } from "../Client"
+import * as _ from 'underscore'
 import { History } from "../History"
 import { expectEqual, JSONStringify } from '../JSONStringify'
-import { Server } from "../Server"
+import { Client } from "../service/Client"
+import { Server } from "../service/Server"
 import { randomUserDeltas } from "./random"
 
 
@@ -50,21 +52,24 @@ describe("server-client scenarios", () => {
 
         expect(client1.getText()).toBe(client2.getText())
         expect(client1.getText()).toBe(server.getText())
+
+
+
     })
 })
 
-describe("hand-made scenarios", () => {
+describe("History hand-made scenarios", () => {
     it("scenario 1", () => {
         const initialText = "initial"
         const serverHistory = new History("server", initialText)
         const clientHistory = new History("client1", initialText)
 
         const set1 = [new Delta().retain(7).insert(" text"), new Delta().insert("The ")]
-        serverHistory.apply(set1)
+        serverHistory.append(set1)
         // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getText())
 
         const set2 = [new Delta().retain(7).insert(" string"), new Delta().insert("An ")]
-        clientHistory.apply(set2)
+        clientHistory.append(set2)
         // console.log(clientHistory.name, clientHistory.getCurrentRev(), clientHistory.getText())
 
         const set1ForClient = serverHistory.merge({
@@ -79,6 +84,20 @@ describe("hand-made scenarios", () => {
         })
 
         expect(clientHistory.getText()).toBe(serverHistory.getText())
+
+        const clientRev = clientHistory.getCurrentRev()
+        const serverRev = serverHistory.getCurrentRev()
+        const set3 = [new Delta().retain(3).insert("pending"), new Delta().insert("More Pending").delete(3)]
+        clientHistory.append(set3)
+
+        const set4 = [new Delta().retain(2).delete(2).insert(" rebased"), new Delta().insert("More rebased ")]
+        serverHistory.append(set4)
+
+        const clientRebased = clientHistory.rebase({baseRev:clientRev, branchName: serverHistory.name, deltas: set4})
+        const serverRebased = serverHistory.rebase({baseRev:serverRev, branchName: clientHistory.name, deltas: set3})
+
+        expect(clientHistory.getText()).toBe(serverHistory.getText())
+
     })
 
     it("scenario 2", () => {
@@ -87,11 +106,11 @@ describe("hand-made scenarios", () => {
         const c1History = new History("client1", initialText)
 
         const serverSet = [new Delta().retain(7).insert(" text"), new Delta().insert("The ")]
-        serverHistory.apply(serverSet)
+        serverHistory.append(serverSet)
         // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getText())
 
         const client1Set = [new Delta().retain(7).insert(" string"), new Delta().insert("An ")]
-        c1History.apply(client1Set)
+        c1History.append(client1Set)
         // console.log(c1History.name, c1History.getCurrentRev(), c1History.getText())
 
         const serverSetForClient1 = serverHistory.merge({
@@ -119,64 +138,75 @@ describe("hand-made scenarios", () => {
 
 describe("generated scenarios", () => {
     it("scenario 1", () => {
-        const initialText = "initial"
-        const serverHistory = new History(initialText)
-        const clientHistory = new History(initialText)
 
-        let serverRev = serverHistory.getCurrentRev()
-        let clientRev = clientHistory.getCurrentRev()
+        for(let i = 0; i < 40; i++)
+        {
+            const initialText = "initial"
+            const serverHistory = new History(initialText)
+            const clientHistory = new History(initialText)
 
-        // const set1 = randomUserDeltas(initialText.length, 30)
-        // serverHistory.apply(set1)
+            let serverRev = serverHistory.getCurrentRev()
+            let clientRev = clientHistory.getCurrentRev()
 
-        // const set2 = randomUserDeltas(initialText.length, 30)
-        // clientHistory.apply(set2)
+            // const set1 = randomUserDeltas(initialText.length, 30)
+            // serverHistory.apply(set1)
 
-        // // apply to both
-        // const set1ForClient = serverHistory.apply(set2)
-        // clientHistory.apply(set1ForClient)
+            // const set2 = randomUserDeltas(initialText.length, 30)
+            // clientHistory.apply(set2)
 
-        expectEqual(clientHistory.getContent(), serverHistory.getContent()) // , "<" + JSONStringify(set1) + " and " + JSONStringify(set2) + " and " + JSONStringify(set1ForClient) + ">")
+            // // apply to both
+            // const set1ForClient = serverHistory.apply(set2)
+            // clientHistory.apply(set1ForClient)
 
-        const set3 = randomUserDeltas(serverHistory.getText().length, 30)
-        serverHistory.apply(set3)
+            expectEqual(clientHistory.getContent(), serverHistory.getContent()) // , "<" + JSONStringify(set1) + " and " + JSONStringify(set2) + " and " + JSONStringify(set1ForClient) + ">")
 
-        const set4 = randomUserDeltas(clientHistory.getText().length, 30)
-        clientHistory.apply(set4)
+            const set3 = randomUserDeltas(serverHistory.getText().length, 30)
+            serverHistory.append(set3)
 
-        const set3ForClient = serverHistory.merge({
-            baseRev: serverRev,
-            branchName: "client",
-            deltas: set4
-        })
-        clientHistory.merge({
-            baseRev: clientRev,
-            branchName: "server",
-            deltas: set3ForClient
-        })
+            const set4 = randomUserDeltas(clientHistory.getText().length, 30)
+            clientHistory.append(set4)
 
-        expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set3) + " and " + JSONStringify(set4) + " and " + JSONStringify(set3ForClient))
+            const set3ForClient = serverHistory.merge({
+                baseRev: serverRev,
+                branchName: "client",
+                deltas: set4
+            })
+            clientHistory.merge({
+                baseRev: clientRev,
+                branchName: "server",
+                deltas: set3ForClient
+            })
 
-        serverRev = serverHistory.getCurrentRev()
-        clientRev = clientHistory.getCurrentRev()
+            expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set3) + " and " + JSONStringify(set4) + " and " + JSONStringify(set3ForClient))
 
-        const set5 = randomUserDeltas(serverHistory.getText().length, 30)
-        serverHistory.apply(set5)
+            serverRev = serverHistory.getCurrentRev()
+            clientRev = clientHistory.getCurrentRev()
 
-        const set6 = randomUserDeltas(clientHistory.getText().length, 30)
-        clientHistory.apply(set6)
+            const set5 = randomUserDeltas(serverHistory.getText().length, 30)
+            serverHistory.append(set5)
 
-        const set5ForClient = serverHistory.merge({
-            baseRev: serverRev,
-            branchName: "client",
-            deltas: set6
-        })
-        clientHistory.merge({
-            baseRev: clientRev,
-            branchName: "server",
-            deltas: set5ForClient
-        })
+            const set6 = randomUserDeltas(clientHistory.getText().length, 30)
+            clientHistory.append(set6)
 
-        expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set5) + " and " + JSONStringify(set6) + " and " + JSONStringify(set5ForClient))
+            const set5ForClient = serverHistory.merge({
+                baseRev: serverRev,
+                branchName: "client",
+                deltas: set6
+            })
+            clientHistory.merge({
+                baseRev: clientRev,
+                branchName: "server",
+                deltas: set5ForClient
+            })
+
+            expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set5) + " and " + JSONStringify(set6) + " and " + JSONStringify(set5ForClient))
+        }
+
     })
 })
+
+describe("sort", () => {
+    jsc.property("idempotent", "array nat", (arr:number[]) => {
+      return _.isEqual(arr.sort().sort(), arr.sort())
+    })
+  })

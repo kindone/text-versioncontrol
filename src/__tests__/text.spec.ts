@@ -1,8 +1,8 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
-import { IDelta } from '../IDelta';
 import { expectEqual, JSONStringify } from '../JSONStringify'
-import { StringWithState } from "../StringWithState"
+import { IDelta } from '../primitive/IDelta';
+import { StringWithState } from "../primitive/StringWithState"
 import { randomInt, randomStringWithState, randomUserDeltas } from "./random"
 
 

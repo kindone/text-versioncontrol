@@ -1,5 +1,6 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
+import { expectEqual } from '../JSONStringify';
 
 describe("Quill Delta basic operations", () => {
     it("length", () => {
@@ -14,5 +15,9 @@ describe("Quill Delta basic operations", () => {
         const initial = new Delta().insert('Hello')
         const delta = new Delta().retain(1).insert('x').delete(1)
         expect(initial.compose(delta).ops).toEqual([ { insert: 'Hxllo' } ])
+    })
+    it("mutable", () => {
+        const delta = new Delta()
+        expectEqual(delta.insert("a"), delta)
     })
 })

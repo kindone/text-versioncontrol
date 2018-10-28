@@ -1,8 +1,7 @@
-export { Client } from "./Client"
-export { Server } from "./Server"
-export { IHistory, History } from "./History"
-export { Fragment } from "./Fragment"
-export { StringWithState } from "./StringWithState"
-export { IDelta } from "./IDelta"
-
+export { Client } from "./service/Client"
+export { Server } from "./service/Server"
+export { IHistory, ISavepoint, ISyncRequest, ISyncResponse, History } from "./History"
+export { Fragment } from "./primitive/Fragment"
+export { StringWithState } from "./primitive/StringWithState"
+export { IDelta } from "./primitive/IDelta"
 

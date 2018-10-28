@@ -2,8 +2,8 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Operation } from "../Operation"
-import { StringWithState } from "../StringWithState"
+import { Operation } from "../primitive/Operation"
+import { StringWithState } from "../primitive/StringWithState"
 
 
 export function randomString(size: number) {

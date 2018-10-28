@@ -14,6 +14,6 @@ export function expectEqual(obj1:any, obj2:any, msg:string = "Not equal: ") {
     // expect(JSON.parse(JSONStringify(obj1))).toEqual(JSON.parse(JSONStringify(obj2)))
     if(!_.isEqual(JSON.parse(JSONStringify(obj1)), JSON.parse(JSONStringify(obj2))))
     {
-        throw new Error(msg +  JSONStringify(obj1) + " and " + JSONStringify(obj2))
+        throw new Error(msg +  ": ( " + JSONStringify(obj1) + " and " + JSONStringify(obj2) +" )")
     }
 }

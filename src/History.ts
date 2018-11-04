@@ -2,7 +2,7 @@ import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { IDelta } from './primitive/IDelta'
 import { StringWithState } from './primitive/StringWithState'
-import { expectEqual } from './util'
+import { asDelta, expectEqual } from './util'
 
 export interface ISavepoint
 {
@@ -31,7 +31,9 @@ export interface IHistory {
     getChanges(fromRev:number, toRev:number): IDelta[]
 
     simulate(deltas: IDelta[], name: string): IDelta
-    append(deltas: IDelta[], name?: string): IDelta[]
+    simulateAt(baseRev:number, deltas: IDelta[], name: string):{ deltas: IDelta[]; content: IDelta }
+    simulateRebaseAt(baseRev:number, deltas: IDelta[], name:string):{ deltas: IDelta[]; content: IDelta }
+    append(deltas: IDelta[], name?: string): void
     merge(mergeRequest: ISyncRequest): IDelta[]
     rebase(rebaseRequest: ISyncRequest):IDelta[]
 }
@@ -43,17 +45,11 @@ export class History implements IHistory {
     private deltas: IDelta[] = []
 
     constructor(public readonly name: string, initialContent: string | IDelta = '', private readonly initialRev = 0) {
-
-        if(initialContent === '')
-            this.doSavepoint(initialRev, new Delta([]))
-        else if(typeof initialContent === 'string')
-            this.doSavepoint(initialRev, new Delta([{insert: initialContent}]))
-        else
-            this.doSavepoint(initialRev, initialContent)
+        this.doSavepoint(initialRev, asDelta(initialContent))
     }
 
-    public append(deltas: IDelta[], name?: string): IDelta[] {
-        return this.mergeAt(this.getCurrentRev(), deltas, name)
+    public append(deltas: IDelta[], name?: string): void {
+        this.mergeAt(this.getCurrentRev(), deltas, name)
     }
 
     public merge(mergeRequest: ISyncRequest): IDelta[] {
@@ -83,6 +79,17 @@ export class History implements IHistory {
     {
         const result = this.simulateMerge(name, deltas, this.getCurrentRev())
         return result.content
+    }
+
+    public simulateAt(baseRev:number, deltas: IDelta[], name: string):{ deltas: IDelta[]; content: IDelta }
+    {
+        const result = this.simulateMerge(name, deltas, baseRev)
+        return result
+    }
+
+    public simulateRebaseAt(baseRev:number, deltas: IDelta[], name:string):{ deltas: IDelta[]; content: IDelta }
+    {
+        return this.simulateRebase(name, deltas, baseRev)
     }
 
     public getCurrentRev(): number {

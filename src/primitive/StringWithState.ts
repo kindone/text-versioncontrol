@@ -1,10 +1,12 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { normalizeOps } from '../util'
 import { DeltaIterator, OpsWithDiff } from './DeltaIterator'
 import { Fragment } from './Fragment'
 import { FragmentIterator, IResult } from './FragmentIterator';
 import { IDelta } from './IDelta';
+
 
 export class StringWithState {
     public static fromString(str: string) {
@@ -110,7 +112,7 @@ export class StringWithState {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        return new Delta(this.normalizeOps(newOps))
+        return new Delta(normalizeOps(newOps))
     }
 
     public clone() {
@@ -144,7 +146,7 @@ export class StringWithState {
                 return result
         },[])
 
-        return new Delta(this.normalizeOps(ops))
+        return new Delta(normalizeOps(ops))
     }
 
     public toHtml() {
@@ -167,43 +169,5 @@ export class StringWithState {
             }
         }
         return null
-    }
-
-    private normalizeOps(ops:Op[]):Op[]
-    {
-        if(ops.length === 0)
-            return ops
-        const newOps:Op[] = [ops[0]]
-        for(const op of ops.slice(1))
-        {
-            const normalized = this.normalizeTwoOps(newOps[newOps.length-1], op)
-            if(normalized.length === 1) {
-                newOps[newOps.length-1] = normalized[0]
-            }
-            else// 2
-                newOps.push(normalized[1])
-        }
-        return newOps
-    }
-
-    private normalizeTwoOps(op1:Op, op2:Op):Op[] {
-        if(typeof op1.insert === 'string' && typeof op2.insert === 'string' && !op1.attributes && !op2.attributes) {
-            return [{insert: (op1.insert as string).concat(op2.insert as string)}]
-        }
-
-        if(typeof op1.insert === 'string' && typeof op2.insert === 'string' && op1.attributes && op2.attributes) {
-            if(_.isEqual(op1.attributes, op2.attributes))
-                return [{insert: (op1.insert as string).concat(op2.insert as string), attributes: op1.attributes}]
-        }
-
-        if(op1.delete && op2.delete)
-            return [{delete: op1.delete + op2.delete}]
-        if(op1.retain && op2.retain && !op1.attributes && !op2.attributes)
-            return [{retain: op1.retain + op2.retain}]
-        if(op1.retain && op2.retain && op1.attributes && op2.attributes &&
-            _.isEqual(op1.attributes, op2.attributes)) {
-            return [{retain: op1.retain + op2.retain, attributes: op1.attributes}]
-        }
-        return [op1, op2]
     }
 }

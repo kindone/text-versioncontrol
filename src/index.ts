@@ -4,4 +4,6 @@ export { IHistory, ISavepoint, ISyncRequest, ISyncResponse, History } from "./Hi
 export { Fragment } from "./primitive/Fragment"
 export { StringWithState } from "./primitive/StringWithState"
 export { IDelta } from "./primitive/IDelta"
+export { Document } from "./Document"
+export { Excerpt, ISourceSyncInfo} from "./excerpt"
 

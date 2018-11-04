@@ -1,12 +1,21 @@
 import Delta = require("quill-delta")
+import AttributeMap from "quill-delta/dist/AttributeMap"
 import Op from "quill-delta/dist/Op"
 import { IDelta } from "../primitive/IDelta"
-import { IDestInfo } from "./DestInfo"
 import { ISourceInfo } from "./SourceInfo"
+
 
 
 export class Excerpt
 {
+
+    public static excerptMarker(sourceUri:string, sourceRev:number, destRev:number): {begin:AttributeMap, end:AttributeMap}
+    {
+        const header = { uri: sourceUri, srcRev: sourceRev, destRev}
+        return {begin: {beginExcerpt: header},
+                end: {endExcerpt: header}}
+    }
+
     public static take(offset:number, retain:number, length:number):IDelta {
         // ....start....end...length
         let delta = new Delta()
@@ -22,25 +31,12 @@ export class Excerpt
     }
 
     public static paste(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {
-        const header = { uri: sourceInfo.uri, srcRev: sourceInfo.rev, destRev: rev}
-        let ops:Op[] = [{retain: offset}, {insert: {beginExcerpt: header}}]
+        const {begin, end} = this.excerptMarker(sourceInfo.uri, sourceInfo.rev, rev)
+        let ops:Op[] = []
+        ops.push({insert: begin})
         ops = ops.concat(sourceInfo.content.ops)
-        ops.push({insert: {endExcerpt: header}})
+        ops.push({insert: end})
         return new Delta(ops)
-    }
-
-    constructor(public readonly sourceInfo:ISourceInfo, public readonly destInfo:IDestInfo) {
-    }
-
-    // used to represent excerpt from source
-    public taken():IDelta {
-        // ....start....end...length
-        const {offset, retain, length} = this.sourceInfo
-        return Excerpt.take(offset, retain, length)
-    }
-
-    public pasted():IDelta {
-        return Excerpt.paste(this.destInfo.rev, this.destInfo.offset, this.sourceInfo)
     }
 
 }

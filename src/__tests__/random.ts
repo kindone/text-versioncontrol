@@ -1,4 +1,4 @@
-
+import jsc = require("jsverify")
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
@@ -7,14 +7,18 @@ import { StringWithState } from "../primitive/StringWithState"
 
 
 export function randomString(size: number) {
-    return Math.random()
+    // return Math.random()
+    //     .toString(36)
+    //     .substr(2, size)
+    return jsc.random(0, Number.MAX_SAFE_INTEGER)
         .toString(36)
         .substr(2, size)
 }
 
 export function randomInt(dist: number) {
     // return 0~dist-1
-    return Math.floor(Math.random() * dist)
+    // return Math.floor(Math.random() * dist)
+    return Math.floor(jsc.random(0, dist-1))
 }
 
 export function randomOperation(length: number) {

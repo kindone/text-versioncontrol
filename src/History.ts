@@ -18,7 +18,7 @@ export interface ISyncRequest {
 
 export interface ISyncResponse {
     deltas: IDelta[]
-    revision: number
+    rev: number
 }
 
 export interface IHistory {
@@ -33,9 +33,9 @@ export interface IHistory {
     simulate(deltas: IDelta[], name: string): IDelta
     simulateAt(baseRev:number, deltas: IDelta[], name: string):{ deltas: IDelta[]; content: IDelta }
     simulateRebaseAt(baseRev:number, deltas: IDelta[], name:string):{ deltas: IDelta[]; content: IDelta }
-    append(deltas: IDelta[], name?: string): void
-    merge(mergeRequest: ISyncRequest): IDelta[]
-    rebase(rebaseRequest: ISyncRequest):IDelta[]
+    append(deltas: IDelta[], name?: string): number
+    merge(mergeRequest: ISyncRequest): ISyncResponse
+    rebase(rebaseRequest: ISyncRequest): ISyncResponse
 }
 
 export class History implements IHistory {
@@ -48,16 +48,20 @@ export class History implements IHistory {
         this.doSavepoint(initialRev, asDelta(initialContent))
     }
 
-    public append(deltas: IDelta[], name?: string): void {
+    public append(deltas: IDelta[], name?: string): number {
         this.mergeAt(this.getCurrentRev(), deltas, name)
+        return this.getCurrentRev()
     }
 
-    public merge(mergeRequest: ISyncRequest): IDelta[] {
-        return this.mergeAt(mergeRequest.baseRev, mergeRequest.deltas, mergeRequest.branchName)
+    public merge(mergeRequest: ISyncRequest): ISyncResponse {
+
+        const deltas = this.mergeAt(mergeRequest.baseRev, mergeRequest.deltas, mergeRequest.branchName)
+        const rev = this.getCurrentRev()
+        return {rev, deltas}
     }
 
     // prioritize remote
-    public rebase(rebaseRequest: ISyncRequest):IDelta[] {
+    public rebase(rebaseRequest: ISyncRequest):ISyncResponse {
         const baseRev = rebaseRequest.baseRev
         const deltas = rebaseRequest.deltas
         const name = rebaseRequest.branchName
@@ -72,7 +76,8 @@ export class History implements IHistory {
             this.doSavepoint(this.getCurrentRev(), result.content)
             this.checkSavepoints()
         }
-        return result.deltas
+        const rev = this.getCurrentRev()
+        return {rev, deltas: result.deltas}
     }
 
     public simulate(deltas: IDelta[], name: string): IDelta

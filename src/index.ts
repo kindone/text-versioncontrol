@@ -1,9 +1,10 @@
-export { Client } from "./service/Client"
-export { Server } from "./service/Server"
+export { DocClient } from "./service/DocClient"
+export { DocServer } from "./service/DocServer"
 export { IHistory, ISavepoint, ISyncRequest, ISyncResponse, History } from "./History"
 export { Fragment } from "./primitive/Fragment"
 export { StringWithState } from "./primitive/StringWithState"
 export { IDelta } from "./primitive/IDelta"
 export { Document } from "./Document"
 export { Excerpt, ISourceSyncInfo} from "./excerpt"
+export { JSONStringify } from "./util"
 

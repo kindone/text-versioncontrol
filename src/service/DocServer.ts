@@ -1,6 +1,6 @@
 import { History, IHistory, ISyncRequest, ISyncResponse } from '../History'
 
-export class Server {
+export class DocServer {
     private history: IHistory
 
     constructor(history:IHistory = new History('server')) {
@@ -8,10 +8,7 @@ export class Server {
     }
 
     public merge(syncRequest: ISyncRequest): ISyncResponse {
-        const deltas = this.history.merge(syncRequest)
-        const revision = this.history.getCurrentRev()
-
-        return { deltas, revision }
+        return this.history.merge(syncRequest)
     }
 
     public getText() {

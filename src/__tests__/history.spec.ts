@@ -3,17 +3,17 @@ import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { History } from "../History"
-import { Client } from "../service/Client"
-import { Server } from "../service/Server"
+import { DocClient } from "../service/DocClient"
+import { DocServer } from "../service/DocServer"
 import { deltaLength, expectEqual, JSONStringify } from '../util'
 import { randomUserDeltas } from "./random"
 
 
 describe("server-client scenarios", () => {
     it("scenario 1", () => {
-        const server = new Server()
-        const client1 = new Client()
-        const client2 = new Client()
+        const server = new DocServer()
+        const client1 = new DocClient()
+        const client2 = new DocClient()
 
         client1.apply([new Delta().insert("client1 text")])
         client2.apply([new Delta().insert("Hello world")])
@@ -78,7 +78,7 @@ describe("History hand-made scenarios", () => {
         clientHistory.merge({
             baseRev: 0,
             branchName: serverHistory.name,
-            deltas: set1ForClient
+            deltas: set1ForClient.deltas
         })
 
         expect(clientHistory.getText()).toBe(serverHistory.getText())
@@ -119,7 +119,7 @@ describe("History hand-made scenarios", () => {
         c1History.merge({
             baseRev: 0,
             branchName: serverHistory.name,
-            deltas: serverSetForClient1
+            deltas: serverSetForClient1.deltas
         })
 
         expect(c1History.getText()).toBe(serverHistory.getText())
@@ -172,7 +172,7 @@ describe("generated scenarios", () => {
             clientHistory.merge({
                 baseRev: clientRev,
                 branchName: "server",
-                deltas: set3ForClient
+                deltas: set3ForClient.deltas
             })
 
             expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set3) + " and " + JSONStringify(set4) + " and " + JSONStringify(set3ForClient))
@@ -194,7 +194,7 @@ describe("generated scenarios", () => {
             clientHistory.merge({
                 baseRev: clientRev,
                 branchName: "server",
-                deltas: set5ForClient
+                deltas: set5ForClient.deltas
             })
 
             expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set5) + " and " + JSONStringify(set6) + " and " + JSONStringify(set5ForClient))

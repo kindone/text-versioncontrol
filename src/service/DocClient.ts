@@ -2,7 +2,7 @@ import Delta = require('quill-delta')
 import { History, IHistory, ISyncResponse } from '../History'
 import { IDelta } from '../primitive/IDelta'
 
-export class Client {
+export class DocClient {
     private history: IHistory
     private synchedRev: number = 0
     private synchedClientRev: number = 0
@@ -23,7 +23,7 @@ export class Client {
             branchName: 'server',
             deltas: response.deltas
         })
-        this.synchedRev = response.revision
+        this.synchedRev = response.rev
         this.synchedClientRev = this.history.getCurrentRev()
         this.pending = []
     }

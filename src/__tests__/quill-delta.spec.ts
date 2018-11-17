@@ -1,6 +1,6 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
-import { expectEqual, transformPosition } from '../util';
+import { expectEqual, transformPosition, JSONStringify } from '../util';
 
 describe("Quill Delta basic operations", () => {
     it("negative value ignored", () => {
@@ -25,13 +25,24 @@ describe("Quill Delta basic operations", () => {
     it("compose2", () => {
         const delta = new Delta().retain(3).insert('first')
         const target = new Delta().delete(4).retain(5).delete(6)
-        console.log(delta.compose(target).ops)
+        // console.log('compose2:', delta.compose(target).ops)
+        expectEqual(delta.compose(target).ops, [ { insert: 'irst' }, { delete: 3 }, { retain: 1 }, { delete: 6 } ])
     })
 
     it("compose3", () => {
         const delta = new Delta().delete(4).retain(5).delete(6)
         const target = new Delta().retain(3).insert('first')
-        console.log(delta.compose(target).ops)
+        // console.log('compose3:', delta.compose(target).ops)
+        expectEqual(delta.compose(target).ops, [ { delete: 4 }, { retain: 3 }, { insert: 'first' }, { retain: 2 }, { delete: 6 } ])
+    })
+
+    it("compose actual", () => {
+        // flatten
+        const delta = new Delta([{"retain":16},{"insert":" beautiful "},{"delete":1}])
+        const target = new Delta([{"retain":7},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"delete":1},{"retain":9},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"delete":1}])
+        console.log('compose.transform:', JSONStringify(delta.transform(target).ops))
+        expectEqual(delta.compose(target).ops, [{"retain":7},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"delete":1},{"retain":8},{"insert":" "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"insert":"eautiful "},{"delete":1}])
+        console.log('compose.transformed.compose:', JSONStringify(delta.compose(delta.transform(target)).ops))
     })
 
 
@@ -43,37 +54,40 @@ describe("Quill Delta basic operations", () => {
     it("transformation of delta", () => {
         const delta = new Delta().delete(4).retain(5).delete(6)
         const target = new Delta().retain(3).insert('first')
-        console.log(delta.transform(target, true))
+        expectEqual( delta.transform(target, true).ops,  [ { insert: 'first' } ])
     })
 
     it("transformation of delta2", () => {
         const delta = new Delta().delete(4).retain(5).delete(6)
         const target = new Delta().retain(3).insert('first')
-        console.log(delta.transform(target, false))
+        expectEqual( delta.transform(target, false).ops,  [ { insert: 'first' } ])
     })
 
     it("transformation of delta3", () => {
         const delta = new Delta().retain(3).insert('first')
         const target = new Delta().delete(4).retain(5).delete(6)
-        console.log(delta.transform(target, true))
+        expectEqual( delta.transform(target, true).ops,  [ { delete: 3 }, { retain: 5 }, { delete: 1 },        { retain: 5 },
+            { delete: 6 } ])
     })
 
     it("transformation of delta4", () => {
         const delta = new Delta().retain(3).insert('first')
         const target = new Delta().delete(4).retain(5).delete(6)
-        console.log(delta.transform(target, false))
+        expectEqual( delta.transform(target, false).ops,  [ { delete: 3 }, { retain: 5 }, { delete: 1 },
+            { retain: 5 }, { delete: 6 } ])
     })
 
     it("transformation of delta5", () => {
         const delta = new Delta().retain(6).insert('first')
         const target = new Delta().delete(4).retain(5).delete(6)
-        console.log(delta.transform(target, true))
+        expectEqual( delta.transform(target, true).ops,  [ { delete: 4 }, { retain: 10 }, { delete: 6 } ])
     })
 
     it("transformation of delta6", () => {
         const delta = new Delta().retain(6).insert('first')
         const target = new Delta().delete(4).retain(5).delete(6)
-        console.log(delta.transform(target, false))
+        // console.log(delta.transform(target, false))
+        expectEqual( delta.transform(target, false).ops,  [ { delete: 4 }, { retain: 10 }, { delete: 6 } ])
     })
 
     it("transformation of positions", () => {

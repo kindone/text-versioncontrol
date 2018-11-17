@@ -6,7 +6,7 @@ import { ISourceInfo } from "./SourceInfo"
 
 
 
-export class Excerpt
+export class ExcerptUtil
 {
 
     public static excerptMarker(sourceUri:string, sourceRev:number, destRev:number): {begin:AttributeMap, end:AttributeMap}

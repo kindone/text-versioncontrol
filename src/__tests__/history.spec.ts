@@ -78,7 +78,7 @@ describe("History hand-made scenarios", () => {
         clientHistory.merge({
             baseRev: 0,
             branchName: serverHistory.name,
-            deltas: set1ForClient.deltas
+            deltas: set1ForClient.resDeltas
         })
 
         expect(clientHistory.getText()).toBe(serverHistory.getText())
@@ -119,7 +119,7 @@ describe("History hand-made scenarios", () => {
         c1History.merge({
             baseRev: 0,
             branchName: serverHistory.name,
-            deltas: serverSetForClient1.deltas
+            deltas: serverSetForClient1.resDeltas
         })
 
         expect(c1History.getText()).toBe(serverHistory.getText())
@@ -172,7 +172,7 @@ describe("generated scenarios", () => {
             clientHistory.merge({
                 baseRev: clientRev,
                 branchName: "server",
-                deltas: set3ForClient.deltas
+                deltas: set3ForClient.resDeltas
             })
 
             expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set3) + " and " + JSONStringify(set4) + " and " + JSONStringify(set3ForClient))
@@ -194,7 +194,7 @@ describe("generated scenarios", () => {
             clientHistory.merge({
                 baseRev: clientRev,
                 branchName: "server",
-                deltas: set5ForClient.deltas
+                deltas: set5ForClient.resDeltas
             })
 
             expectEqual(clientHistory.getContent(), serverHistory.getContent(), JSONStringify(set5) + " and " + JSONStringify(set6) + " and " + JSONStringify(set5ForClient))

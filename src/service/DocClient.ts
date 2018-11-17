@@ -21,7 +21,7 @@ export class DocClient {
         this.history.merge({
             baseRev: this.synchedClientRev,
             branchName: 'server',
-            deltas: response.deltas
+            deltas: response.resDeltas
         })
         this.synchedRev = response.rev
         this.synchedClientRev = this.history.getCurrentRev()

@@ -4,12 +4,12 @@ export interface IDestInfo
 {
     rev:number
     offset:number
-    content:IDelta
+    length:number // including marker
 }
 
 export class DestInfo implements IDestInfo
 {
-    constructor(public rev:number, public offset:number, public content:IDelta) {
+    constructor(public rev:number, public offset:number, public length:number) {
 
     }
 }

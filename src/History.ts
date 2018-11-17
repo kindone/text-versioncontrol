@@ -17,8 +17,17 @@ export interface ISyncRequest {
 }
 
 export interface ISyncResponse {
-    deltas: IDelta[]
     rev: number
+    content: IDelta
+    reqDeltas: IDelta[]
+    resDeltas: IDelta[]
+}
+
+interface IMergeResult {
+    rev: number
+    content: IDelta
+    reqDeltas: IDelta[]
+    resDeltas: IDelta[]
 }
 
 export interface IHistory {
@@ -30,9 +39,10 @@ export interface IHistory {
     getContentForRev(rev: number): IDelta
     getChanges(fromRev:number, toRev:number): IDelta[]
 
-    simulate(deltas: IDelta[], name: string): IDelta
-    simulateAt(baseRev:number, deltas: IDelta[], name: string):{ deltas: IDelta[]; content: IDelta }
-    simulateRebaseAt(baseRev:number, deltas: IDelta[], name:string):{ deltas: IDelta[]; content: IDelta }
+    simulateAppend(deltas: IDelta[], name: string): IMergeResult
+    simulateAppendAt(baseRev:number, deltas: IDelta[], name: string): IMergeResult
+    simulateMergeAt(baseRev:number, deltas: IDelta[], name: string): IMergeResult
+    simulateRebaseAt(baseRev:number, deltas: IDelta[], name:string): IMergeResult
     append(deltas: IDelta[], name?: string): number
     merge(mergeRequest: ISyncRequest): ISyncResponse
     rebase(rebaseRequest: ISyncRequest): ISyncResponse
@@ -54,10 +64,7 @@ export class History implements IHistory {
     }
 
     public merge(mergeRequest: ISyncRequest): ISyncResponse {
-
-        const deltas = this.mergeAt(mergeRequest.baseRev, mergeRequest.deltas, mergeRequest.branchName)
-        const rev = this.getCurrentRev()
-        return {rev, deltas}
+        return this.mergeAt(mergeRequest.baseRev, mergeRequest.deltas, mergeRequest.branchName)
     }
 
     // prioritize remote
@@ -68,31 +75,53 @@ export class History implements IHistory {
 
         const result = this.simulateRebase(name ? name : this.name, deltas, baseRev)
 
+        // old + rebased + transformed
         this.deltas = this.deltas.slice(0, baseRev - this.initialRev)
-        this.deltas = this.deltas.concat(deltas)
-        this.deltas = this.deltas.concat(result.deltas)
+        this.deltas = this.deltas.concat(result.reqDeltas)
+        this.deltas = this.deltas.concat(result.resDeltas)
 
         if (this.getLatestSavepointRev() + History.MIN_SAVEPOINT_RATE <this.getCurrentRev()) {
             this.doSavepoint(this.getCurrentRev(), result.content)
             this.checkSavepoints()
         }
-        const rev = this.getCurrentRev()
-        return {rev, deltas: result.deltas}
-    }
-
-    public simulate(deltas: IDelta[], name: string): IDelta
-    {
-        const result = this.simulateMerge(name, deltas, this.getCurrentRev())
-        return result.content
-    }
-
-    public simulateAt(baseRev:number, deltas: IDelta[], name: string):{ deltas: IDelta[]; content: IDelta }
-    {
-        const result = this.simulateMerge(name, deltas, baseRev)
         return result
     }
 
-    public simulateRebaseAt(baseRev:number, deltas: IDelta[], name:string):{ deltas: IDelta[]; content: IDelta }
+    public simulateAppend(deltas: IDelta[], name: string): IMergeResult
+    {
+        return this.simulateMergeAt(this.getCurrentRev(), deltas, name)
+    }
+
+    public simulateAppendAt(fromRev:number, deltas: IDelta[], name: string): IMergeResult
+    {
+        const baseRevText = this.getContentForRev(fromRev)
+        const ss = StringWithState.fromDelta(baseRevText)
+
+        let newDeltas: IDelta[] = []
+        for (const delta of deltas)
+            newDeltas = newDeltas.concat(ss.apply(delta, name))
+
+        return { rev: fromRev + deltas.length, reqDeltas: newDeltas, resDeltas: [], content: ss.toDelta() }
+    }
+
+    public simulateMergeAt(
+        baseRev:number, remoteDeltas: IDelta[], name: string
+    ): IMergeResult {
+        const baseRevText = this.getContentForRev(baseRev)
+        const ss = StringWithState.fromDelta(baseRevText)
+        const localDeltas = this.getChanges(baseRev)
+
+        for(const localDelta of localDeltas)
+            ss.apply(localDelta, this.name)
+
+        let newDeltas: IDelta[] = []
+        for (const delta of remoteDeltas)
+            newDeltas = newDeltas.concat(ss.apply(delta, name))
+
+        return { rev: (baseRev + remoteDeltas.length + localDeltas.length), reqDeltas: newDeltas, resDeltas: localDeltas, content: ss.toDelta() }
+    }
+
+    public simulateRebaseAt(baseRev:number, deltas: IDelta[], name:string):IMergeResult
     {
         return this.simulateRebase(name, deltas, baseRev)
     }
@@ -129,46 +158,28 @@ export class History implements IHistory {
 
     public getChanges(fromRev:number, toRev:number = -1): IDelta[] {
         if(toRev >= 0)
-            return this.deltas.slice(fromRev - this.initialRev, toRev - this.initialRev)
+            return this.deltas.slice(fromRev - this.initialRev, toRev + 1 - this.initialRev)
         else
             return this.deltas.slice(fromRev - this.initialRev)
     }
 
-    private mergeAt(baseRev: number, deltas: IDelta[], name?: string): IDelta[] {
-        const baseToCurr = this.getChanges(baseRev)
-        const result = this.simulateMerge(name ? name : this.name, deltas, baseRev)
+    private mergeAt(baseRev: number, deltas: IDelta[], name?: string):IMergeResult {
+        const result = this.simulateMergeAt(baseRev, deltas, name ? name : this.name)
 
-        this.deltas = this.deltas.concat(result.deltas)
+        this.deltas = this.deltas.concat(result.reqDeltas)
 
         if (this.getLatestSavepointRev() + History.MIN_SAVEPOINT_RATE < this.getCurrentRev()) {
             this.doSavepoint(this.getCurrentRev(), result.content)
             this.checkSavepoints()
         }
-        return baseToCurr
-    }
-
-    private simulateMerge(
-        name: string,
-        remoteDeltas: IDelta[],
-        baseRev: number
-    ): { deltas: IDelta[]; content: IDelta } {
-        const baseRevText = this.getContentForRev(baseRev)
-        const ss = StringWithState.fromDelta(baseRevText)
-        let newDeltas: IDelta[] = []
-        for (let rev = baseRev; rev < this.getCurrentRev(); rev++)
-            ss.apply(this.deltas[rev - this.initialRev], this.name)
-
-        for (const delta of remoteDeltas)
-            newDeltas = newDeltas.concat(ss.apply(delta, name))
-
-        return { deltas: newDeltas, content: ss.toDelta() }
+        return result
     }
 
     private simulateRebase(
         name: string,
         remoteDeltas: IDelta[],
         baseRev: number
-    ): { deltas: IDelta[]; content: IDelta } {
+    ): IMergeResult {
         const baseRevText = this.getContentForRev(baseRev)
         const ss = StringWithState.fromDelta(baseRevText)
         let newDeltas: IDelta[] = []
@@ -176,10 +187,11 @@ export class History implements IHistory {
         for (const delta of remoteDeltas)
             ss.apply(delta, name)
 
-        for (let rev = baseRev; rev < this.getCurrentRev(); rev++)
-            newDeltas = newDeltas.concat(ss.apply(this.deltas[rev - this.initialRev], this.name))
+        const localDeltas = this.getChanges(baseRev)
+        for (const localDelta of localDeltas)
+            newDeltas = newDeltas.concat(ss.apply(localDelta, this.name))
 
-        return { deltas: newDeltas, content: ss.toDelta() }
+        return { rev: (baseRev + remoteDeltas.length + localDeltas.length), reqDeltas: remoteDeltas, resDeltas: newDeltas, content: ss.toDelta() }
     }
 
     private checkSavepoints(): void {

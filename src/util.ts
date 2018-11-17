@@ -1,8 +1,8 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { ExtendedDelta } from './excerpt/ExtendedDelta'
 import { IDelta } from './primitive/IDelta';
-
 
 
 export function JSONStringify(obj:any) {
@@ -103,13 +103,55 @@ export function normalizeOps(ops:Op[]):Op[]
 export function normalizeDeltas(deltas:IDelta[]):IDelta[]
 {
     return _.reduce(deltas, (newChanges:IDelta[], change) => {
-        for(const op of change.ops)
+        if(!isDeltaWithNoEffect(change))
         {
-            if(op.insert || op.delete) {
-                newChanges.push(new Delta(normalizeOps(change.ops)))
-                return newChanges
-            }
+            newChanges.push(new Delta(normalizeOps(change.ops)))
+            return newChanges
         }
+        else
+            return newChanges
+    }, [])
+}
+
+export function normalizeDeltasWithRevision(deltas:IDelta[], startRev:number):Array<{delta:IDelta, rev:number}>
+{
+    let rev = startRev
+    return _.reduce(deltas, (newChanges:Array<{delta:IDelta, rev:number}>, change) => {
+        if(!isDeltaWithNoEffect(change))
+            newChanges.push({delta: new Delta(normalizeOps(change.ops)), rev})
+
+        rev ++
+
         return newChanges
     }, [])
+}
+
+export function isDeltaWithNoEffect(delta:IDelta)
+{
+    for(const op of delta.ops)
+    {
+        if(op.insert || op.delete) {
+            return false
+        }
+    }
+    return true
+}
+
+export function flattenDeltas(delta1:IDelta, delta2:IDelta):IDelta
+{
+    const sync = delta2.sync || delta1.sync
+    const excerpt = delta2.excerpt || delta2.excerpt
+    return new ExtendedDelta(new Delta(delta1.ops).compose(new Delta(delta2.ops)).ops, sync, excerpt)
+}
+
+export function transformDelta(prev:IDelta, target:IDelta):IDelta
+{
+    const sync = target.sync
+    const excerpt = target.excerpt
+    return new ExtendedDelta(new Delta(prev.ops).transform(new Delta(target.ops)).ops, sync, excerpt)
+}
+
+export function flattenTransformedDelta(delta1:IDelta, delta2:IDelta):IDelta
+{
+    return flattenDeltas(delta1, transformDelta(delta1, delta2))
 }

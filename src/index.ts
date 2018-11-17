@@ -5,6 +5,6 @@ export { Fragment } from "./primitive/Fragment"
 export { StringWithState } from "./primitive/StringWithState"
 export { IDelta } from "./primitive/IDelta"
 export { Document } from "./Document"
-export { Excerpt, ISourceSyncInfo} from "./excerpt"
+export { ExcerptUtil, ISourceSyncInfo} from "./excerpt"
 export { JSONStringify } from "./util"
 

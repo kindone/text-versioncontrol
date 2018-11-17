@@ -8,7 +8,6 @@ export interface ISourceInfo
     rev:number
     offset:number
     retain:number
-    length:number
     content:IDelta
 }
 
@@ -19,7 +18,6 @@ export class SourceInfo implements ISourceInfo
         public rev:number,
         public offset:number,
         public retain:number,
-        public length: number,
         public content:IDelta)
     {
     }

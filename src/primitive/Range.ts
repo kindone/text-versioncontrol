@@ -1,7 +1,8 @@
 import Delta = require("quill-delta")
 import Op from "quill-delta/dist/Op"
-import { normalizeOps, normalizeDeltas} from '../util'
+import { normalizeOps, normalizeDeltas, deltaLength} from '../util'
 import { IDelta } from "./IDelta"
+import { StringWithState } from "./StringWithState";
 
 
 export interface RangedTransforms {
@@ -67,6 +68,15 @@ export class Range
                 break
         }
         return new Range(start, end)
+    }
+
+    public cropContent(content:IDelta):IDelta
+    {
+        const ss = StringWithState.fromDelta(content)
+        const length = deltaLength(content)
+        const cropper = new Delta().delete(this.start).retain(this.end-this.start).delete(length-this.end)
+        ss.apply(cropper, "any")
+        return ss.toDelta()
     }
 
     public cropChanges(deltas:IDelta[]):IDelta[]

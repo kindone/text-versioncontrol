@@ -1,6 +1,6 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
-import { expectEqual, transformPosition, JSONStringify } from '../util';
+import { expectEqual, transformPosition, JSONStringify, flattenDeltas, transformDeltas } from '../util';
 
 describe("Quill Delta basic operations", () => {
     it("negative value ignored", () => {
@@ -20,6 +20,7 @@ describe("Quill Delta basic operations", () => {
         const initial = new Delta().insert('Hello')
         const delta = new Delta().retain(1).insert('x').delete(1)
         expect(initial.compose(delta).ops).toEqual([ { insert: 'Hxllo' } ])
+        expect(flattenDeltas(initial,delta).ops).toEqual([ { insert: 'Hxllo' } ])
     })
 
     it("compose2", () => {
@@ -27,6 +28,7 @@ describe("Quill Delta basic operations", () => {
         const target = new Delta().delete(4).retain(5).delete(6)
         // console.log('compose2:', delta.compose(target).ops)
         expectEqual(delta.compose(target).ops, [ { insert: 'irst' }, { delete: 3 }, { retain: 1 }, { delete: 6 } ])
+        expectEqual(flattenDeltas(delta, target).ops, [{delete:3},{insert:"irst"},{delete:6}])
     })
 
     it("compose3", () => {
@@ -34,17 +36,60 @@ describe("Quill Delta basic operations", () => {
         const target = new Delta().retain(3).insert('first')
         // console.log('compose3:', delta.compose(target).ops)
         expectEqual(delta.compose(target).ops, [ { delete: 4 }, { retain: 3 }, { insert: 'first' }, { retain: 2 }, { delete: 6 } ])
+        expectEqual(flattenDeltas(delta, target).ops, [ { delete: 4 }, { retain: 3 }, { insert: 'first' }, { retain: 2 }, { delete: 6 } ])
     })
 
     it("compose actual", () => {
         // flatten
-        const delta = new Delta([{"retain":16},{"insert":" beautiful "},{"delete":1}])
-        const target = new Delta([{"retain":7},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"delete":1},{"retain":9},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"delete":1}])
+        const delta = new Delta([{retain:16},{insert:" beautiful "},{delete:1}])
+        const target = new Delta([{retain:7},{insert:{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1},{retain:9},{insert:{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1}])
         console.log('compose.transform:', JSONStringify(delta.transform(target).ops))
-        expectEqual(delta.compose(target).ops, [{"retain":7},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"delete":1},{"retain":8},{"insert":" "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{"insert":"eautiful "},{"delete":1}])
+        expectEqual(delta.compose(target).ops, [{retain:7},{insert:{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1},{retain:8},{insert:" "},{insert:{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{insert:"eautiful "},{delete:1}])
+        expectEqual(flattenDeltas(delta, target).ops, [{retain:7},{insert:{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1},{retain:8},{insert:" "},{insert:{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{insert:"eautiful "},{delete:1}])
         console.log('compose.transformed.compose:', JSONStringify(delta.compose(delta.transform(target)).ops))
     })
 
+    it("compose null retain", () => {
+        // flatten
+        const delta = new Delta([{retain:16},{insert:" beautiful "},{delete:1}])
+        const target = new Delta([{retain:1, attributes: {"a": null, "b": null}}])
+        expectEqual(delta.compose(target).ops, [{retain:1,attributes:{"a":null,"b":null}},{retain:15},{insert:" beautiful "},{delete:1}])
+        expectEqual(flattenDeltas(delta, target).ops, [{retain:1,attributes:{"a":null,"b":null}},{retain:15},{insert:" beautiful "},{delete:1}])
+    })
+
+    it("compose null retain ignores original content", () => {
+        // flatten
+        const delta = new Delta([{insert:" beautiful "},{delete:1}])
+        const target = new Delta([{retain:1, attributes: {"a": null, "b": null}}])
+        console.log('compose.transform:', JSONStringify(delta.compose(target).ops))
+        expectEqual(delta.compose(target).ops, [{insert:" beautiful "},{delete:1}])
+        expectEqual(flattenDeltas(delta, target).ops, [{insert:" ",attributes:{"a":null,"b":null}},{insert:"beautiful "},{delete:1}])
+    })
+
+    it("compose actual null retain", () => {
+        // flatten
+        const delta = new Delta([{insert:{"y":"wt"},attributes:{"b":null}},{retain:1,attributes:{"i":1}},{delete:1}])
+        const target = new Delta([{insert:"lt"},{retain:1,attributes:{"b":null,"i":null}},{insert:{"y":"tb"},attributes:{"b":1,"i":1}},{delete:1},{insert:"9e"}])
+        expectEqual(delta.compose(target).ops, [{insert:"lt"},{insert:{"y":"wt"}},{attributes:{"b":1,"i":1},insert:{"y":"tb"}},{insert:"9e"},{delete:2}])
+        expectEqual(flattenDeltas(delta, target).ops, [{insert:"lt"},{insert:{"y":"wt"},attributes:{"b":null,"i":null}},{insert:{"y":"tb"},attributes:{"b":1,"i":1}},{delete:1},{insert:"9e"},{delete:1}])
+    })
+
+    it("compose actual deletes", () => {
+        //
+        const delta = new Delta([{insert:{"y":"ah"}},{retain:1},{retain:1},{insert:{"y":"fj"}}])
+        const target = new Delta([{delete:3},{retain:1}])
+        expectEqual(delta.compose(target).ops, [{insert:{"y":"fj"}},{delete:2}])
+        expectEqual(flattenDeltas(delta, target).ops, [{delete:2},{insert:{"y":"fj"}}])
+    })
+
+    it("compose example", () => {
+        // delete reordered to back of all inserts
+        const delta = new Delta([{insert:"71"},{delete:1},{insert:"nw"}])
+        console.log('delta init:', delta.ops, delta.compose(new Delta([{retain:4}])))
+        const target = new Delta([{retain:4}])
+        expectEqual(delta.compose(target).ops, [{insert:"71nw"},{delete:1}])
+        expectEqual(flattenDeltas(delta, target).ops,[{insert:"71"},{delete:1},{insert:"nw"}])
+    })
 
     it("mutable", () => {
         const delta = new Delta()
@@ -55,18 +100,22 @@ describe("Quill Delta basic operations", () => {
         const delta = new Delta().delete(4).retain(5).delete(6)
         const target = new Delta().retain(3).insert('first')
         expectEqual( delta.transform(target, true).ops,  [ { insert: 'first' } ])
+        expectEqual( transformDeltas(delta, target, true).ops,  [ { insert: 'first' } ])
     })
 
     it("transformation of delta2", () => {
         const delta = new Delta().delete(4).retain(5).delete(6)
         const target = new Delta().retain(3).insert('first')
         expectEqual( delta.transform(target, false).ops,  [ { insert: 'first' } ])
+        expectEqual( transformDeltas(delta, target, false).ops,  [ { insert: 'first' } ])
     })
 
     it("transformation of delta3", () => {
         const delta = new Delta().retain(3).insert('first')
         const target = new Delta().delete(4).retain(5).delete(6)
         expectEqual( delta.transform(target, true).ops,  [ { delete: 3 }, { retain: 5 }, { delete: 1 },        { retain: 5 },
+            { delete: 6 } ])
+        expectEqual( transformDeltas(delta, target, true).ops,  [ { delete: 3 }, { retain: 5 }, { delete: 1 },        { retain: 5 },
             { delete: 6 } ])
     })
 
@@ -75,12 +124,15 @@ describe("Quill Delta basic operations", () => {
         const target = new Delta().delete(4).retain(5).delete(6)
         expectEqual( delta.transform(target, false).ops,  [ { delete: 3 }, { retain: 5 }, { delete: 1 },
             { retain: 5 }, { delete: 6 } ])
+        expectEqual( transformDeltas(delta, target, false).ops,  [ { delete: 3 }, { retain: 5 }, { delete: 1 },
+            { retain: 5 }, { delete: 6 } ])
     })
 
     it("transformation of delta5", () => {
         const delta = new Delta().retain(6).insert('first')
         const target = new Delta().delete(4).retain(5).delete(6)
         expectEqual( delta.transform(target, true).ops,  [ { delete: 4 }, { retain: 10 }, { delete: 6 } ])
+        expectEqual( transformDeltas(delta, target, true).ops,  [ { delete: 4 }, { retain: 10 }, { delete: 6 } ])
     })
 
     it("transformation of delta6", () => {
@@ -88,6 +140,24 @@ describe("Quill Delta basic operations", () => {
         const target = new Delta().delete(4).retain(5).delete(6)
         // console.log(delta.transform(target, false))
         expectEqual( delta.transform(target, false).ops,  [ { delete: 4 }, { retain: 10 }, { delete: 6 } ])
+        expectEqual( transformDeltas(delta, target, false).ops,  [ { delete: 4 }, { retain: 10 }, { delete: 6 } ])
+    })
+
+    it("transformation of delta7", () => {
+        const delta = new Delta().retain(6).insert('first')
+        const target = new Delta().delete(4).insert('second').delete(6) // => insert.delete(10)
+        console.log(JSONStringify(delta.transform(target, false)))
+        expectEqual( delta.transform(target, false).ops,  [{insert:"second"},{delete:6},{retain:5},{delete:4}])
+        expectEqual( transformDeltas(delta, target, false).ops,  [{insert:"second"},{delete:6},{retain:5},{delete:4}])
+    })
+
+    it("transformation of delta7", () => {
+        const delta = new Delta([{delete:2}, {retain:4}, {insert:'first'}])// .delete(2).retain(4).insert('first')
+        const target = new Delta([{delete:4}, {insert:'second'}, {delete:6}])// .delete(4).insert('second').delete(6)
+        console.log(JSONStringify(delta), JSONStringify(target))
+        console.log(JSONStringify(delta.transform(target, false)))
+        expectEqual(delta.transform(target, false).ops,  [{insert:"second"},{delete:4},{retain:5},{delete:4}])
+        expectEqual( transformDeltas(delta, target, false).ops,  [{insert:"second"},{delete:4},{retain:5},{delete:4}])
     })
 
     it("transformation of positions", () => {

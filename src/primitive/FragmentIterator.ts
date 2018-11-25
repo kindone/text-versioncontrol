@@ -33,19 +33,19 @@ export class FragmentIterator
 
     public retain(amount:number):Fragment[] {
         return this.mapCurrent(
-            (fragment, unused, begin, end) => fragment.slice(begin,end),
+            (fragment, begin, end) => fragment.slice(begin,end),
             amount)
     }
 
     public attribute(amount:number, attr:{[name:string]:any}):Fragment[] {
         return this.mapCurrent(
-            (fragment, unused, begin, end) => fragment.sliceWithAttribute(attr, this.branch, begin, end),
+            (fragment, begin, end) => fragment.sliceWithAttribute(attr, this.branch, begin, end),
             amount)
     }
 
     public delete(amount:number):Fragment[] {
         return this.mapCurrent(
-            (fragment, unused, begin, end) => fragment.sliceWithDelete(this.branch, begin, end),
+            (fragment, begin, end) => fragment.sliceWithDelete(this.branch, begin, end),
             amount)
     }
 
@@ -87,8 +87,8 @@ export class FragmentIterator
     }
 
     private mapCurrent<T=undefined>(
-        fragmentGen:(fragment:Fragment, arg:T|undefined, begin:number, end?:number) => Fragment,
-        amount:number, arg?:T):Fragment[]
+        fragmentGen:(fragment:Fragment, begin:number, end?:number) => Fragment,
+        amount:number):Fragment[]
     {
         let fragments:Fragment[] = []
 
@@ -103,20 +103,20 @@ export class FragmentIterator
             const remaining = this.current().size() - (this.offsetAtFragment + amount)
             if(remaining > 0) {
                 // take some of current and finish
-                fragments.push(fragmentGen(this.current(), arg, this.offsetAtFragment, this.offsetAtFragment+amount))
+                fragments.push(fragmentGen(this.current(), this.offsetAtFragment, this.offsetAtFragment+amount))
                 this.offsetAtFragment += amount
                 return fragments
             }
             else if(remaining === 0)
             {
                 // take rest of current and finish
-                fragments.push(fragmentGen(this.current(), arg, this.offsetAtFragment))
+                fragments.push(fragmentGen(this.current(), this.offsetAtFragment))
                 this.nextFragment()
                 return  fragments
             }
             else { // overwhelms current fragment
                 // first take rest of current
-                fragments.push(fragmentGen(this.current(), arg, this.offsetAtFragment))
+                fragments.push(fragmentGen(this.current(), this.offsetAtFragment))
 
                 // adjust amount
                 amount -= (this.current().size() - this.offsetAtFragment)
@@ -141,6 +141,17 @@ export class FragmentIterator
     }
 
     private nextForInsert():Fragment[] {
+        const fragments:Fragment[] = []
+        // if it's not visible, should advancefor tiebreak
+        while(this.hasNext() && this.current().shouldAdvanceForTiebreak(this.branch))
+        {
+            fragments.push(this.current().slice(this.offsetAtFragment))
+            this.nextFragment()
+        }
+        return fragments
+    }
+
+    private nextForInsertWithLookahead():Fragment[] {
         const fragments:Fragment[] = []
         // if it's not visible, should advancefor tiebreak
         while(this.hasNext() && this.current().shouldAdvanceForTiebreak(this.branch))

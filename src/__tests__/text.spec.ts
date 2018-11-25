@@ -2,7 +2,7 @@ import Delta = require('quill-delta')
 import * as _ from "underscore"
 import { IDelta } from '../primitive/IDelta'
 import { StringWithState } from "../primitive/StringWithState"
-import { expectEqual, JSONStringify } from '../util'
+import { expectEqual, JSONStringify, flattenDeltas } from '../util'
 import { randomInt, randomStringWithState, randomUserDeltas } from "./random"
 
 
@@ -125,6 +125,7 @@ function testCombination(
     const ssClient1 = ssInitial.clone()
     const ssClient2 = ssInitial.clone()
     const ssServer = ssInitial.clone()
+    const ssClient3 = ssInitial.clone()
 
     expect(ssClient1.equals(ssInitial)).toBe(true)
     expect(ssClient2.equals(ssInitial)).toBe(true)
@@ -132,6 +133,9 @@ function testCombination(
 
     const combined1 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
     const combined2 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
+    const flattened = combineRandom([
+        [flattenDeltas(...user1Deltas)], [flattenDeltas(...user2Deltas)], [flattenDeltas(...user3Deltas)]
+    ])
 
     const mergedDeltas: IDelta[] = []
     for (const comb of combined1) {
@@ -142,6 +146,9 @@ function testCombination(
         ssClient2.apply(comb.delta, comb.branch)
     }
 
+    for(const comb of flattened) {
+        ssClient3.apply(comb.delta, comb.branch)
+    }
     for (const mergedDelta of mergedDeltas) {
         ssServer.apply(mergedDelta, "merged")
     }
@@ -165,10 +172,42 @@ function testCombination(
         console.error(JSONStringify(ssServer))
         expectEqual(ssClient1.toDelta(), ssServer.toDelta())
     }
+
+    if (true && !_.isEqual(JSON.parse(JSONStringify(ssClient1.toDelta())), JSON.parse(JSONStringify(ssClient3.toDelta())))) {
+        console.log(JSONStringify(ssInitial))
+        console.log(JSONStringify(combined1))
+        console.log(JSONStringify(flattened))
+        console.log(JSONStringify(ssClient1))
+        console.log(JSONStringify(ssClient3))
+        expectEqual(ssClient1.toDelta(), ssClient3.toDelta())
+    }
 }
 
 describe("commutativity", () => {
+    it("scenario 0", () => {
+        for (let j = 0; j < 50; j++) {
+            const ss = randomStringWithState()
+            const user1Deltas = randomUserDeltas(ss.toText().length,2)
+            const user2Deltas = []
+
+            for (let i = 0; i < 60; i++) {
+                testCombination(ss, user1Deltas, user2Deltas)
+            }
+        }
+    })
     it("scenario 1", () => {
+        for (let j = 0; j < 50; j++) {
+            const ss = randomStringWithState()
+            const user1Deltas = randomUserDeltas(ss.toText().length,2, false)
+            const user2Deltas = randomUserDeltas(ss.toText().length,1, false)
+
+            for (let i = 0; i < 60; i++) {
+                testCombination(ss, user1Deltas, user2Deltas)
+            }
+        }
+    })
+
+    it("scenario 2", () => {
         for (let j = 0; j < 50; j++) {
             const ss = randomStringWithState()
             const user1Deltas = randomUserDeltas(ss.toText().length,4)
@@ -178,6 +217,22 @@ describe("commutativity", () => {
             for (let i = 0; i < 60; i++) {
                 testCombination(ss, user1Deltas, user2Deltas, user3Deltas)
             }
+        }
+    })
+})
+
+describe("flatten", () => {
+    it("scenario 1", () => {
+        for (let j = 0; j < 50; j++) {
+            const ss = randomStringWithState()
+            const ss2 = ss.clone()
+            const deltas = randomUserDeltas(ss.toText().length,10)
+            for(const delta of deltas)
+                ss.apply(delta, "branch")
+
+            ss2.apply(flattenDeltas(...deltas), "branch")
+
+            expectEqual(ss.toDelta(), ss2.toDelta())
         }
     })
 })

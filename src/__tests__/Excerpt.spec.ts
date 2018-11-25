@@ -82,7 +82,7 @@ describe("Excerpt", () => {
       console.log('phases3.doc2: ', JSONStringify(doc2.getContent()))
 
       // method 1
-      if(false)
+      if(true)
       {
         const syncInfo = doc1.syncInfoSinceExcerpted(sourceInfo1)
         console.log('phase3.excerpt syncInfo content:', JSONStringify(doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)))
@@ -90,6 +90,7 @@ describe("Excerpt", () => {
         console.log('phase3.excerpt using new destinfo:', JSONStringify(doc2.takeExcerpt(destInfo2.offset, destInfo2.length)))
         console.log('phase4.doc2: ', JSONStringify(doc2.getContent()), 'destInfo:', destInfo2)
         expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":5,"destRev":4}}},{"insert":"pretty beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":5,"destRev":4}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        // expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":2,"destRev":2}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
       }
       // method2
       else{
@@ -108,7 +109,7 @@ describe("Excerpt", () => {
           console.log('phase3.excerpt dest content:', JSONStringify(doc2.takeExcerpt(destInfo.offset, destInfo.length)))
           sourceInfo = doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)
         }
-        // expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":5,"destRev":7}}},{"insert":"pretty beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":5,"destRev":7}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":3,"destRev":6}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
       }
       console.log('phase4.doc2: ', JSONStringify(doc2.getContent()))
       console.log('phase4.changesSince previous sync: ', JSONStringify(doc2.changesSince(destInfo1.rev)))

@@ -36,6 +36,10 @@ export class Modification
         return this.insertedBy !== undefined && this.insertedBy !== branch
     }
 
+    public isInsertedThenDeletedBy(branch: string) {
+        return this.isInsertedBy(branch) && this.isDeletedBy(branch)
+    }
+
     public isVisibleTo(branch: string) {
         return !this.isDeletedBy(branch) && !this.isInsertedByOther(branch)
     }
@@ -46,7 +50,8 @@ export class Modification
 
     public shouldAdvanceForTiebreak(branch: string) {
         // use tiebreaking string comparison on inserted branch
-        return this.insertedBy !== undefined && this.insertedBy < branch
+        // not an initial insert
+        return (this.insertedBy !== undefined && this.insertedBy < branch)// || (this.insertedBy === undefined && this.isDeletedBy(branch))
     }
 
     public isInserted() {

@@ -5,7 +5,7 @@ import {Document} from '../Document'
 import { ExcerptUtil } from "../excerpt/ExcerptUtil";
 import { IDelta } from "../primitive/IDelta";
 import { Range } from "../primitive/Range"
-import {deltaLength, JSONStringify, normalizeOps, expectEqual} from '../util'
+import {deltaLength, JSONStringify, normalizeOps, expectEqual} from '../primitive/util'
 
 
 describe("Excerpt", () => {
@@ -38,8 +38,8 @@ describe("Excerpt", () => {
       const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
       const doc1Changes = [
-        new Delta().delete(3).insert('Your '),
-        new Delta().retain(5).insert('precious ') // Your precious Document 1
+        new Delta([{delete: 3}, {insert: 'Your '}]),
+        new Delta([{retain: 5}, {insert: 'precious '}]) // Your precious Document 1
       ]
 
       const doc2Changes = [
@@ -60,16 +60,16 @@ describe("Excerpt", () => {
       console.log('phases2.doc2: ', JSONStringify(doc2.getContent()))
 
       const doc1ChangesAfter = [
-        new Delta().insert('No, It\'s ').delete(4).insert('Our'), // +8, No, it's Our
-        new Delta().retain(13+8).insert(' beautiful ').delete(1),
-        new Delta().retain(13).insert('delicious '),
-        new Delta().retain(16).insert('ete').delete(6),
+        new Delta([{insert: 'No, It\'s '}, {delete: 4}, {insert: 'Our'}]), // +8, No, it's Our
+        new Delta([{retain: 13+8}, {insert: ' beautiful '}, {delete: 1}]),
+        new Delta([{retain: 13}, {insert: 'delicious '}]),
+        new Delta([{retain: 16}, {insert: 'ete'}, {delete: 6}]),
       ]
 
       const doc2ChangesAfter = [
-        new Delta().delete(4).insert('Actual'),
-        new Delta().retain(11).insert('tty').delete(5), // Actual pre|tty|cious
-        new Delta().retain(11).insert('ttier').delete(3)
+        new Delta([{delete: 4}, {insert: 'Actual'}]),
+        new Delta([{retain: 11}, {insert: 'tty'}, {delete: 5}]), // Actual pre|tty|cious
+        new Delta([{retain: 11}, {insert: 'ttier'}, {delete: 3}])
       ]
 
       doc1.append(doc1ChangesAfter)
@@ -85,11 +85,9 @@ describe("Excerpt", () => {
       if(false)
       {
         const syncInfo = doc1.syncInfoSinceExcerpted(sourceInfo1)
-        console.log('phase3.excerpt syncInfo content:', JSONStringify(doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)))
         const destInfo2 = doc2.syncExcerpt(syncInfo, destInfo1)
-        console.log('phase3.excerpt using new destinfo:', JSONStringify(doc2.takeExcerpt(destInfo2.offset, destInfo2.length)))
-        console.log('phase4.doc2: ', JSONStringify(doc2.getContent()), 'destInfo:', destInfo2)
-        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":5,"destRev":4}}},{"insert":"pretty beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":5,"destRev":4}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        // expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":2,"destRev":2}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
       }
       // method2
       else{
@@ -108,7 +106,7 @@ describe("Excerpt", () => {
           console.log('phase3.excerpt dest content:', JSONStringify(doc2.takeExcerpt(destInfo.offset, destInfo.length)))
           sourceInfo = doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)
         }
-        // expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":5,"destRev":7}}},{"insert":"pretty beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":5,"destRev":7}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
       }
       console.log('phase4.doc2: ', JSONStringify(doc2.getContent()))
       console.log('phase4.changesSince previous sync: ', JSONStringify(doc2.changesSince(destInfo1.rev)))

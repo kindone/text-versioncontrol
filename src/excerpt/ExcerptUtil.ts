@@ -18,16 +18,16 @@ export class ExcerptUtil
 
     public static take(offset:number, retain:number, length:number):IDelta {
         // ....start....end...length
-        let delta = new Delta()
+        const ops:Op[] = []
         if(offset > 0)
-            delta = delta.delete(offset)
+            ops.push({delete:offset})
 
-        delta = delta.retain(retain)
+        ops.push({retain})
 
         if(length - retain - offset > 0)
-            delta = delta.delete(length - retain - offset)
+            ops.push({delete:(length - retain - offset)})
 
-        return delta
+        return new Delta(ops)
     }
 
     public static paste(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {

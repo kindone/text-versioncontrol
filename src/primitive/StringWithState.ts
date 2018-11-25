@@ -1,11 +1,11 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { normalizeOps } from '../util'
-import { DeltaIterator, OpsWithDiff } from './DeltaIterator'
+import { DeltaIterator } from './DeltaIterator'
 import { Fragment } from './Fragment'
 import { FragmentIterator, IResult } from './FragmentIterator';
 import { IDelta } from './IDelta';
+import { normalizeOps } from './util'
 
 
 export class StringWithState {
@@ -135,6 +135,14 @@ export class StringWithState {
         return _.reduce(this.fragments, (result:string, fragment) => {
             return result.concat(fragment.toText())
         },"")
+    }
+
+    public toFlattenedDelta():IDelta {
+        const ops = _.map(this.fragments, (fragment) => {
+            return fragment.toFlattenedOp()
+        }, [])
+
+        return new Delta(ops)
     }
 
     public toDelta():IDelta {

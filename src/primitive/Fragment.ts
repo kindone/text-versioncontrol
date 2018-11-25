@@ -116,6 +116,29 @@ export class Fragment {
         return _.isEqual(this.val, cs.val) && _.isEqual(this.attrs, this.attrs) && this.mod.equals(cs.mod)
     }
 
+    public toFlattenedOp(): Op {
+        if(this.mod.isDeleted())
+            return {"delete": this.val.length}
+
+        const attributes = this.getAttributes()
+
+        if(this.mod.isInserted())
+        {
+            const insert = this.val
+
+            if(_.isEmpty(attributes))
+                return {insert}
+            else
+                return {insert, attributes}
+        }
+
+        const retain = this.val.length
+        if(_.isEmpty(attributes))
+            return {retain}
+        else
+            return {retain, attributes}
+    }
+
     public toOp():Op {
         let insert:string|object =  ""
 

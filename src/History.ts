@@ -2,7 +2,7 @@ import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { IDelta } from './primitive/IDelta'
 import { StringWithState } from './primitive/StringWithState'
-import { asDelta, expectEqual } from './util'
+import { asDelta, expectEqual } from './primitive/util'
 
 export interface ISavepoint
 {

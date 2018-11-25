@@ -1,7 +1,7 @@
 import * as _ from 'underscore'
 import { Fragment } from "../primitive/Fragment";
 import { FragmentIterator } from "../primitive/FragmentIterator";
-import { expectEqual } from "../util";
+import { expectEqual } from "../primitive/util";
 
 
 describe("hand-made scenarios", () => {

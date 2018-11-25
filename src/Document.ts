@@ -8,7 +8,7 @@ import { ISourceSyncInfo } from "./excerpt/SourceSyncInfo"
 import { History, IHistory } from "./History"
 import { IDelta } from "./primitive/IDelta"
 import { Range } from "./primitive/Range"
-import { asDelta, deltaLength, flattenDeltas, JSONStringify, transformDelta, flattenTransformedDelta } from "./util"
+import { asDelta, deltaLength, JSONStringify, flattenTransformedDelta, flattenDeltas, expectEqual } from "./primitive/util"
 
 
 
@@ -74,11 +74,23 @@ export class Document {
         const uri = sourceInfo.uri
         const rev = this.getCurrentRev()
         const initialRange = new Range(sourceInfo.offset, sourceInfo.offset+sourceInfo.retain)
-        const changesSince = this.changesSince(sourceInfo.rev)
-        const rangeTransformed = initialRange.applyChanges(changesSince)
-        const croppedSourceChanges = initialRange.cropChanges(changesSince)
+        const changes = this.changesSince(sourceInfo.rev)
+        const rangeTransformed = initialRange.applyChanges(changes)
+        const croppedChanges = initialRange.cropChanges(changes)
 
-        return {uri, rev, changes: croppedSourceChanges, range:rangeTransformed}
+        {
+            const changesString = JSONStringify(changes)
+            const excerpt1 = this.takeExcerpt(rangeTransformed.start, rangeTransformed.end-rangeTransformed.start)
+            const flattenedChange = flattenDeltas(...changes)
+            const flattenedRange = initialRange.applyChangeOpen(flattenedChange)
+            const excerpt2 = this.takeExcerpt(flattenedRange.start, flattenedRange.end-flattenedRange.start)
+
+            // expectEqual([initialRange.applyChange(flattenDeltas(...changes))], rangeTransformed)
+            // expectEqual([initialRange.cropChange(flattenDeltas(...changes))], croppedChanges)
+            // expectEqual(this.takeExcerpt(rangeTransformed.start, rangeTransformed.end-rangeTransformed.start))
+        }
+
+        return {uri, rev, changes: croppedChanges, range:rangeTransformed}
     }
 
     public syncInfo1SinceExcerpted(sourceInfo:ISourceInfo):ISourceSyncInfo
@@ -95,13 +107,8 @@ export class Document {
 
     public syncExcerpt(syncInfo:ISourceSyncInfo, destInfo:IDestInfo):IDestInfo {
         const destRange = new Range(destInfo.offset, destInfo.offset + destInfo.length)
-        console.log('syncExcerpt.content.now:', JSONStringify(this.getContent()))
-        console.log('syncExcerpt.content.atLastSync:', JSONStringify(this.getContentAt(destInfo.rev)))
-        console.log('syncExcerpt.destRange:', JSONStringify(destRange))
 
-        console.log('syncExcerpt.sourceDeltas:', JSONStringify(syncInfo.changes))
-
-        const adjustedSourceChanges = _.map(syncInfo.changes, (change) => {
+        let adjustedSourceChanges = _.map(syncInfo.changes, (change) => {
           // adjust offset
             if(change.ops.length > 0 && change.ops[0].retain)
                 change.ops[0].retain! += destInfo.offset+1
@@ -110,43 +117,28 @@ export class Document {
             return change
         }, [])
 
-        console.log('syncExcerpt.adjustedSourceDeltas:', JSONStringify(adjustedSourceChanges))
+        adjustedSourceChanges = [flattenDeltas(...adjustedSourceChanges)]
 
         const simulateResult = this.history.simulateMergeAt(destInfo.rev, adjustedSourceChanges, "$simulate$")
         const newDestRange = destRange.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
-        console.log('syncExcerpt.simulated.changes:', JSONStringify(simulateResult.resDeltas.concat(simulateResult.reqDeltas)))
-        console.log('syncExcerpt.simulated.content:', JSONStringify(simulateResult.content))
-        console.log('syncExcerpt.newDestRange:', JSONStringify(newDestRange))
-        console.log('syncExcerpt.simulated.croppedBy.newDestRange:', JSONStringify(newDestRange.cropContent(simulateResult.content)))
 
         const destRev = this.getCurrentRev()+1
 
         const markers = ExcerptUtil.excerptMarker(syncInfo.uri, syncInfo.rev, destRev)
-        const replaceMarkers = new Delta()
-            .retain(destRange.start)
-            .insert(markers.begin).delete(1)
-            .retain(destRange.end-destRange.start-2)
-            .insert(markers.end).delete(1)
-
-        console.log('syncExcerpt.markers:', JSONStringify(replaceMarkers))
+        const replaceMarkers:IDelta = new Delta([
+            {retain: destRange.start},
+            {delete: 1},
+            {insert: markers.begin},
+            {retain: destRange.end-destRange.start-2},
+            {delete: 1},
+            {insert: markers.end}])
 
         if(adjustedSourceChanges.length > 0)
             adjustedSourceChanges[adjustedSourceChanges.length-1] = flattenTransformedDelta(adjustedSourceChanges[adjustedSourceChanges.length-1], replaceMarkers)
         else
             adjustedSourceChanges[0] = replaceMarkers
 
-        console.log('syncExcerpt.composedDeltas:', JSONStringify(adjustedSourceChanges))
-
         const syncResult = this.merge(destInfo.rev, adjustedSourceChanges)
-
-        console.log('syncExcerpt.syncResult.rev:', JSONStringify(syncResult.rev), 'destInfo.rev,offset:', destInfo.rev, destInfo.offset)
-        console.log('syncExcerpt.syncResult.resDeltas:', JSONStringify(syncResult.resDeltas))
-        console.log('syncExcerpt.syncResult.reqDeltas:', JSONStringify(syncResult.reqDeltas))
-        console.log('syncExcerpt.syncResult.content:', JSONStringify(syncResult.content))
-
-        console.log('syncExcerpt.cropped2By.newDestRange:', JSONStringify(newDestRange.cropContent(syncResult.content)))
-        console.log('syncExcerpt.content.after:', JSONStringify(this.getContent()))
-
         return new DestInfo(this.getCurrentRev(), newDestRange.start, newDestRange.end - newDestRange.start)
     }
 

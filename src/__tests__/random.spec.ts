@@ -1,4 +1,4 @@
-import { JSONStringify } from "../util"
+import { JSONStringify } from "../primitive/util"
 import { randomUserDeltas } from "./random"
 
 describe("randoms", () => {

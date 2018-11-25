@@ -4,7 +4,7 @@ import AttributeMap from "quill-delta/dist/AttributeMap"
 import Op from "quill-delta/dist/Op"
 import * as _ from 'underscore'
 import { IDelta } from "../primitive/IDelta";
-import { JSONStringify } from "../util";
+import { JSONStringify } from "../primitive/util";
 import { OpGen, DeltaGen, DeltasGen, ChangesGen } from "./jsverify.gen"
 import { randomAttribute } from "./random";
 

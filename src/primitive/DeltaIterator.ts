@@ -43,10 +43,7 @@ function calculateAttributeDelta(attr:AttributeMap, branch:string, attrFragment?
 
     for(const field of Object.keys(attr)) {
         // 1. check if the field is not shadowed by branch with higher priority
-        // 1. check if the field is different from mods by a branch with lower and equal priority
-
-        const valField = attrFragment.val ? attrFragment.val[field] : undefined
-
+        // 1. check if the field is different from  mods by a branch with lower and equal priority
         if(!shadowed.hasOwnProperty(field) && (!compared.hasOwnProperty(field) || compared[field] !== attr[field]))
             attrDelta[field] = attr[field]
     }

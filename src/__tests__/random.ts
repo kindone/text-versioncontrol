@@ -6,13 +6,21 @@ import { Operation } from "../primitive/Operation"
 import { StringWithState } from "../primitive/StringWithState"
 
 
-export function randomString(size: number) {
+export function randomString(size: number):string {
     // return Math.random()
     //     .toString(36)
     //     .substr(2, size)
-    return jsc.random(0, Number.MAX_SAFE_INTEGER)
-        .toString(36)
-        .substr(2, size)
+    // return jsc.random(0, Number.MAX_SAFE_INTEGER)
+    //     .toString(36)
+    //     .substr(2, size)
+
+    let text = ""
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+    for (let i = 0; i < size; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length))
+
+    return text
 }
 
 export function randomInt(dist: number) {
@@ -180,5 +188,5 @@ export function randomUserOps(baseLength: number, withAttr = true) {
 }
 
 export function randomStringWithState() {
-    return StringWithState.fromString(randomString(randomInt(2) + 1))
+    return StringWithState.fromString(randomString(randomInt(10) + 1))
 }

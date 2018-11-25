@@ -3,7 +3,10 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from "underscore"
 import { IDelta } from '../primitive/IDelta'
 import { StringWithState } from '../primitive/StringWithState';
-import { expectEqual, JSONStringify } from '../util'
+import { expectEqual, JSONStringify, flattenDeltas } from '../primitive/util'
+import { randomUserDeltas, randomString, randomInt } from './random';
+import { Range } from '../primitive/Range';
+import { random } from 'jsverify';
 
 describe("text spec regression", () => {
     it("case 1", () => {
@@ -288,4 +291,35 @@ describe("text spec regression", () => {
 
     })
 
+})
+
+describe("text spec regression2", () => {
+    it("case 1", () => {
+
+        for(let i = 0; i < 20; i++)
+        {
+            const str = randomString(randomInt(35-16)+16)
+            const ss1 = StringWithState.fromString(str)
+            const ss2 = ss1.clone()
+            const deltas = [{"ops":[{"insert":"No, It's "},{"delete":4},{"insert":"Our"}]}, // +8
+                {"ops":[{"retain":21},{"insert":" beautiful "},{"delete":1}]},// 22
+                {"ops":[{"retain":13},{"insert":"delicious "}]},
+                {"ops":[{"retain":16},{"insert":"ete"},{"delete":6}]}]
+
+            const flattened = [flattenDeltas(...deltas)]
+
+            for(const delta of deltas)
+                ss1.apply(delta, "a")
+
+            for(const delta of flattened)
+                ss2.apply(delta, "a")
+
+            expectEqual(ss1.toDelta(), ss2.toDelta(), `string: ${str}, flattened: ${JSONStringify(flattened)} `)
+
+            const start = randomInt(20)
+            const range = new Range(start, start + randomInt(20))
+
+            expectEqual(range.applyChanges(deltas), range.applyChanges(flattened))
+        }
+    })
 })

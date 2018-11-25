@@ -3,9 +3,9 @@ import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { History } from "../History"
+import { deltaLength, expectEqual, JSONStringify } from '../primitive/util'
 import { DocClient } from "../service/DocClient"
 import { DocServer } from "../service/DocServer"
-import { deltaLength, expectEqual, JSONStringify } from '../util'
 import { randomUserDeltas } from "./random"
 
 

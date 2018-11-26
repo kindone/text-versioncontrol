@@ -11,19 +11,8 @@ export class DeltaTransformer
     public retain(amount:number):Op[] {
         return this.mapCurrent(
             (op, begin, end) => {
-                const length = opLength(op)
-                end = end ? end : length
-                if(op.insert)
-                    return [{retain: amount + end-begin}]
-                else if(op.retain)
-                    return [{retain: amount}]
-                else if(op.delete) {
-                    if(end - begin < amount)
-                        return [{retain: amount-(end - begin)}]
-                    else
-                        return []
-                }
-                throw new Error('invalid op')
+                end = end ? end : opLength(op)
+                return [{retain: (end - begin)}]
             },
             amount)
     }
@@ -31,16 +20,8 @@ export class DeltaTransformer
     public attribute(amount:number, attributes:{[name:string]:any}):Op[] {
         return this.mapCurrent(
             (op, begin, end) => {
-                const length = opLength(op)
-                end = end ? end : length
-                if(op.insert)
-                    return [{retain: end-begin, attributes}]
-                else if(op.retain)
-                    return [{retain: end-begin, attributes}]
-                else if(op.delete)
-                    return [{retain: end-begin, attributes}]
-
-                throw new Error('invalid op')
+                end = end ? end : opLength(op)
+                return [{retain: end-begin, attributes}]
             },
             amount)
     }
@@ -48,16 +29,8 @@ export class DeltaTransformer
     public delete(amount:number):Op[] {
         return this.mapCurrent(
             (op, begin, end) => {
-                const length = opLength(op)
-                end = end ? end : length
-                if(op.insert)
-                    return [{delete: end - begin}]
-                else if(op.retain)
-                    return [{delete: end - begin}]
-                else if(op.delete) {
-                     return [{delete: end - begin}]
-                }
-                throw new Error('invalid op')
+                end = end ? end : opLength(op)
+                return [{delete: end - begin}]
             },
             amount)
     }
@@ -205,6 +178,11 @@ export class DeltaTransformer
                 this.nextOp()
             }
         } while(amount > 0 && this.hasNext())
+
+        if(amount > 0)
+        {
+            ops = ops.concat(opGen(this.current(), 0, amount))
+        }
 
         return ops
     }

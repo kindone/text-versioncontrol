@@ -3,12 +3,9 @@ import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { DeltaComposer } from './DeltaComposer'
+import { DeltaTransformer } from './DeltaTransformer'
 import { ExtendedDelta } from './excerpt/ExtendedDelta'
 import { IDelta } from './primitive/IDelta'
-import { StringWithState } from './primitive/StringWithState'
-import { DeltaTransformer } from './DeltaTransformer';
-
-
 
 
 export function JSONStringify(obj:any) {
@@ -159,6 +156,7 @@ export function transformDeltas(delta1:IDelta, delta2:IDelta, laterWins:boolean)
 {
     const iter = new DeltaTransformer(delta1.ops, laterWins)
     let outOps:Op[] = []
+    console.log('delta2:', delta2.ops)
     for(const op of delta2.ops)
     {
         if(!iter.hasNext()) {

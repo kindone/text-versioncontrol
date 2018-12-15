@@ -9,29 +9,29 @@ import {deltaLength, JSONStringify, normalizeOps, expectEqual} from '../primitiv
 
 
 describe("Excerpt", () => {
-    // it('Document excerpt', () => {
-    //   const doc1 = new Document('doc1', 'My Document 1')
-    //   const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
+    it('Document excerpt', () => {
+      const doc1 = new Document('doc1', 'My Document 1')
+      const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
-    //   const doc1Changes = [
-    //     new Delta().delete(3).insert('Your '),
-    //     new Delta().retain(5).insert('precious ')
-    //   ]
+      const doc1Changes = [
+        new Delta().delete(3).insert('Your '),
+        new Delta().retain(5).insert('precious ')
+      ]
 
-    //   const doc2Changes = [
-    //     new Delta().insert('Some introduction here: ')
-    //   ]
-    //   doc1.append(doc1Changes)
-    //   doc2.append(doc2Changes)
+      const doc2Changes = [
+        new Delta().insert('Some introduction here: ')
+      ]
+      doc1.append(doc1Changes)
+      doc2.append(doc2Changes)
 
-    //   const sourceInfo1 = doc1.takeExcerpt(0, 4) // Your
-    //   console.log(JSONStringify(sourceInfo1))
+      const sourceInfo1 = doc1.takeExcerpt(0, 4) // Your
+      expectEqual(JSONStringify(sourceInfo1), JSONStringify({"uri":"doc1","rev":2,"offset":0,"retain":4,"content":{"ops":[{"insert":"Your"}]}}))
 
-    //   const pasted = doc2.pasteExcerpt(5, sourceInfo1)
-    //   console.log(JSONStringify(pasted))
+      const pasted = doc2.pasteExcerpt(5, sourceInfo1)
+      expectEqual(JSONStringify(pasted), JSONStringify({"rev":2,"offset":5,"length":6}))
 
-    //   console.log(JSONStringify(doc2.getContent()))
-    // })
+      expectEqual(JSONStringify(doc2.getContent().ops), JSONStringify([{"insert":"Some "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":2,"destRev":2}}},{"insert":"Your"},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":2,"destRev":2}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]))
+    })
 
     it('Document sync', () => {
       const doc1 = new Document('doc1', 'My Document 1')
@@ -87,7 +87,6 @@ describe("Excerpt", () => {
         const syncInfo = doc1.syncInfoSinceExcerpted(sourceInfo1)
         const destInfo2 = doc2.syncExcerpt(syncInfo, destInfo1)
         expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
-        // expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":2,"destRev":2}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
       }
       // method2
       else{
@@ -95,25 +94,45 @@ describe("Excerpt", () => {
         let destInfo = destInfo1
         while(sourceInfo.rev < doc1.getCurrentRev())
         {
-          console.log('=============================================================')
-          console.log('phase3.excerpt sourceInfo:', JSONStringify(sourceInfo))
           const syncInfo = doc1.syncInfo1SinceExcerpted(sourceInfo)
-          console.log('phase3.excerpt syncInfo:', JSONStringify(syncInfo))
-          console.log('phase3.excerpt syncInfo content:', JSONStringify(doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)))
           destInfo = doc2.syncExcerpt(syncInfo, destInfo)
-          console.log('phase3.excerpt doc2: ', JSONStringify(doc2.getContent()))
-          console.log('phase3.excerpt dest info:', JSONStringify(destInfo))
-          console.log('phase3.excerpt dest content:', JSONStringify(doc2.takeExcerpt(destInfo.offset, destInfo.length)))
           sourceInfo = doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)
         }
         expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        console.log("Sync changes: ", JSONStringify(doc2.changesSince(destInfo1.rev)))
       }
-      console.log('phase4.doc2: ', JSONStringify(doc2.getContent()))
-      console.log('phase4.changesSince previous sync: ', JSONStringify(doc2.changesSince(destInfo1.rev)))
+    })
 
-      //
+    it('TODO: Overlapping excerpt', () => {
+      const doc1 = new Document('doc1', 'aaaa')
+      const doc2 = new Document('doc2', 'bbbb')
 
+      const e1 = doc1.takeExcerpt(1,2)
+      const d1 = doc2.pasteExcerpt(1, e1)
 
+      const e2 = doc2.takeExcerpt(1, 2)
+      const d2 = doc1.pasteExcerpt(3, e2)
+
+      console.log(JSONStringify(e1))
+      console.log(JSONStringify(e2))
+
+      const doc1Changes = [
+        new Delta([{delete: 1}, {insert: 'A'}]),
+        new Delta([{retain: 1}, {insert: '1'}]),
+        new Delta([{retain: 2}, {insert: '1'}])
+      ]
+
+      const doc2Changes = [
+        new Delta([{insert:'B'}])
+      ]
+      doc1.append(doc1Changes)
+      doc2.append(doc2Changes)
+
+      const s1 = doc1.syncInfoSinceExcerpted(e1)
+      doc2.syncExcerpt(s1, d1)
+
+      console.log(JSONStringify(doc1.getContent()))
+      console.log(JSONStringify(doc2.getContent()))
     })
 
 

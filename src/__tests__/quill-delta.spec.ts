@@ -29,7 +29,7 @@ describe("Quill Delta basic operations", () => {
         const target = new Delta().delete(4).retain(5).delete(6)
         // console.log('compose2:', delta.compose(target).ops)
         expectEqual(delta.compose(target).ops, [ { insert: 'irst' }, { delete: 3 }, { retain: 1 }, { delete: 6 } ])
-        expectEqual(flattenDeltas(delta, target).ops, [{delete:3},{insert:"irst"},{delete:6}])
+        expectEqual(flattenDeltas(delta, target).ops, [{delete:3},{insert:"irst"},{retain:1},{delete:6}])
     })
 
     it("compose3", () => {
@@ -44,10 +44,9 @@ describe("Quill Delta basic operations", () => {
         // flatten
         const delta = new Delta([{retain:16},{insert:" beautiful "},{delete:1}])
         const target = new Delta([{retain:7},{insert:{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1},{retain:9},{insert:{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1}])
-        console.log('compose.transform:', JSONStringify(delta.transform(target).ops))
+
         expectEqual(delta.compose(target).ops, [{retain:7},{insert:{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1},{retain:8},{insert:" "},{insert:{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{insert:"eautiful "},{delete:1}])
         expectEqual(flattenDeltas(delta, target).ops, [{retain:7},{insert:{"beginExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{delete:1},{retain:8},{insert:" "},{insert:{"endExcerpt":{"uri":"doc1","srcRev":4,"destRev":7}}},{insert:"eautiful "},{delete:1}])
-        console.log('compose.transformed.compose:', JSONStringify(delta.compose(delta.transform(target)).ops))
     })
 
     it("compose null retain", () => {
@@ -62,7 +61,6 @@ describe("Quill Delta basic operations", () => {
         // flatten
         const delta = new Delta([{insert:" beautiful "},{delete:1}])
         const target = new Delta([{retain:1, attributes: {"a": null, "b": null}}])
-        console.log('compose.transform:', JSONStringify(delta.compose(target).ops))
         expectEqual(delta.compose(target).ops, [{insert:" beautiful "},{delete:1}])
         expectEqual(flattenDeltas(delta, target).ops, [{insert:" ",attributes:{"a":null,"b":null}},{insert:"beautiful "},{delete:1}])
     })
@@ -86,7 +84,6 @@ describe("Quill Delta basic operations", () => {
     it("compose example", () => {
         // delete reordered to back of all inserts
         const delta = new Delta([{insert:"71"},{delete:1},{insert:"nw"}])
-        console.log('delta init:', delta.ops, delta.compose(new Delta([{retain:4}])))
         const target = new Delta([{retain:4}])
         expectEqual(delta.compose(target).ops, [{insert:"71nw"},{delete:1}])
         expectEqual(flattenDeltas(delta, target).ops,[{insert:"71"},{delete:1},{insert:"nw"}])

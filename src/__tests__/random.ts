@@ -2,7 +2,6 @@ import jsc = require("jsverify")
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Operation } from "../primitive/Operation"
 import { StringWithState } from "../primitive/StringWithState"
 
 
@@ -29,13 +28,6 @@ export function randomInt(dist: number) {
     return Math.floor(jsc.random(0, dist-1))
 }
 
-export function randomOperation(length: number) {
-    const from = randomInt(length) // 0~length-1
-    const numDeleted = randomInt(length - from + 1) // 0~length-from
-
-    if (numDeleted > 0) return new Operation(from, numDeleted, randomString(randomInt(3)))
-    else return new Operation(from, numDeleted, randomString(randomInt(2) + 1))
-}
 
 export function randomAttribute() {
     const kind = randomInt(7)
@@ -85,35 +77,6 @@ export function randomInsert(withAttr = true):Op {
             return {insert:randomEmbed(), attributes: randomAttribute()}
             // embed with attribute
     }
-}
-
-export function randomOp(length: number) {
-    const from = randomInt(length) // 0~length-1
-    const numDeleted = randomInt(length - from + 1) // 0~length-from
-
-    if (numDeleted > 0) return new Operation(from, numDeleted, randomString(randomInt(3)))
-    else return new Operation(from, numDeleted, randomString(randomInt(2) + 1))
-}
-
-export function randomDeltaFromOperation(length: number):Delta {
-    return randomOperation(length).toDelta()
-}
-
-export function randomUserOperations(baseLength: number, numOps = 0) {
-    let length = baseLength
-    const ops: Operation[] = []
-    const numIter = numOps > 0 ? numOps : randomInt(4) + 1
-    for (let i = 0; i < numIter; i++) {
-        const op = randomOperation(length)
-        length += op.content.length - op.numDeleted
-        ops.push(op)
-    }
-    return ops
-}
-
-export function randomUserDeltasFromOperations(baseLength: number, numOps = 0) {
-    const userOps = randomUserOperations(baseLength, numOps)
-    return userOps.map((userop) => userop.toDelta())
 }
 
 export function randomUserDeltas(baseLength: number, numOps:number, withAttr = true) {

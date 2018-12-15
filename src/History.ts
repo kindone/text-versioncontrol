@@ -23,12 +23,7 @@ export interface ISyncResponse {
     resDeltas: IDelta[]
 }
 
-interface IMergeResult {
-    rev: number
-    content: IDelta
-    reqDeltas: IDelta[]
-    resDeltas: IDelta[]
-}
+type IMergeResult = ISyncResponse
 
 export interface IHistory {
     readonly name:string

@@ -133,6 +133,8 @@ export class Document {
             {delete: 1},
             {insert: markers.end}])
 
+        replaceMarkers.sync = syncInfo
+
         if(adjustedSourceChanges.length > 0)
             adjustedSourceChanges[adjustedSourceChanges.length-1] = flattenTransformedDelta(adjustedSourceChanges[adjustedSourceChanges.length-1], replaceMarkers)
         else

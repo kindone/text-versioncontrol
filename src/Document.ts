@@ -2,6 +2,7 @@ import Delta = require("quill-delta")
 import Op from "quill-delta/dist/Op"
 import * as _ from 'underscore'
 import { DestInfo, IDestInfo } from "./excerpt/DestInfo"
+import { IExcerpt } from "./excerpt/Excerpt"
 import { ExcerptUtil } from "./excerpt/ExcerptUtil"
 import { ISourceInfo, SourceInfo } from "./excerpt/SourceInfo"
 import { ISourceSyncInfo } from "./excerpt/SourceSyncInfo"
@@ -12,8 +13,10 @@ import { asDelta, deltaLength, JSONStringify, flattenTransformedDelta, flattenDe
 
 
 
+
 export class Document {
     private readonly history:IHistory
+    private excerpts:IExcerpt[] = []
 
     constructor(public readonly uri:string, content:string | IDelta) {
         this.history = new History(uri, asDelta(content))
@@ -61,11 +64,10 @@ export class Document {
 
     public pasteExcerpt(offset:number, sourceInfo:ISourceInfo):IDestInfo {
         const rev = this.getCurrentRev()+1
-        const pasted = ExcerptUtil.paste(rev, offset, sourceInfo)
-        const destInfo = new DestInfo(rev, offset, deltaLength(pasted))
+        const destInfo = new DestInfo(rev, offset, deltaLength(sourceInfo.content))
 
         const ops:Op[] = [{retain: offset}]
-        this.history.append([new Delta(ops.concat(pasted.ops))], "$excerpt$")
+        this.history.append([new Delta(ops.concat(sourceInfo.content.ops))], "$excerpt$")
         return destInfo
     }
 
@@ -111,9 +113,9 @@ export class Document {
         let adjustedSourceChanges = _.map(syncInfo.changes, (change) => {
           // adjust offset
             if(change.ops.length > 0 && change.ops[0].retain)
-                change.ops[0].retain! += destInfo.offset+1
+                change.ops[0].retain! += destInfo.offset
             else
-                change.ops.unshift({retain: destInfo.offset+1})
+                change.ops.unshift({retain: destInfo.offset})
             return change
         }, [])
 
@@ -127,11 +129,8 @@ export class Document {
         const markers = ExcerptUtil.excerptMarker(syncInfo.uri, syncInfo.rev, destRev)
         const replaceMarkers:IDelta = new Delta([
             {retain: destRange.start},
-            {delete: 1},
-            {insert: markers.begin},
-            {retain: destRange.end-destRange.start-2},
-            {delete: 1},
-            {insert: markers.end}])
+            {retain: destRange.end-destRange.start}
+            ])
 
         replaceMarkers.sync = syncInfo
 

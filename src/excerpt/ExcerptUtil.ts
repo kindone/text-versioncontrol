@@ -30,7 +30,7 @@ export class ExcerptUtil
         return new Delta(ops)
     }
 
-    public static paste(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {
+    public static pasteWithMarkers(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {
         const {begin, end} = this.excerptMarker(sourceInfo.uri, sourceInfo.rev, rev)
         let ops:Op[] = []
         ops.push({insert: begin})
@@ -38,5 +38,12 @@ export class ExcerptUtil
         ops.push({insert: end})
         return new Delta(ops)
     }
+
+    public static paste(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {
+        let ops:Op[] = []
+        ops = ops.concat(sourceInfo.content.ops)
+        return new Delta(ops)
+    }
+
 
 }

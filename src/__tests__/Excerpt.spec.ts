@@ -28,9 +28,9 @@ describe("Excerpt", () => {
       expectEqual(JSONStringify(sourceInfo1), JSONStringify({"uri":"doc1","rev":2,"offset":0,"retain":4,"content":{"ops":[{"insert":"Your"}]}}))
 
       const pasted = doc2.pasteExcerpt(5, sourceInfo1)
-      expectEqual(JSONStringify(pasted), JSONStringify({"rev":2,"offset":5,"length":6}))
+      expectEqual(JSONStringify(pasted), JSONStringify({"rev":2,"offset":5,"length":4}))
 
-      expectEqual(JSONStringify(doc2.getContent().ops), JSONStringify([{"insert":"Some "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":2,"destRev":2}}},{"insert":"Your"},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":2,"destRev":2}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]))
+      expectEqual(JSONStringify(doc2.getContent().ops), JSONStringify([{"insert":"Some Yourintroduction here: Here comes the trouble. HAHAHAHA"}]))
     })
 
     it('Document sync', () => {
@@ -68,8 +68,8 @@ describe("Excerpt", () => {
 
       const doc2ChangesAfter = [
         new Delta([{delete: 4}, {insert: 'Actual'}]),
-        new Delta([{retain: 11}, {insert: 'tty'}, {delete: 5}]), // Actual pre|tty|cious
-        new Delta([{retain: 11}, {insert: 'ttier'}, {delete: 3}])
+        new Delta([{retain: 10}, {insert: 'tty'}, {delete: 5}]), // Actual pre|tty|cious
+        new Delta([{retain: 10}, {insert: 'ttier'}, {delete: 3}])
       ]
 
       doc1.append(doc1ChangesAfter)
@@ -98,7 +98,7 @@ describe("Excerpt", () => {
           destInfo = doc2.syncExcerpt(syncInfo, destInfo)
           sourceInfo = doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)
         }
-        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":9}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
         console.log("Sync changes: ", JSONStringify(doc2.changesSince(destInfo1.rev)))
       }
     })

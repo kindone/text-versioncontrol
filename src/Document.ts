@@ -2,7 +2,7 @@ import Delta = require("quill-delta")
 import Op from "quill-delta/dist/Op"
 import * as _ from 'underscore'
 import { DestInfo, IDestInfo } from "./excerpt/DestInfo"
-import { IExcerpt } from "./excerpt/Excerpt"
+import { IExcerpt, Excerpt } from "./excerpt/Excerpt"
 import { ExcerptUtil } from "./excerpt/ExcerptUtil"
 import { ISourceInfo, SourceInfo } from "./excerpt/SourceInfo"
 import { ISourceSyncInfo } from "./excerpt/SourceSyncInfo"
@@ -26,6 +26,10 @@ export class Document {
         return this.history.getCurrentRev()
     }
 
+    public getExcerpts() {
+        return this.excerpts
+    }
+
     public getContent() {
         return this.history.getContent()
     }
@@ -45,7 +49,6 @@ export class Document {
     public changesSince(fromRev:number, toRev:number = -1):IDelta[] {
         return this.history.getChanges(fromRev, toRev)
     }
-
 
     public takeExcerpt(offset:number, retain:number):ISourceInfo {
         const length = deltaLength(this.history.getContent())
@@ -68,6 +71,7 @@ export class Document {
 
         const ops:Op[] = [{retain: offset}]
         this.history.append([new Delta(ops.concat(sourceInfo.content.ops))], "$excerpt$")
+        this.excerpts.push(new Excerpt(sourceInfo, destInfo))
         return destInfo
     }
 
@@ -126,7 +130,6 @@ export class Document {
 
         const destRev = this.getCurrentRev()+1
 
-        const markers = ExcerptUtil.excerptMarker(syncInfo.uri, syncInfo.rev, destRev)
         const replaceMarkers:IDelta = new Delta([
             {retain: destRange.start},
             {retain: destRange.end-destRange.start}

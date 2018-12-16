@@ -40,9 +40,7 @@ export class ExcerptUtil
     }
 
     public static paste(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {
-        let ops:Op[] = []
-        ops = ops.concat(sourceInfo.content.ops)
-        return new Delta(ops)
+        return new Delta(sourceInfo.content.ops)
     }
 
 

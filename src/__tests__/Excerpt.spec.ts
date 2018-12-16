@@ -58,6 +58,7 @@ describe("Excerpt", () => {
       console.log('destInfo:', JSONStringify(destInfo1))
 
       console.log('phases2.doc2: ', JSONStringify(doc2.getContent()))
+      console.log('phases2.doc2.excerpts: ', JSONStringify(doc2.getExcerpts()))
 
       const doc1ChangesAfter = [
         new Delta([{insert: 'No, It\'s '}, {delete: 4}, {insert: 'Our'}]), // +8, No, it's Our

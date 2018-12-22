@@ -1,17 +1,7 @@
 import Delta = require("quill-delta")
 import { IDelta } from "../primitive/IDelta";
 
-
-export interface ISourceInfo
-{
-    uri:string
-    rev:number
-    offset:number
-    retain:number
-    content:IDelta
-}
-
-export class SourceInfo implements ISourceInfo
+export class ExcerptSource
 {
     constructor(
         public uri: string,

@@ -1,4 +1,4 @@
-export { DestInfo, IDestInfo } from "./DestInfo"
-export { SourceInfo, ISourceInfo } from "./SourceInfo"
-export { SourceSyncInfo, ISourceSyncInfo } from "./SourceSyncInfo"
+export { ExcerptTarget } from "./ExcerptTarget"
+export { ExcerptSource } from "./ExcerptSource"
+export { SourceSync as SourceSyncInfo } from "./SourceSyncInfo"
 export { ExcerptUtil } from "./ExcerptUtil"

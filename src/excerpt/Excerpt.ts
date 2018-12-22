@@ -1,14 +1,9 @@
-import { DestInfo } from "./DestInfo"
-import { SourceInfo } from "./SourceInfo"
+import { ExcerptSource } from "./ExcerptSource"
+import { ExcerptTarget } from "./ExcerptTarget"
 
-export interface IExcerpt {
-    source:SourceInfo
-    dest: DestInfo
-}
-
-export class Excerpt implements IExcerpt
+export class Excerpt
 {
-    constructor(public source:SourceInfo, public dest:DestInfo)
+    constructor(public source:ExcerptSource, public target:ExcerptTarget)
     {
     }
 }

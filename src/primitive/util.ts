@@ -2,7 +2,6 @@ import Delta = require('quill-delta')
 import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { ExtendedDelta } from '../excerpt/ExtendedDelta'
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
 import { IDelta } from './IDelta'
@@ -140,17 +139,17 @@ export function isDeltaWithNoEffect(delta:IDelta)
     return true
 }
 
-export function flattenDeltasByQuill(...deltas:IDelta[]):IDelta
-{
-    let flattened:IDelta = deltas[0]
-    for(const delta2 of deltas.slice(1))
-    {
-        const sync = delta2.sync || flattened.sync
-        const excerpt = delta2.excerpt || flattened.excerpt
-        flattened = new ExtendedDelta(new Delta(flattened.ops).compose(new Delta(delta2.ops)).ops, sync, excerpt)
-    }
-    return flattened
-}
+// export function flattenDeltasByQuill(...deltas:IDelta[]):IDelta
+// {
+//     let flattened:IDelta = deltas[0]
+//     for(const delta2 of deltas.slice(1))
+//     {
+//         const sync = delta2.sync || flattened.sync
+//         const excerpt = delta2.excerpt || flattened.excerpt
+//         flattened = new ExtendedDelta(new Delta(flattened.ops).compose(new Delta(delta2.ops)).ops, sync, excerpt)
+//     }
+//     return flattened
+// }
 
 export function transformDeltas(delta1:IDelta, delta2:IDelta, firstWins:boolean)
 {
@@ -260,12 +259,12 @@ export function opLength(op:Op)
     throw new Error('invalid op')
 }
 
-export function transformDeltasByQuill(prev:IDelta, target:IDelta):IDelta
-{
-    const sync = target.sync
-    const excerpt = target.excerpt
-    return new ExtendedDelta(new Delta(prev.ops).transform(new Delta(target.ops)).ops, sync, excerpt)
-}
+// export function transformDeltasByQuill(prev:IDelta, target:IDelta):IDelta
+// {
+//     const sync = target.sync
+//     const excerpt = target.excerpt
+//     return new ExtendedDelta(new Delta(prev.ops).transform(new Delta(target.ops)).ops, sync, excerpt)
+// }
 
 export function flattenTransformedDelta(delta1:IDelta, delta2:IDelta, firstWins = false):IDelta
 {

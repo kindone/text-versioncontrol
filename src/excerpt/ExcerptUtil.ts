@@ -2,16 +2,16 @@ import Delta = require("quill-delta")
 import AttributeMap from "quill-delta/dist/AttributeMap"
 import Op from "quill-delta/dist/Op"
 import { IDelta } from "../primitive/IDelta"
-import { ISourceInfo } from "./SourceInfo"
+import { ExcerptSource } from "./ExcerptSource"
 
 
 
 export class ExcerptUtil
 {
 
-    public static excerptMarker(sourceUri:string, sourceRev:number, destRev:number): {begin:AttributeMap, end:AttributeMap}
+    public static excerptMarker(sourceUri:string, sourceRev:number, targetRev:number): {begin:AttributeMap, end:AttributeMap}
     {
-        const header = { uri: sourceUri, srcRev: sourceRev, destRev}
+        const header = { uri: sourceUri, srcRev: sourceRev, targetRev}
         return {begin: {beginExcerpt: header},
                 end: {endExcerpt: header}}
     }
@@ -30,7 +30,7 @@ export class ExcerptUtil
         return new Delta(ops)
     }
 
-    public static pasteWithMarkers(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {
+    public static pasteWithMarkers(rev:number, offset:number, sourceInfo:ExcerptSource):IDelta {
         const {begin, end} = this.excerptMarker(sourceInfo.uri, sourceInfo.rev, rev)
         let ops:Op[] = []
         ops.push({insert: begin})
@@ -39,7 +39,7 @@ export class ExcerptUtil
         return new Delta(ops)
     }
 
-    public static paste(rev:number, offset:number, sourceInfo:ISourceInfo):IDelta {
+    public static paste(rev:number, offset:number, sourceInfo:ExcerptSource):IDelta {
         return new Delta(sourceInfo.content.ops)
     }
 

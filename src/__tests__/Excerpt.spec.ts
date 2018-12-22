@@ -100,7 +100,7 @@ describe("Excerpt", () => {
           sourceInfo = doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)
         }
         expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
-        console.log("Sync changes: ", JSONStringify(doc2.changesSince(destInfo1.rev)))
+        console.log("Sync changes: ", JSONStringify(doc2.getChanges(destInfo1.rev)))
       }
     })
 

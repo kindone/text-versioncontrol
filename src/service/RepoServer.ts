@@ -1,12 +1,13 @@
-import { History, ISyncRequest, ISyncResponse } from "../History"
+import { History } from "../history/History"
+import { SyncResponse } from "../history/SyncResponse"
 import { DocServer } from "./DocServer";
 import { IRepoSyncRequest } from "./RepoClient";
 
 
-export interface IRepoSyncResponse {
-    [name:string]:ISyncResponse
-}
 
+export interface RepoSyncResponse {
+    [name:string]:SyncResponse
+}
 
 export class RepoServer
 {
@@ -17,8 +18,8 @@ export class RepoServer
             this.docs[docName] = new DocServer(new History(docName))
     }
 
-    public merge( syncRequest: IRepoSyncRequest): IRepoSyncResponse {
-        const syncResponse:IRepoSyncResponse = {}
+    public merge( syncRequest: IRepoSyncRequest): RepoSyncResponse {
+        const syncResponse:RepoSyncResponse = {}
         for(const docName in syncRequest)
         {
             if(this.docs[docName]) {

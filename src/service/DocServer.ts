@@ -1,4 +1,6 @@
-import { History, IHistory, ISyncRequest, ISyncResponse } from '../History'
+import { History, IHistory } from '../history/History'
+import { SyncRequest } from '../history/SyncRequest';
+import { SyncResponse } from '../history/SyncResponse';
 
 export class DocServer {
     private history: IHistory
@@ -7,7 +9,7 @@ export class DocServer {
         this.history = history
     }
 
-    public merge(syncRequest: ISyncRequest): ISyncResponse {
+    public merge(syncRequest: SyncRequest): SyncResponse {
         return this.history.merge(syncRequest)
     }
 

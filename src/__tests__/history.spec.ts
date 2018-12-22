@@ -2,7 +2,7 @@
 import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { History } from "../History"
+import { History } from "../History/History"
 import { deltaLength, expectEqual, JSONStringify } from '../primitive/util'
 import { DocClient } from "../service/DocClient"
 import { DocServer } from "../service/DocServer"

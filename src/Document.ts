@@ -5,8 +5,8 @@ import { Excerpt } from "./excerpt/Excerpt"
 import { ExcerptSource } from "./excerpt/ExcerptSource"
 import { ExcerptTarget } from "./excerpt/ExcerptTarget"
 import { ExcerptUtil } from "./excerpt/ExcerptUtil"
-import { SourceSync } from "./excerpt/SourceSyncInfo"
-import { History, IHistory } from "./History"
+import { SourceSync } from "./excerpt/SourceSync"
+import { History, IHistory } from "./history/History"
 import { IDelta } from "./primitive/IDelta"
 import { Range } from "./primitive/Range"
 import { asDelta, deltaLength, JSONStringify, flattenTransformedDelta, flattenDeltas, expectEqual } from "./primitive/util"
@@ -20,24 +20,24 @@ export class Document {
         this.history = new History(uri, asDelta(content))
     }
 
-    public getCurrentRev() {
+    public getCurrentRev():number {
         return this.history.getCurrentRev()
     }
 
-    public getExcerpts() {
+    public getExcerpts():Excerpt[] {
         return this.excerpts
     }
 
-    public getContent() {
+    public getContent():IDelta {
         return this.history.getContent()
     }
 
-    public getContentAt(rev:number) {
+    public getContentAt(rev:number):IDelta {
         return this.history.getContentForRev(rev)
     }
 
-    public append(deltas: IDelta[]) {
-        this.history.append(deltas, this.uri)
+    public append(deltas: IDelta[]):number {
+        return this.history.append(deltas, this.uri)
     }
 
     public merge(baseRev:number, deltas:IDelta[]) {
@@ -63,22 +63,22 @@ export class Document {
         return new ExcerptSource(this.uri, rev, offset, retain, content)
     }
 
-    public pasteExcerpt(offset:number, sourceInfo:ExcerptSource):ExcerptTarget {
+    public pasteExcerpt(offset:number, source:ExcerptSource):ExcerptTarget {
         const rev = this.getCurrentRev()+1
-        const destInfo = new ExcerptTarget(rev, offset, deltaLength(sourceInfo.content))
+        const target = new ExcerptTarget(rev, offset, deltaLength(source.content))
 
         const ops:Op[] = [{retain: offset}]
-        this.history.append([new Delta(ops.concat(sourceInfo.content.ops))], "$excerpt$")
-        this.excerpts.push(new Excerpt(sourceInfo, destInfo))
-        return destInfo
+        this.history.append([new Delta(ops.concat(source.content.ops))], "$excerpt$")
+        this.excerpts.push(new Excerpt(source, target))
+        return target
     }
 
-    public syncInfoSinceExcerpted(sourceInfo:ExcerptSource):SourceSync
+    public syncInfoSinceExcerpted(source:ExcerptSource):SourceSync
     {
-        const uri = sourceInfo.uri
+        const uri = source.uri
         const rev = this.getCurrentRev()
-        const initialRange = new Range(sourceInfo.offset, sourceInfo.offset+sourceInfo.retain)
-        const changes = this.getChanges(sourceInfo.rev)
+        const initialRange = new Range(source.offset, source.offset+source.retain)
+        const changes = this.getChanges(source.rev)
         const rangeTransformed = initialRange.applyChanges(changes)
         const croppedChanges = initialRange.cropChanges(changes)
 
@@ -97,33 +97,33 @@ export class Document {
         return {uri, rev, changes: croppedChanges, range:rangeTransformed}
     }
 
-    public syncInfo1SinceExcerpted(sourceInfo:ExcerptSource):SourceSync
+    public syncInfo1SinceExcerpted(source:ExcerptSource):SourceSync
     {
-        const uri = sourceInfo.uri
-        const rev = sourceInfo.rev + 1
-        const initialRange = new Range(sourceInfo.offset, sourceInfo.offset + sourceInfo.retain)
-        const changesSince = this.getChanges(sourceInfo.rev, sourceInfo.rev) // only 1
+        const uri = source.uri
+        const rev = source.rev + 1
+        const initialRange = new Range(source.offset, source.offset + source.retain)
+        const changesSince = this.getChanges(source.rev, source.rev) // only 1
         const rangeTransformed = initialRange.applyChanges(changesSince)
         const croppedSourceChanges = initialRange.cropChanges(changesSince)
 
         return {uri, rev, changes: croppedSourceChanges, range:rangeTransformed}
     }
 
-    public syncExcerpt(syncInfo:SourceSync, destInfo:ExcerptTarget):ExcerptTarget {
-        const destRange = new Range(destInfo.offset, destInfo.offset + destInfo.length)
+    public syncExcerpt(sync:SourceSync, target:ExcerptTarget):ExcerptTarget {
+        const destRange = new Range(target.offset, target.offset + target.length)
 
-        let adjustedSourceChanges = _.map(syncInfo.changes, (change) => {
+        let adjustedSourceChanges = _.map(sync.changes, (change) => {
           // adjust offset
             if(change.ops.length > 0 && change.ops[0].retain)
-                change.ops[0].retain! += destInfo.offset
+                change.ops[0].retain! += target.offset
             else
-                change.ops.unshift({retain: destInfo.offset})
+                change.ops.unshift({retain: target.offset})
             return change
         }, [])
 
         adjustedSourceChanges = [flattenDeltas(...adjustedSourceChanges)]
 
-        const simulateResult = this.history.simulateMergeAt(destInfo.rev, adjustedSourceChanges, "$simulate$")
+        const simulateResult = this.history.simulateMergeAt(target.rev, adjustedSourceChanges, "$simulate$")
         const newDestRange = destRange.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
 
         const destRev = this.getCurrentRev()+1
@@ -138,7 +138,7 @@ export class Document {
         else
             adjustedSourceChanges[0] = replaceMarkers
 
-        const syncResult = this.merge(destInfo.rev, adjustedSourceChanges)
+        const syncResult = this.merge(target.rev, adjustedSourceChanges)
         return new ExcerptTarget(this.getCurrentRev(), newDestRange.start, newDestRange.end - newDestRange.start)
     }
 

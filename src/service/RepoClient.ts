@@ -1,10 +1,12 @@
-import { History, ISyncResponse, ISyncRequest } from "../History"
+import { History } from "../history/History"
+import { SyncRequest } from "../history/SyncRequest"
 import { IDelta } from "../primitive/IDelta"
 import { DocClient } from "./DocClient"
-import { IRepoSyncResponse } from "./RepoServer"
+import { RepoSyncResponse } from "./RepoServer"
 
-export interface IRepoSyncRequest {
-    [name:string]:ISyncRequest
+
+export interface RepoSyncRequest {
+    [name:string]:SyncRequest
 }
 
 export class RepoClient
@@ -20,7 +22,7 @@ export class RepoClient
         this.docs[docName].apply(deltas)
     }
 
-    public sync(syncResponse:IRepoSyncResponse) {
+    public sync(syncResponse:RepoSyncResponse) {
         for(const docName in syncResponse) {
             if(this.docs[docName])
                 this.docs[docName].sync(syncResponse[docName])
@@ -29,8 +31,8 @@ export class RepoClient
         }
     }
 
-    public getSyncRequest():IRepoSyncRequest {
-        const repoSyncRequest:IRepoSyncRequest = {}
+    public getSyncRequest():RepoSyncRequest {
+        const repoSyncRequest:RepoSyncRequest = {}
         for(const docName in this.docs)
         {
             if(docName)

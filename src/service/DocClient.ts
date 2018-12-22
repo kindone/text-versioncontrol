@@ -1,6 +1,8 @@
 import Delta = require('quill-delta')
-import { History, IHistory, ISyncResponse } from '../History'
+import { History, IHistory } from '../history/History'
+import { SyncResponse } from '../history/SyncResponse'
 import { IDelta } from '../primitive/IDelta'
+
 
 export class DocClient {
     private history: IHistory
@@ -17,7 +19,7 @@ export class DocClient {
         this.pending = this.pending.concat(deltas)
     }
 
-    public sync(response: ISyncResponse) {
+    public sync(response: SyncResponse) {
         this.history.merge({
             baseRev: this.synchedClientRev,
             branchName: 'server',

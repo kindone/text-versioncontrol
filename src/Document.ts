@@ -44,19 +44,19 @@ export class Document {
         return this.history.getChanges(fromRev, toRev)
     }
 
-    public takeExcerpt(offset:number, retain:number):ExcerptSource {
+    public takeExcerpt(start:number, end:number):ExcerptSource {
         const fullContentLength = deltaLength(this.history.getContent())
-        const takePartial = [ExcerptUtil.take(offset, retain, fullContentLength)]
+        const takePartial = [ExcerptUtil.take(start, end, fullContentLength)]
         const partialContent = this.history.simulateAppend(takePartial, this.uri).content
-        return new ExcerptSource(this.uri, this.history.getCurrentRev(), offset, retain, partialContent)
+        return new ExcerptSource(this.uri, this.history.getCurrentRev(), start, end, partialContent)
     }
 
-    public takeExcerptAt(rev:number, offset:number, retain:number):ExcerptSource {
+    public takeExcerptAt(rev:number, start:number, end:number):ExcerptSource {
         const length = deltaLength(this.history.getContentForRev(rev))
-        const takeChange = [ExcerptUtil.take(offset, retain, length)]
+        const takeChange = [ExcerptUtil.take(start, end, length)]
         const result = this.history.simulateAppendAt(rev, takeChange, this.uri)
         const content = result.content
-        return new ExcerptSource(this.uri, rev, offset, retain, content)
+        return new ExcerptSource(this.uri, rev, start, end, content)
     }
 
     public pasteExcerpt(offset:number, source:ExcerptSource):ExcerptTarget {
@@ -73,17 +73,17 @@ export class Document {
     {
         const uri = source.uri
         const rev = this.getCurrentRev()
-        const initialRange = new Range(source.offset, source.offset+source.retain)
+        const initialRange = new Range(source.start, source.end)
         const changes = this.getChanges(source.rev)
         const rangeTransformed = initialRange.applyChanges(changes)
         const croppedChanges = initialRange.cropChanges(changes)
 
         {
             const changesString = JSONStringify(changes)
-            const excerpt1 = this.takeExcerpt(rangeTransformed.start, rangeTransformed.end-rangeTransformed.start)
+            const excerpt1 = this.takeExcerpt(rangeTransformed.start, rangeTransformed.end)
             const flattenedChange = flattenDeltas(...changes)
             const flattenedRange = initialRange.applyChangeOpen(flattenedChange)
-            const excerpt2 = this.takeExcerpt(flattenedRange.start, flattenedRange.end-flattenedRange.start)
+            const excerpt2 = this.takeExcerpt(flattenedRange.start, flattenedRange.end)
 
             // expectEqual([initialRange.applyChange(flattenDeltas(...changes))], rangeTransformed)
             // expectEqual([initialRange.cropChange(flattenDeltas(...changes))], croppedChanges)
@@ -97,7 +97,7 @@ export class Document {
     {
         const uri = source.uri
         const rev = source.rev + 1
-        const initialRange = new Range(source.offset, source.offset + source.retain)
+        const initialRange = new Range(source.start, source.end)
         const changesSince = this.getChanges(source.rev, source.rev) // only 1
         const rangeTransformed = initialRange.applyChanges(changesSince)
         const croppedSourceChanges = initialRange.cropChanges(changesSince)

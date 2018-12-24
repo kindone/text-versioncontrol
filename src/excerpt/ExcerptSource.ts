@@ -6,8 +6,8 @@ export class ExcerptSource
     constructor(
         public uri: string,
         public rev:number,
-        public offset:number,
-        public retain:number,
+        public start:number,
+        public end:number,
         public content:IDelta)
     {
     }

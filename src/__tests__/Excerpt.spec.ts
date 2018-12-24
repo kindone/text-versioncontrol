@@ -25,7 +25,7 @@ describe("Excerpt", () => {
       doc2.append(doc2Changes)
 
       const source1 = doc1.takeExcerpt(0, 4) // Your
-      expectEqual(JSONStringify(source1), JSONStringify({"uri":"doc1","rev":2,"offset":0,"retain":4,"content":{"ops":[{"insert":"Your"}]}}))
+      expectEqual(JSONStringify(source1), JSONStringify({"uri":"doc1","rev":2,"start":0,"end":4,"content":{"ops":[{"insert":"Your"}]}}))
 
       const pasted = doc2.pasteExcerpt(5, source1)
       expectEqual(JSONStringify(pasted), JSONStringify({"rev":2,"offset":5,"length":4}))
@@ -51,7 +51,7 @@ describe("Excerpt", () => {
       console.log('phases1.doc1: ', JSONStringify(doc1.getContent()))
       console.log('phases1.doc2: ', JSONStringify(doc2.getContent()))
 
-      const source1 = doc1.takeExcerpt(5, 9) // 'precious '
+      const source1 = doc1.takeExcerpt(5, 14) // 'precious '
       console.log('sourceInfo:', JSONStringify(source1))
 
       const target1 = doc2.pasteExcerpt(5, source1) // Some precious introduction here: ...'
@@ -83,7 +83,7 @@ describe("Excerpt", () => {
       console.log('phases3.doc2: ', JSONStringify(doc2.getContent()))
 
       // method 1
-      if(true)
+      if(false)
       {
         const sync = doc1.getSyncSinceExcerpted(source1)
         const target2 = doc2.syncExcerpt(sync, target1)
@@ -98,7 +98,7 @@ describe("Excerpt", () => {
         {
           const sync = doc1.getSingleSyncSinceExcerpted(source)
           target = doc2.syncExcerpt(sync, target)
-          source = doc1.takeExcerptAt(sync.rev, sync.range.start, sync.range.end - sync.range.start)
+          source = doc1.takeExcerptAt(sync.rev, sync.range.start, sync.range.end)
         }
         expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
         console.log("Sync changes: ", JSONStringify(doc2.getChanges(target1.rev)))
@@ -109,10 +109,10 @@ describe("Excerpt", () => {
       const doc1 = new Document('doc1', 'aaaa')
       const doc2 = new Document('doc2', 'bbbb')
 
-      const e1 = doc1.takeExcerpt(1,2)
+      const e1 = doc1.takeExcerpt(1, 3)
       const d1 = doc2.pasteExcerpt(1, e1)
 
-      const e2 = doc2.takeExcerpt(1, 2)
+      const e2 = doc2.takeExcerpt(1, 3)
       const d2 = doc1.pasteExcerpt(3, e2)
 
       console.log(JSONStringify(e1))

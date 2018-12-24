@@ -24,10 +24,10 @@ describe("Excerpt", () => {
       doc1.append(doc1Changes)
       doc2.append(doc2Changes)
 
-      const sourceInfo1 = doc1.takeExcerpt(0, 4) // Your
-      expectEqual(JSONStringify(sourceInfo1), JSONStringify({"uri":"doc1","rev":2,"offset":0,"retain":4,"content":{"ops":[{"insert":"Your"}]}}))
+      const source1 = doc1.takeExcerpt(0, 4) // Your
+      expectEqual(JSONStringify(source1), JSONStringify({"uri":"doc1","rev":2,"offset":0,"retain":4,"content":{"ops":[{"insert":"Your"}]}}))
 
-      const pasted = doc2.pasteExcerpt(5, sourceInfo1)
+      const pasted = doc2.pasteExcerpt(5, source1)
       expectEqual(JSONStringify(pasted), JSONStringify({"rev":2,"offset":5,"length":4}))
 
       expectEqual(JSONStringify(doc2.getContent().ops), JSONStringify([{"insert":"Some Yourintroduction here: Here comes the trouble. HAHAHAHA"}]))
@@ -51,11 +51,11 @@ describe("Excerpt", () => {
       console.log('phases1.doc1: ', JSONStringify(doc1.getContent()))
       console.log('phases1.doc2: ', JSONStringify(doc2.getContent()))
 
-      const sourceInfo1 = doc1.takeExcerpt(5, 9) // 'precious '
-      console.log('sourceInfo:', JSONStringify(sourceInfo1))
+      const source1 = doc1.takeExcerpt(5, 9) // 'precious '
+      console.log('sourceInfo:', JSONStringify(source1))
 
-      const destInfo1 = doc2.pasteExcerpt(5, sourceInfo1) // Some precious introduction here: ...'
-      console.log('destInfo:', JSONStringify(destInfo1))
+      const target1 = doc2.pasteExcerpt(5, source1) // Some precious introduction here: ...'
+      console.log('targetInfo:', JSONStringify(target1))
 
       console.log('phases2.doc2: ', JSONStringify(doc2.getContent()))
       console.log('phases2.doc2.excerpts: ', JSONStringify(doc2.getExcerpts()))
@@ -83,24 +83,25 @@ describe("Excerpt", () => {
       console.log('phases3.doc2: ', JSONStringify(doc2.getContent()))
 
       // method 1
-      if(false)
+      if(true)
       {
-        const syncInfo = doc1.syncInfoSinceExcerpted(sourceInfo1)
-        const destInfo2 = doc2.syncExcerpt(syncInfo, destInfo1)
-        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"beginExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"prettier beautiful "},{"insert":{"endExcerpt":{"uri":"doc1","srcRev":6,"destRev":6}}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
+        const sync = doc1.getSyncSinceExcerpted(source1)
+        const target2 = doc2.syncExcerpt(sync, target1)
+        expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
+        console.log("Sync changes: ", JSONStringify(doc2.getChanges(target1.rev)))
       }
       // method2
       else{
-        let sourceInfo = sourceInfo1
-        let destInfo = destInfo1
-        while(sourceInfo.rev < doc1.getCurrentRev())
+        let source = source1
+        let target = target1
+        while(source.rev < doc1.getCurrentRev())
         {
-          const syncInfo = doc1.syncInfo1SinceExcerpted(sourceInfo)
-          destInfo = doc2.syncExcerpt(syncInfo, destInfo)
-          sourceInfo = doc1.takeExcerptAt(syncInfo.rev, syncInfo.range.start, syncInfo.range.end - syncInfo.range.start)
+          const sync = doc1.getSingleSyncSinceExcerpted(source)
+          target = doc2.syncExcerpt(sync, target)
+          source = doc1.takeExcerptAt(sync.rev, sync.range.start, sync.range.end - sync.range.start)
         }
         expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
-        console.log("Sync changes: ", JSONStringify(doc2.getChanges(destInfo1.rev)))
+        console.log("Sync changes: ", JSONStringify(doc2.getChanges(target1.rev)))
       }
     })
 
@@ -129,7 +130,7 @@ describe("Excerpt", () => {
       doc1.append(doc1Changes)
       doc2.append(doc2Changes)
 
-      const s1 = doc1.syncInfoSinceExcerpted(e1)
+      const s1 = doc1.getSyncSinceExcerpted(e1)
       doc2.syncExcerpt(s1, d1)
 
       console.log(JSONStringify(doc1.getContent()))

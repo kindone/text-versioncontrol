@@ -1,7 +1,7 @@
 import { History } from "../history/History"
 import { SyncResponse } from "../history/SyncResponse"
 import { DocServer } from "./DocServer";
-import { IRepoSyncRequest } from "./RepoClient";
+import { RepoSyncRequest } from "./RepoClient";
 
 
 
@@ -18,7 +18,7 @@ export class RepoServer
             this.docs[docName] = new DocServer(new History(docName))
     }
 
-    public merge( syncRequest: IRepoSyncRequest): RepoSyncResponse {
+    public merge( syncRequest: RepoSyncRequest): RepoSyncResponse {
         const syncResponse:RepoSyncResponse = {}
         for(const docName in syncRequest)
         {

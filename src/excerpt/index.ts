@@ -1,4 +1,5 @@
+export { Excerpt } from "./Excerpt"
 export { ExcerptTarget } from "./ExcerptTarget"
 export { ExcerptSource } from "./ExcerptSource"
-export { SourceSync as SourceSyncInfo } from "./SourceSync"
+export { ExcerptSync } from "./ExcerptSync"
 export { ExcerptUtil } from "./ExcerptUtil"

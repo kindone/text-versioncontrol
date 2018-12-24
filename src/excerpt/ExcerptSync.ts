@@ -1,7 +1,7 @@
 import { IDelta } from "../primitive/IDelta"
 import { Range } from "../primitive/Range"
 
-export class SourceSync
+export class ExcerptSync
 {
     constructor(
         public uri:string,

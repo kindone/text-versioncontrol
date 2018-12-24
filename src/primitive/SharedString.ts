@@ -8,9 +8,9 @@ import { IDelta } from './IDelta';
 import { normalizeOps } from './util'
 
 
-export class StringWithState {
+export class SharedString {
     public static fromString(str: string) {
-        return new StringWithState([new Fragment(str)])
+        return new SharedString([new Fragment(str)])
     }
 
     public static fromDelta(delta:IDelta) {
@@ -22,16 +22,16 @@ export class StringWithState {
             return fragments
         },[])
 
-        return new StringWithState(fs)
+        return new SharedString(fs)
     }
 
-    public fragments: Fragment[]
+    private fragments: Fragment[]
 
     constructor(fragments:Fragment[]) {
         this.fragments = fragments
     }
 
-    public apply(delta: IDelta, branch: string, debug = false):IDelta {
+    public applyChange(delta: IDelta, branch: string, debug = false):IDelta {
         const fragmentIter = new FragmentIterator(branch, this.fragments)
         const deltaIter = new DeltaIterator(branch, this.fragments)
 
@@ -116,10 +116,10 @@ export class StringWithState {
     }
 
     public clone() {
-        return new StringWithState(this.fragments.concat())
+        return new SharedString(this.fragments.concat())
     }
 
-    public equals(ss: StringWithState) {
+    public equals(ss: SharedString) {
         if(this.fragments.length !== ss.fragments.length)
             return false
 

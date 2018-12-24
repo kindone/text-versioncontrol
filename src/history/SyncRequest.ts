@@ -2,6 +2,6 @@ import { IDelta } from "../primitive/IDelta"
 
 export interface SyncRequest {
     branchName: string
-    baseRev: number
+    rev: number
     deltas: IDelta[]
 }

@@ -1,39 +1,39 @@
 import Delta = require('quill-delta')
 import * as _ from "underscore"
 import { IDelta } from '../primitive/IDelta'
-import { StringWithState } from "../primitive/StringWithState"
+import { SharedString } from "../primitive/SharedString"
 import { expectEqual, JSONStringify, flattenDeltas } from '../primitive/util'
-import { randomInt, randomStringWithState, randomUserDeltas } from "./random"
+import { randomInt, randomSharedString, randomUserDeltas } from "./random"
 
 
 describe("hand-made scenarios", () => {
     it("scenario 1", () => {
-        const str = StringWithState.fromString("world")
+        const str = SharedString.fromString("world")
         expect(str.toText()).toBe("world")
-        str.apply(new Delta().insert('hello '), "me")
+        str.applyChange(new Delta().insert('hello '), "me")
         expect(str.toText()).toBe("hello world")
 
-        const op = str.apply(new Delta().retain(6).delete(5), "me")
+        const op = str.applyChange(new Delta().retain(6).delete(5), "me")
         // console.log("altered:", op)
         expect(str.toText()).toBe("hello ")
 
-        str.apply(new Delta().retain(6).insert("world"), "you")
+        str.applyChange(new Delta().retain(6).insert("world"), "you")
         expect(str.toText()).toBe("hello world")
         // console.log(str.toHtml())
         // console.log(str.toString())
     })
 
     it("scenario 2", () => {
-        const str = StringWithState.fromString("world")
+        const str = SharedString.fromString("world")
         // console.log(JSONStringify(str))
         expect(str.toText()).toBe("world")
-        str.apply(new Delta().retain(5).insert("world"), "you")
+        str.applyChange(new Delta().retain(5).insert("world"), "you")
         // console.log(JSONStringify(str))
         expect(str.toText()).toBe("worldworld")
-        str.apply(new Delta().insert("hello "), "me")
+        str.applyChange(new Delta().insert("hello "), "me")
         // console.log(JSONStringify(str))
         expect(str.toText()).toBe("hello worldworld")
-        str.apply(new Delta().retain(6).delete(5), "me")
+        str.applyChange(new Delta().retain(6).delete(5), "me")
         // console.log(JSONStringify(str))
         expect(str.toText()).toBe("hello world")
         // console.log(str.toHtml())
@@ -41,15 +41,15 @@ describe("hand-made scenarios", () => {
     })
 
     it("scenario 3", () => {
-        const str = StringWithState.fromString("world")
+        const str = SharedString.fromString("world")
         // console.log(JSONStringify(str))
-        expect(str.apply(new Delta().retain(5).insert("world"), "you")).toEqual(new Delta().retain(5).insert("world"))
+        expect(str.applyChange(new Delta().retain(5).insert("world"), "you")).toEqual(new Delta().retain(5).insert("world"))
         // console.log(JSONStringify(str))
         expect(str.toText()).toBe("worldworld")
-        expect(str.apply(new Delta().insert("hello "), "me")).toEqual(new Delta().insert("hello "))
+        expect(str.applyChange(new Delta().insert("hello "), "me")).toEqual(new Delta().insert("hello "))
         // console.log(JSONStringify(str))
         expect(str.toText()).toBe("hello worldworld")
-        expect(str.apply(new Delta().delete(11), "me")).toEqual(new Delta().delete(11))
+        expect(str.applyChange(new Delta().delete(11), "me")).toEqual(new Delta().delete(11))
         // console.log(JSONStringify(str))
         expect(str.toText()).toBe("world")
         // console.log(str.toText())
@@ -58,29 +58,29 @@ describe("hand-made scenarios", () => {
     })
 
     it("scenario 4 delete", () => {
-        const str = StringWithState.fromString("abcde")
+        const str = SharedString.fromString("abcde")
         expect(str.toText()).toBe("abcde")
         const deltas:IDelta[] = []
         // NOTE:
         // new Delta().retain(2).delete(1).insert("f"))) is saved as {"ops":[{"retain":2},{"insert":"f"},{"delete":1}]}
-        let delta = str.apply(new Delta().retain(2).delete(1).insert("f"), "user2") // ab(f)[c]de
+        let delta = str.applyChange(new Delta().retain(2).delete(1).insert("f"), "user2") // ab(f)[c]de
         deltas.push(delta)
         console.log(JSONStringify(delta), JSONStringify(str))
         expect(str.toText()).toBe("abfde")
 
-        delta = str.apply(new Delta().delete(3), "user1") // [ab](f)[c]de
+        delta = str.applyChange(new Delta().delete(3), "user1") // [ab](f)[c]de
         deltas.push(delta)
         console.log(JSONStringify(delta), JSONStringify(str))
         expect(str.toText()).toBe("fde")
 
-        delta = str.apply(new Delta().retain(1).insert("gh"), "user1") // [ab](f)[c]dghe
+        delta = str.applyChange(new Delta().retain(1).insert("gh"), "user1") // [ab](f)[c]dghe
         deltas.push(delta)
         console.log(JSONStringify(delta), JSONStringify(str))
         expect(str.toText()).toBe("fdghe")
 
-        const str2 = StringWithState.fromString("abcde")
+        const str2 = SharedString.fromString("abcde")
         for(const del of deltas) {
-            str2.apply(del, "merged")
+            str2.applyChange(del, "merged")
             console.log(JSONStringify(str2))
         }
         expect(str2.toText()).toBe("fdghe")
@@ -117,7 +117,7 @@ function combineRandom(deltasForUsers: IDelta[][]) {
 }
 
 function testCombination(
-    ssInitial: StringWithState,
+    ssInitial: SharedString,
     user1Deltas: IDelta[],
     user2Deltas: IDelta[],
     user3Deltas: IDelta[] = []
@@ -140,18 +140,18 @@ function testCombination(
 
     const mergedDeltas: IDelta[] = []
     for (const comb of combined1) {
-        mergedDeltas.push(ssClient1.apply(comb.delta, comb.branch))
+        mergedDeltas.push(ssClient1.applyChange(comb.delta, comb.branch))
     }
 
     for (const comb of combined2) {
-        ssClient2.apply(comb.delta, comb.branch)
+        ssClient2.applyChange(comb.delta, comb.branch)
     }
 
     for(const comb of flattened) {
-        ssClient3.apply(comb.delta, comb.branch)
+        ssClient3.applyChange(comb.delta, comb.branch)
     }
     for (const mergedDelta of mergedDeltas) {
-        ssServer.apply(mergedDelta, "merged")
+        ssServer.applyChange(mergedDelta, "merged")
     }
 
     // expect(ssInitial.equals(ssClient1)).toBe(false)
@@ -187,7 +187,7 @@ function testCombination(
 describe("commutativity", () => {
     it("scenario 0", () => {
         for (let j = 0; j < 50; j++) {
-            const ss = randomStringWithState()
+            const ss = randomSharedString()
             const user1Deltas = randomUserDeltas(ss.toText().length,2)
             const user2Deltas = []
 
@@ -198,7 +198,7 @@ describe("commutativity", () => {
     })
     it("scenario 1", () => {
         for (let j = 0; j < 50; j++) {
-            const ss = randomStringWithState()
+            const ss = randomSharedString()
             const user1Deltas = randomUserDeltas(ss.toText().length,2, false)
             const user2Deltas = randomUserDeltas(ss.toText().length,1, false)
 
@@ -210,7 +210,7 @@ describe("commutativity", () => {
 
     it("scenario 2", () => {
         for (let j = 0; j < 50; j++) {
-            const ss = randomStringWithState()
+            const ss = randomSharedString()
             const user1Deltas = randomUserDeltas(ss.toText().length,4)
             const user2Deltas = randomUserDeltas(ss.toText().length,4)
             const user3Deltas = randomUserDeltas(ss.toText().length,5)
@@ -225,13 +225,13 @@ describe("commutativity", () => {
 describe("flatten", () => {
     it("scenario 1", () => {
         for (let j = 0; j < 50; j++) {
-            const ss = randomStringWithState()
+            const ss = randomSharedString()
             const ss2 = ss.clone()
             const deltas = randomUserDeltas(ss.toText().length,10)
             for(const delta of deltas)
-                ss.apply(delta, "branch")
+                ss.applyChange(delta, "branch")
 
-            ss2.apply(flattenDeltas(...deltas), "branch")
+            ss2.applyChange(flattenDeltas(...deltas), "branch")
 
             expectEqual(ss.toDelta(), ss2.toDelta())
         }

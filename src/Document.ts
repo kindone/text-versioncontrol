@@ -1,11 +1,7 @@
 import Delta = require("quill-delta")
 import Op from "quill-delta/dist/Op"
 import * as _ from 'underscore'
-import { Excerpt } from "./excerpt/Excerpt"
-import { ExcerptSource } from "./excerpt/ExcerptSource"
-import { ExcerptTarget } from "./excerpt/ExcerptTarget"
-import { ExcerptUtil } from "./excerpt/ExcerptUtil"
-import { SourceSync } from "./excerpt/SourceSync"
+import { Excerpt, ExcerptSource, ExcerptSync, ExcerptTarget, ExcerptUtil } from "./excerpt"
 import { History, IHistory } from "./history/History"
 import { IDelta } from "./primitive/IDelta"
 import { Range } from "./primitive/Range"
@@ -41,7 +37,7 @@ export class Document {
     }
 
     public merge(baseRev:number, deltas:IDelta[]) {
-        return this.history.merge({baseRev, branchName: '$simulate$', deltas})
+        return this.history.merge({rev: baseRev, branchName: '$simulate$', deltas})
     }
 
     public getChanges(fromRev:number, toRev:number = -1):IDelta[] {
@@ -73,7 +69,7 @@ export class Document {
         return target
     }
 
-    public syncInfoSinceExcerpted(source:ExcerptSource):SourceSync
+    public getSyncSinceExcerpted(source:ExcerptSource):ExcerptSync
     {
         const uri = source.uri
         const rev = this.getCurrentRev()
@@ -97,7 +93,7 @@ export class Document {
         return {uri, rev, changes: croppedChanges, range:rangeTransformed}
     }
 
-    public syncInfo1SinceExcerpted(source:ExcerptSource):SourceSync
+    public getSingleSyncSinceExcerpted(source:ExcerptSource):ExcerptSync
     {
         const uri = source.uri
         const rev = source.rev + 1
@@ -109,8 +105,8 @@ export class Document {
         return {uri, rev, changes: croppedSourceChanges, range:rangeTransformed}
     }
 
-    public syncExcerpt(sync:SourceSync, target:ExcerptTarget):ExcerptTarget {
-        const destRange = new Range(target.offset, target.offset + target.length)
+    public syncExcerpt(sync:ExcerptSync, target:ExcerptTarget):ExcerptTarget {
+        const targetRange = new Range(target.offset, target.offset + target.length)
 
         let adjustedSourceChanges = _.map(sync.changes, (change) => {
           // adjust offset
@@ -124,13 +120,13 @@ export class Document {
         adjustedSourceChanges = [flattenDeltas(...adjustedSourceChanges)]
 
         const simulateResult = this.history.simulateMergeAt(target.rev, adjustedSourceChanges, "$simulate$")
-        const newDestRange = destRange.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
+        const newTargetRange = targetRange.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
 
-        const destRev = this.getCurrentRev()+1
+        const targetRev = this.getCurrentRev()+1
 
         const replaceMarkers:IDelta = new Delta([
-            {retain: destRange.start},
-            {retain: destRange.end-destRange.start}
+            {retain: targetRange.start},
+            {retain: targetRange.end-targetRange.start}
             ])
 
         if(adjustedSourceChanges.length > 0)
@@ -139,7 +135,7 @@ export class Document {
             adjustedSourceChanges[0] = replaceMarkers
 
         const syncResult = this.merge(target.rev, adjustedSourceChanges)
-        return new ExcerptTarget(this.getCurrentRev(), newDestRange.start, newDestRange.end - newDestRange.start)
+        return new ExcerptTarget(this.getCurrentRev(), newTargetRange.start, newTargetRange.end - newTargetRange.start)
     }
 
 

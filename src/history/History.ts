@@ -1,7 +1,7 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { IDelta } from '../primitive/IDelta'
-import { StringWithState } from '../primitive/StringWithState'
+import { SharedString } from '../primitive/SharedString'
 import { asDelta, expectEqual } from '../primitive/util'
 import { Savepoint } from './Savepoint';
 import { SyncRequest } from './SyncRequest';
@@ -44,12 +44,12 @@ export class History implements IHistory {
     }
 
     public merge(mergeRequest: SyncRequest): SyncResponse {
-        return this.mergeAt(mergeRequest.baseRev, mergeRequest.deltas, mergeRequest.branchName)
+        return this.mergeAt(mergeRequest.rev, mergeRequest.deltas, mergeRequest.branchName)
     }
 
     // prioritize remote
     public rebase(rebaseRequest: SyncRequest):SyncResponse {
-        const baseRev = rebaseRequest.baseRev
+        const baseRev = rebaseRequest.rev
         const deltas = rebaseRequest.deltas
         const name = rebaseRequest.branchName
 
@@ -75,11 +75,11 @@ export class History implements IHistory {
     public simulateAppendAt(fromRev:number, deltas: IDelta[], name: string): MergeResult
     {
         const baseRevText = this.getContentForRev(fromRev)
-        const ss = StringWithState.fromDelta(baseRevText)
+        const ss = SharedString.fromDelta(baseRevText)
 
         let newDeltas: IDelta[] = []
         for (const delta of deltas)
-            newDeltas = newDeltas.concat(ss.apply(delta, name))
+            newDeltas = newDeltas.concat(ss.applyChange(delta, name))
 
         return { rev: fromRev + deltas.length, reqDeltas: newDeltas, resDeltas: [], content: ss.toDelta() }
     }
@@ -88,15 +88,15 @@ export class History implements IHistory {
         baseRev:number, remoteDeltas: IDelta[], name: string
     ): MergeResult {
         const baseRevText = this.getContentForRev(baseRev)
-        const ss = StringWithState.fromDelta(baseRevText)
+        const ss = SharedString.fromDelta(baseRevText)
         const localDeltas = this.getChanges(baseRev)
 
         for(const localDelta of localDeltas)
-            ss.apply(localDelta, this.name)
+            ss.applyChange(localDelta, this.name)
 
         let newDeltas: IDelta[] = []
         for (const delta of remoteDeltas)
-            newDeltas = newDeltas.concat(ss.apply(delta, name))
+            newDeltas = newDeltas.concat(ss.applyChange(delta, name))
 
         return { rev: (baseRev + remoteDeltas.length + localDeltas.length), reqDeltas: newDeltas, resDeltas: localDeltas, content: ss.toDelta() }
     }
@@ -116,9 +116,9 @@ export class History implements IHistory {
 
     public getTextForRev(rev: number): string {
         const savepoint = this.getNearestSavepointForRev(rev)
-        const ss = StringWithState.fromDelta(savepoint.content)
+        const ss = SharedString.fromDelta(savepoint.content)
         for (let i = savepoint.rev; i < rev; i++)
-            ss.apply(this.deltas[i - this.initialRev], '_')
+            ss.applyChange(this.deltas[i - this.initialRev], '_')
 
         return ss.toText()
     }
@@ -129,9 +129,9 @@ export class History implements IHistory {
 
     public getContentForRev(rev: number): IDelta {
         const savepoint = this.getNearestSavepointForRev(rev)
-        const ss = StringWithState.fromDelta(savepoint.content)
+        const ss = SharedString.fromDelta(savepoint.content)
         for (let i = savepoint.rev; i < rev; i++)
-            ss.apply(this.deltas[i - this.initialRev], '_')
+            ss.applyChange(this.deltas[i - this.initialRev], '_')
 
         return ss.toDelta()
     }
@@ -161,15 +161,15 @@ export class History implements IHistory {
         baseRev: number
     ): MergeResult {
         const baseRevText = this.getContentForRev(baseRev)
-        const ss = StringWithState.fromDelta(baseRevText)
+        const ss = SharedString.fromDelta(baseRevText)
         let newDeltas: IDelta[] = []
 
         for (const delta of remoteDeltas)
-            ss.apply(delta, name)
+            ss.applyChange(delta, name)
 
         const localDeltas = this.getChanges(baseRev)
         for (const localDelta of localDeltas)
-            newDeltas = newDeltas.concat(ss.apply(localDelta, this.name))
+            newDeltas = newDeltas.concat(ss.applyChange(localDelta, this.name))
 
         return { rev: (baseRev + remoteDeltas.length + localDeltas.length), reqDeltas: remoteDeltas, resDeltas: newDeltas, content: ss.toDelta() }
     }
@@ -178,7 +178,7 @@ export class History implements IHistory {
         const initial = this.savepoints[0]
         if (initial.rev !== this.initialRev) throw new Error('initial savepoint rev must be first rev')
 
-        const ss = StringWithState.fromDelta(initial.content)
+        const ss = SharedString.fromDelta(initial.content)
         let j = 0
         for (let rev = this.initialRev; rev < this.getCurrentRev(); rev++) {
             if (rev > this.getLatestSavepointRev()) break
@@ -187,7 +187,7 @@ export class History implements IHistory {
                 expectEqual(ss.toDelta(), this.savepoints[j].content, 'savepoint is not correct at (' + rev + ',' + j + '):')
                 j++
             }
-            ss.apply(this.deltas[rev-this.initialRev], '_')
+            ss.applyChange(this.deltas[rev-this.initialRev], '_')
         }
     }
 

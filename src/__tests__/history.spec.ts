@@ -71,12 +71,12 @@ describe("History hand-made scenarios", () => {
         // console.log(clientHistory.name, clientHistory.getCurrentRev(), clientHistory.getText())
 
         const set1ForClient = serverHistory.merge({
-            baseRev: 0,
+            rev: 0,
             branchName: clientHistory.name,
             deltas: set2
         })
         clientHistory.merge({
-            baseRev: 0,
+            rev: 0,
             branchName: serverHistory.name,
             deltas: set1ForClient.resDeltas
         })
@@ -91,8 +91,8 @@ describe("History hand-made scenarios", () => {
         const set4 = [new Delta().retain(2).delete(2).insert(" rebased"), new Delta().insert("More rebased ")]
         serverHistory.append(set4)
 
-        const clientRebased = clientHistory.rebase({baseRev:clientRev, branchName: serverHistory.name, deltas: set4})
-        const serverRebased = serverHistory.rebase({baseRev:serverRev, branchName: clientHistory.name, deltas: set3})
+        const clientRebased = clientHistory.rebase({rev:clientRev, branchName: serverHistory.name, deltas: set4})
+        const serverRebased = serverHistory.rebase({rev:serverRev, branchName: clientHistory.name, deltas: set3})
 
         expect(clientHistory.getText()).toBe(serverHistory.getText())
 
@@ -112,12 +112,12 @@ describe("History hand-made scenarios", () => {
         // console.log(c1History.name, c1History.getCurrentRev(), c1History.getText())
 
         const serverSetForClient1 = serverHistory.merge({
-            baseRev: 0,
+            rev: 0,
             branchName: c1History.name,
             deltas: client1Set
         })
         c1History.merge({
-            baseRev: 0,
+            rev: 0,
             branchName: serverHistory.name,
             deltas: serverSetForClient1.resDeltas
         })
@@ -165,12 +165,12 @@ describe("generated scenarios", () => {
             clientHistory.append(set4)
 
             const set3ForClient = serverHistory.merge({
-                baseRev: serverRev,
+                rev: serverRev,
                 branchName: "client",
                 deltas: set4
             })
             clientHistory.merge({
-                baseRev: clientRev,
+                rev: clientRev,
                 branchName: "server",
                 deltas: set3ForClient.resDeltas
             })
@@ -187,12 +187,12 @@ describe("generated scenarios", () => {
             clientHistory.append(set6)
 
             const set5ForClient = serverHistory.merge({
-                baseRev: serverRev,
+                rev: serverRev,
                 branchName: "client",
                 deltas: set6
             })
             clientHistory.merge({
-                baseRev: clientRev,
+                rev: clientRev,
                 branchName: "server",
                 deltas: set5ForClient.resDeltas
             })

@@ -2,7 +2,7 @@ import jsc = require("jsverify")
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { StringWithState } from "../primitive/StringWithState"
+import { SharedString } from "../primitive/SharedString"
 
 
 export function randomString(size: number):string {
@@ -150,6 +150,6 @@ export function randomUserOps(baseLength: number, withAttr = true) {
     return resultOps
 }
 
-export function randomStringWithState() {
-    return StringWithState.fromString(randomString(randomInt(10) + 1))
+export function randomSharedString() {
+    return SharedString.fromString(randomString(randomInt(10) + 1))
 }

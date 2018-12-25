@@ -129,34 +129,51 @@ export class Range {
                 if (right > left) {
                     ops.push({ retain: right - left })
                 }
-
                 cursor += op.retain
             } else if (typeof op.insert === 'string') {
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                }
                 const amount = op.insert.toString().length
                 if (cursor <= start) {
                     start += amount
-                } else ops.push({ insert: op.insert })
+                } else {
+                    ops.push({ insert: op.insert })
+                }
                 end += amount
                 cursor += amount
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                }
             } else if (op.insert) {
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                }
                 if (cursor <= start) {
                     start += 1
-                } else ops.push({ insert: op.insert })
+                } else {
+                    ops.push({ insert: op.insert })
+                }
                 end += 1
                 cursor += 1
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                }
             } else if (op.delete) {
                 const left = Math.max(cursor, start)
                 const right = Math.min(cursor + op.delete, end)
-                if (right > left) ops.push({ delete: right - left })
+                if (right > left) {
+                    ops.push({ delete: right - left })
+                }
 
-                if (cursor <= start) start = Math.max(cursor, start - op.delete)
+                if (cursor <= start) {
+                    start = Math.max(cursor, start - op.delete)
+                }
 
                 end = Math.max(cursor, end - op.delete)
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end, 'left:', left, 'right:', right)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end, 'left:', left, 'right:', right)
+                }
             }
 
             if (cursor > end) break
@@ -181,31 +198,47 @@ export class Range {
 
                 cursor += op.retain
             } else if (typeof op.insert === 'string') {
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                }
                 const amount = op.insert.toString().length
                 if (cursor < start) {
                     start += amount
-                } else ops.push({ insert: op.insert })
+                } else {
+                    ops.push({ insert: op.insert })
+                }
                 end += amount
                 cursor += amount
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                }
             } else if (op.insert) {
                 if (cursor < start) {
                     start += 1
-                } else ops.push({ insert: op.insert })
+                } else {
+                    ops.push({ insert: op.insert })
+                }
 
                 end += 1
                 cursor += 1
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end)
+                }
             } else if (op.delete) {
                 const left = Math.max(cursor, start)
                 const right = Math.min(cursor + op.delete, end)
-                if (right > left) ops.push({ delete: right - left })
+                if (right > left) {
+                    ops.push({ delete: right - left })
+                }
 
-                if (cursor <= start) start = Math.max(cursor, start - op.delete)
+                if (cursor <= start) {
+                    start = Math.max(cursor, start - op.delete)
+                }
 
                 end = Math.max(cursor, end - op.delete)
-                if (debug) console.log('cursor:', cursor, 'start:', start, 'end:', end, 'left:', left, 'right:', right)
+                if (debug) {
+                    console.log('cursor:', cursor, 'start:', start, 'end:', end, 'left:', left, 'right:', right)
+                }
             }
 
             if (cursor > end) break

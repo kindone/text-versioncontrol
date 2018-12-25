@@ -124,8 +124,11 @@ export class Document {
             sync.changes,
             change => {
                 // adjust offset
-                if (change.ops.length > 0 && change.ops[0].retain) change.ops[0].retain! += target.offset
-                else change.ops.unshift({ retain: target.offset })
+                if (change.ops.length > 0 && change.ops[0].retain) {
+                    change.ops[0].retain! += target.offset
+                } else {
+                    change.ops.unshift({ retain: target.offset })
+                }
                 return change
             },
             [],

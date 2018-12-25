@@ -280,7 +280,9 @@ describe('text spec regression', () => {
 
         // console.log(deltas)
         const server = SharedString.fromString(initial)
-        for (const delta of deltas) server.applyChange(delta, 'merged')
+        for (const delta of deltas) {
+            server.applyChange(delta, 'merged')
+        }
 
         // console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
         expectEqual(client1.toDelta(), server.toDelta())
@@ -329,7 +331,9 @@ describe('text spec regression', () => {
 
         // console.log(JSONStringify(deltas))
         const server = SharedString.fromString(initial)
-        for (const delta of deltas) server.applyChange(delta, 'merged')
+        for (const delta of deltas) {
+            server.applyChange(delta, 'merged')
+        }
 
         // console.log(JSONStringify(client1.toDelta()), JSONStringify(server.toDelta()))
         expectEqual(client1.toDelta(), server.toDelta())
@@ -540,9 +544,13 @@ describe('text spec regression2', () => {
 
             const flattened = [flattenDeltas(...deltas)]
 
-            for (const delta of deltas) ss1.applyChange(delta, 'a')
+            for (const delta of deltas) {
+                ss1.applyChange(delta, 'a')
+            }
 
-            for (const delta of flattened) ss2.applyChange(delta, 'a')
+            for (const delta of flattened) {
+                ss2.applyChange(delta, 'a')
+            }
 
             expectEqual(ss1.toDelta(), ss2.toDelta(), `string: ${str}, flattened: ${JSONStringify(flattened)} `)
 

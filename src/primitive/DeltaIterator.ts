@@ -13,7 +13,9 @@ function shadowedAttributes(base: AttributeMap, mod: { [branch: string]: Attribu
     const projected: AttributeMap = { ...base }
     for (const branch of branches.sort()) {
         const branchMod = mod[branch]
-        for (const field of Object.keys(branchMod)) projected[field] = branchMod[field]
+        for (const field of Object.keys(branchMod)) {
+            projected[field] = branchMod[field]
+        }
     }
     return projected
 }
@@ -43,8 +45,9 @@ function calculateAttributeDelta(
     for (const field of Object.keys(attr)) {
         // 1. check if the field is not shadowed by branch with higher priority
         // 1. check if the field is different from  mods by a branch with lower and equal priority
-        if (!shadowed.hasOwnProperty(field) && (!compared.hasOwnProperty(field) || compared[field] !== attr[field]))
+        if (!shadowed.hasOwnProperty(field) && (!compared.hasOwnProperty(field) || compared[field] !== attr[field])) {
             attrDelta[field] = attr[field]
+        }
     }
 
     return _.isEmpty(attrDelta) ? undefined : attrDelta
@@ -134,13 +137,16 @@ export class DeltaIterator {
             const remaining = this.current().size() - (this.offsetAtFragment + amount)
             if (remaining > 0) {
                 // take some of current and finish
-                if (!this.current().isDeletedByOther(this.branch)) ops.push(opGen(amount, this.current().attrs))
+                if (!this.current().isDeletedByOther(this.branch)) {
+                    ops.push(opGen(amount, this.current().attrs))
+                }
                 this.offsetAtFragment += amount
                 return { ops, diff: 0 }
             } else if (remaining === 0) {
                 // take rest of current and finish
-                if (!this.current().isDeletedByOther(this.branch))
+                if (!this.current().isDeletedByOther(this.branch)) {
                     ops.push(opGen(this.current().size() - this.offsetAtFragment, this.current().attrs))
+                }
                 this.nextFragment()
                 return { ops, diff: 0 }
             } else {
@@ -166,7 +172,9 @@ export class DeltaIterator {
         let retain = 0
         // if it's not visible, should advancefor tiebreak
         while (this.hasNext() && this.current().shouldAdvanceForTiebreak(this.branch)) {
-            if (!this.current().isDeleted()) retain += this.current().size() - this.offsetAtFragment
+            if (!this.current().isDeleted()) {
+                retain += this.current().size() - this.offsetAtFragment
+            }
             this.nextFragment()
         }
         return retain > 0 ? [{ retain }] : []

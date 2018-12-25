@@ -16,8 +16,11 @@ export class SharedString {
         const fs = _.reduce(
             delta.ops,
             (fragments: Fragment[], op) => {
-                if (typeof op.insert === 'string') fragments.push(Fragment.initial(op.insert, op.attributes))
-                else if (op.insert) fragments.push(Fragment.initialEmbedded(op.insert, op.attributes))
+                if (typeof op.insert === 'string') {
+                    fragments.push(Fragment.initial(op.insert, op.attributes))
+                } else if (op.insert) {
+                    fragments.push(Fragment.initialEmbedded(op.insert, op.attributes))
+                }
                 return fragments
             },
             [],
@@ -51,7 +54,9 @@ export class SharedString {
                     const opsWithDiff = deltaIter.attribute(retain, op.attributes)
                     newOps = newOps.concat(opsWithDiff.ops)
                     diff = opsWithDiff.diff
-                } else diff = retain
+                } else {
+                    diff = retain
+                }
             }
             // retain
             else if (op.retain) {
@@ -72,7 +77,9 @@ export class SharedString {
                     const opsWithDiff = deltaIter.delete(del)
                     newOps = newOps.concat(opsWithDiff.ops)
                     diff = opsWithDiff.diff
-                } else diff += op.delete
+                } else {
+                    diff += op.delete
+                }
             } else if (op.insert) {
                 let fragments: Fragment[] = []
                 let ops: Op[] = []

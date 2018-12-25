@@ -239,7 +239,9 @@ describe('flatten', () => {
             const ss = randomSharedString()
             const ss2 = ss.clone()
             const deltas = randomUserDeltas(ss.toText().length, 10)
-            for (const delta of deltas) ss.applyChange(delta, 'branch')
+            for (const delta of deltas) {
+                ss.applyChange(delta, 'branch')
+            }
 
             ss2.applyChange(flattenDeltas(...deltas), 'branch')
 

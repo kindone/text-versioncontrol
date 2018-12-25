@@ -11,13 +11,15 @@ export interface AttributeFragment {
 
 export class Fragment {
     public static initial(str: string, attrs?: AttributeMap): Fragment {
-        if (attrs) return new Fragment(str, { val: attrs })
-        else return new Fragment(str)
+        if (attrs) {
+            return new Fragment(str, { val: attrs })
+        } else return new Fragment(str)
     }
 
     public static initialEmbedded(obj: object, attrs?: AttributeMap): Fragment {
-        if (attrs) return new Fragment(new Embedded(obj), { val: attrs })
-        else return new Fragment(new Embedded(obj))
+        if (attrs) {
+            return new Fragment(new Embedded(obj), { val: attrs })
+        } else return new Fragment(new Embedded(obj))
     }
 
     public static insert(str: string, branch: string): Fragment {
@@ -134,8 +136,11 @@ export class Fragment {
     public toOp(): Op {
         let insert: string | object = ''
 
-        if (typeof this.val === 'string') insert = this.val
-        else insert = this.val.value
+        if (typeof this.val === 'string') {
+            insert = this.val
+        } else {
+            insert = this.val.value
+        }
 
         if (!this.attrs || _.isEmpty(this.attrs)) return { insert }
         else {
@@ -191,8 +196,11 @@ export class Fragment {
             // set or unset fields by mod
             const mod = this.attrs.mod[branch]
             for (const field in mod) {
-                if (mod[field] === null) delete projected[field]
-                else projected[field] = mod[field]
+                if (mod[field] === null) {
+                    delete projected[field]
+                } else {
+                    projected[field] = mod[field]
+                }
             }
         }
         return projected
@@ -203,7 +211,9 @@ export class Fragment {
 
         const result: AttributeMap = {}
         for (const field of Object.keys(this.attrs.val)) {
-            if (this.attrs.val[field] !== null) result[field] = this.attrs.val[field]
+            if (this.attrs.val[field] !== null) {
+                result[field] = this.attrs.val[field]
+            }
         }
         return result
     }
@@ -220,7 +230,10 @@ export class Fragment {
             ...attrToApply,
         }
 
-        if (this.attrs.val) return { val: this.attrs.val, mod: { ...this.attrs.mod, [branch]: branchAttr } }
-        else return { mod: { ...this.attrs.mod, [branch]: branchAttr } }
+        if (this.attrs.val) {
+            return { val: this.attrs.val, mod: { ...this.attrs.mod, [branch]: branchAttr } }
+        } else {
+            return { mod: { ...this.attrs.mod, [branch]: branchAttr } }
+        }
     }
 }

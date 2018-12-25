@@ -11,7 +11,9 @@ export class RepoServer {
     public docs: { [name: string]: DocServer } = {}
 
     constructor(docNames: string[]) {
-        for (const docName of docNames) this.docs[docName] = new DocServer(new History(docName))
+        for (const docName of docNames) {
+            this.docs[docName] = new DocServer(new History(docName))
+        }
     }
 
     public merge(syncRequest: RepoSyncRequest): RepoSyncResponse {

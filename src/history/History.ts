@@ -80,7 +80,9 @@ export class History implements IHistory {
         const ss = SharedString.fromDelta(baseRevText)
 
         let newDeltas: IDelta[] = []
-        for (const delta of deltas) newDeltas = newDeltas.concat(ss.applyChange(delta, '$append$'))
+        for (const delta of deltas) {
+            newDeltas = newDeltas.concat(ss.applyChange(delta, '$append$'))
+        }
 
         return { rev: fromRev + deltas.length, reqDeltas: newDeltas, resDeltas: [], content: ss.toDelta() }
     }
@@ -90,10 +92,14 @@ export class History implements IHistory {
         const ss = SharedString.fromDelta(baseRevText)
         const localDeltas = this.getChangesFrom(baseRev)
 
-        for (const localDelta of localDeltas) ss.applyChange(localDelta, this.name)
+        for (const localDelta of localDeltas) {
+            ss.applyChange(localDelta, this.name)
+        }
 
         let newDeltas: IDelta[] = []
-        for (const delta of remoteDeltas) newDeltas = newDeltas.concat(ss.applyChange(delta, branchName))
+        for (const delta of remoteDeltas) {
+            newDeltas = newDeltas.concat(ss.applyChange(delta, branchName))
+        }
 
         return {
             rev: baseRev + remoteDeltas.length + localDeltas.length,
@@ -118,7 +124,9 @@ export class History implements IHistory {
     public getTextAt(rev: number): string {
         const savepoint = this.getNearestSavepointForRev(rev)
         const ss = SharedString.fromDelta(savepoint.content)
-        for (let i = savepoint.rev; i < rev; i++) ss.applyChange(this.deltas[i - this.initialRev], '_')
+        for (let i = savepoint.rev; i < rev; i++) {
+            ss.applyChange(this.deltas[i - this.initialRev], '_')
+        }
 
         return ss.toText()
     }
@@ -130,7 +138,9 @@ export class History implements IHistory {
     public getContentAt(rev: number): IDelta {
         const savepoint = this.getNearestSavepointForRev(rev)
         const ss = SharedString.fromDelta(savepoint.content)
-        for (let i = savepoint.rev; i < rev; i++) ss.applyChange(this.deltas[i - this.initialRev], '_')
+        for (let i = savepoint.rev; i < rev; i++) {
+            ss.applyChange(this.deltas[i - this.initialRev], '_')
+        }
 
         return ss.toDelta()
     }
@@ -165,10 +175,14 @@ export class History implements IHistory {
         const ss = SharedString.fromDelta(baseRevText)
         let newDeltas: IDelta[] = []
 
-        for (const delta of remoteDeltas) ss.applyChange(delta, branchName)
+        for (const delta of remoteDeltas) {
+            ss.applyChange(delta, branchName)
+        }
 
         const localDeltas = this.getChangesFrom(baseRev)
-        for (const localDelta of localDeltas) newDeltas = newDeltas.concat(ss.applyChange(localDelta, this.name))
+        for (const localDelta of localDeltas) {
+            newDeltas = newDeltas.concat(ss.applyChange(localDelta, this.name))
+        }
 
         return {
             rev: baseRev + remoteDeltas.length + localDeltas.length,

@@ -59,8 +59,9 @@ export function normalizeTwoOps(op1: Op, op2: Op): Op[] {
     }
 
     if (typeof op1.insert === 'string' && typeof op2.insert === 'string' && op1.attributes && op2.attributes) {
-        if (_.isEqual(op1.attributes, op2.attributes))
+        if (_.isEqual(op1.attributes, op2.attributes)) {
             return [{ insert: (op1.insert as string).concat(op2.insert as string), attributes: op1.attributes }]
+        }
     }
 
     if (op1.delete && op2.delete) return [{ delete: op1.delete + op2.delete }]
@@ -79,11 +80,13 @@ export function normalizeOps(ops: Op[]): Op[] {
         if (normalized.length === 1) {
             newOps[newOps.length - 1] = normalized[0]
         } // 2
-        else newOps.push(normalized[1])
+        else {
+            newOps.push(normalized[1])
+        }
     }
-    if (newOps[newOps.length - 1].retain && !newOps[newOps.length - 1].attributes)
+    if (newOps[newOps.length - 1].retain && !newOps[newOps.length - 1].attributes) {
         return newOps.slice(0, newOps.length - 1)
-    else return newOps
+    } else return newOps
 }
 
 // remove all retain-only deltas in array
@@ -105,7 +108,9 @@ export function normalizeDeltasWithRevision(deltas: IDelta[], startRev: number):
     return _.reduce(
         deltas,
         (newChanges: Array<{ delta: IDelta; rev: number }>, change) => {
-            if (!isDeltaWithNoEffect(change)) newChanges.push({ delta: new Delta(normalizeOps(change.ops)), rev })
+            if (!isDeltaWithNoEffect(change)) {
+                newChanges.push({ delta: new Delta(normalizeOps(change.ops)), rev })
+            }
 
             rev++
 
@@ -158,13 +163,19 @@ export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boole
             // console.log('delete out:', outOps)
         } else if (typeof op.insert === 'string') {
             // insert string
-            if (op.attributes) outOps = outOps.concat(iter.insertWithAttribute(op.insert, op.attributes))
-            else outOps = outOps.concat(iter.insert(op.insert))
+            if (op.attributes) {
+                outOps = outOps.concat(iter.insertWithAttribute(op.insert, op.attributes))
+            } else {
+                outOps = outOps.concat(iter.insert(op.insert))
+            }
             // console.log('insert out:', outOps)
         } else if (op.insert) {
             // insert object
-            if (op.attributes) outOps = outOps.concat(iter.embedWithAttribute(op.insert, op.attributes))
-            else outOps = outOps.concat(iter.embed(op.insert))
+            if (op.attributes) {
+                outOps = outOps.concat(iter.embedWithAttribute(op.insert, op.attributes))
+            } else {
+                outOps = outOps.concat(iter.embed(op.insert))
+            }
             // console.log('insert out:', outOps)
         }
     }
@@ -191,12 +202,18 @@ export function flattenDeltas(...deltas: IDelta[]) {
                 outOps = outOps.concat(iter.delete(op.delete))
             } else if (typeof op.insert === 'string') {
                 // insert string
-                if (op.attributes) outOps = outOps.concat(iter.insertWithAttribute(op.insert, op.attributes))
-                else outOps = outOps.concat(iter.insert(op.insert))
+                if (op.attributes) {
+                    outOps = outOps.concat(iter.insertWithAttribute(op.insert, op.attributes))
+                } else {
+                    outOps = outOps.concat(iter.insert(op.insert))
+                }
             } else if (op.insert) {
                 // insert object
-                if (op.attributes) outOps = outOps.concat(iter.embedWithAttribute(op.insert, op.attributes))
-                else outOps = outOps.concat(iter.embed(op.insert))
+                if (op.attributes) {
+                    outOps = outOps.concat(iter.embedWithAttribute(op.insert, op.attributes))
+                } else {
+                    outOps = outOps.concat(iter.embed(op.insert))
+                }
             }
         }
         outOps = outOps.concat(iter.rest())

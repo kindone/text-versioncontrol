@@ -35,8 +35,11 @@ export class DeltaTransformer {
         if (this.current().insert) {
             const currentLength = opLength(this.current())
             this.nextOp()
-            if (!this.lastWins) return [{ retain: currentLength }, { insert: str }]
-            else return [{ insert: str }, { retain: currentLength }]
+            if (!this.lastWins) {
+                return [{ retain: currentLength }, { insert: str }]
+            } else {
+                return [{ insert: str }, { retain: currentLength }]
+            }
         } else {
             return [{ insert: str }]
         }
@@ -46,8 +49,11 @@ export class DeltaTransformer {
         if (this.current().insert) {
             const currentLength = opLength(this.current())
             this.nextOp()
-            if (!this.lastWins) return [{ retain: currentLength }, { insert: str, attributes }]
-            else return [{ insert: str, attributes }, { retain: currentLength }]
+            if (!this.lastWins) {
+                return [{ retain: currentLength }, { insert: str, attributes }]
+            } else {
+                return [{ insert: str, attributes }, { retain: currentLength }]
+            }
         } else {
             return [{ insert: str, attributes }]
         }
@@ -57,8 +63,11 @@ export class DeltaTransformer {
         if (this.current().insert) {
             const currentLength = opLength(this.current())
             this.nextOp()
-            if (!this.lastWins) return [{ retain: currentLength }, { insert: obj }]
-            else return [{ insert: obj }, { retain: currentLength }]
+            if (!this.lastWins) {
+                return [{ retain: currentLength }, { insert: obj }]
+            } else {
+                return [{ insert: obj }, { retain: currentLength }]
+            }
         } else {
             return [{ insert: obj }]
         }
@@ -68,8 +77,11 @@ export class DeltaTransformer {
         if (this.current().insert) {
             const currentLength = opLength(this.current())
             this.nextOp()
-            if (!this.lastWins) return [{ retain: currentLength }, { insert: obj, attributes }]
-            else return [{ insert: obj, attributes }, { retain: currentLength }]
+            if (!this.lastWins) {
+                return [{ retain: currentLength }, { insert: obj, attributes }]
+            } else {
+                return [{ insert: obj, attributes }, { retain: currentLength }]
+            }
         } else {
             return [{ insert: obj, attributes }]
         }
@@ -120,7 +132,9 @@ export class DeltaTransformer {
             const remaining = this.currentSize() - (this.offset + amount)
             if (remaining > 0) {
                 // take some of current and finish
-                if (!this.current().delete) ops = ops.concat(opGen(this.current(), this.offset, this.offset + amount))
+                if (!this.current().delete) {
+                    ops = ops.concat(opGen(this.current(), this.offset, this.offset + amount))
+                }
                 this.offset += amount
                 return ops
             } else if (remaining === 0) {
@@ -132,7 +146,9 @@ export class DeltaTransformer {
                 // overwhelms current fragment
                 // first take rest of current
                 const takeAmount = this.currentSize() - this.offset
-                if (!this.current().delete) ops = ops.concat(opGen(this.current(), this.offset))
+                if (!this.current().delete) {
+                    ops = ops.concat(opGen(this.current(), this.offset))
+                }
                 // adjust amount
                 amount -= takeAmount // > 0 by condition
                 this.nextOp()

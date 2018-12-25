@@ -3,14 +3,13 @@ import { History, IHistory } from '../history/History'
 import { SyncResponse } from '../history/SyncResponse'
 import { IDelta } from '../primitive/IDelta'
 
-
 export class DocClient {
     private history: IHistory
     private synchedRev: number = 0
     private synchedClientRev: number = 0
     private pending: IDelta[] = []
 
-    constructor(history:IHistory = new History('client')) {
+    constructor(history: IHistory = new History('client')) {
         this.history = history
     }
 
@@ -23,7 +22,7 @@ export class DocClient {
         this.history.merge({
             rev: this.synchedClientRev,
             branchName: 'server',
-            deltas: response.resDeltas
+            deltas: response.resDeltas,
         })
         this.synchedRev = response.rev
         this.synchedClientRev = this.history.getCurrentRev()
@@ -34,7 +33,7 @@ export class DocClient {
         return {
             rev: this.synchedRev,
             branchName: this.history.name,
-            deltas: this.pending
+            deltas: this.pending,
         }
     }
 

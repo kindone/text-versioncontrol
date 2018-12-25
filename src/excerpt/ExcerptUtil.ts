@@ -1,25 +1,19 @@
-import Delta = require("quill-delta")
-import AttributeMap from "quill-delta/dist/AttributeMap"
-import Op from "quill-delta/dist/Op"
-import { IDelta } from "../primitive/IDelta"
-import { ExcerptSource } from "./ExcerptSource"
+import Delta = require('quill-delta')
+import AttributeMap from 'quill-delta/dist/AttributeMap'
+import Op from 'quill-delta/dist/Op'
+import { IDelta } from '../primitive/IDelta'
+import { ExcerptSource } from './ExcerptSource'
 
-
-
-export class ExcerptUtil
-{
-
-    public static take(start:number, end:number, length:number):IDelta {
+export class ExcerptUtil {
+    public static take(start: number, end: number, length: number): IDelta {
         // ....start....end...length
-        const ops:Op[] = []
+        const ops: Op[] = []
         const retain = end - start
-        if(start > 0)
-            ops.push({delete:start})
+        if (start > 0) ops.push({ delete: start })
 
-        ops.push({retain})
+        ops.push({ retain })
 
-        if(length - end > 0)
-            ops.push({delete:(length - end)})
+        if (length - end > 0) ops.push({ delete: length - end })
 
         return new Delta(ops)
     }

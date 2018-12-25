@@ -1,4 +1,4 @@
-import { IDelta } from "../primitive/IDelta"
+import { IDelta } from '../primitive/IDelta'
 
 export interface SyncResponse {
     rev: number
@@ -6,3 +6,5 @@ export interface SyncResponse {
     reqDeltas: IDelta[]
     resDeltas: IDelta[]
 }
+
+export type MergeResult = SyncResponse

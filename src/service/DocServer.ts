@@ -1,11 +1,11 @@
 import { History, IHistory } from '../history/History'
-import { SyncRequest } from '../history/SyncRequest';
-import { SyncResponse } from '../history/SyncResponse';
+import { SyncRequest } from '../history/SyncRequest'
+import { SyncResponse } from '../history/SyncResponse'
 
 export class DocServer {
     private history: IHistory
 
-    constructor(history:IHistory = new History('server')) {
+    constructor(history: IHistory = new History('server')) {
         this.history = history
     }
 

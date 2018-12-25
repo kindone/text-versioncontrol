@@ -1,11 +1,5 @@
-import { IDelta } from "../primitive/IDelta";
+import { IDelta } from '../primitive/IDelta'
 
-export class ExcerptTarget
-{
-    constructor(
-        public rev:number,
-        public offset:number,
-        public length:number) {
-
-    }
+export class ExcerptTarget {
+    constructor(public rev: number, public offset: number, public length: number) {}
 }

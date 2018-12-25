@@ -2,23 +2,20 @@ export enum Status {
     INITIAL = 0,
     DELETED,
     INSERTED,
-    INSERTED_THEN_DELETED
+    INSERTED_THEN_DELETED,
 }
 
-export class Modification
-{
+export class Modification {
     public readonly insertedBy?: string
     public readonly deletedBy: Set<string>
 
-    constructor(insertedBy?:string, deletedBy:Set<string> = new Set())
-    {
+    constructor(insertedBy?: string, deletedBy: Set<string> = new Set()) {
         this.insertedBy = insertedBy
         this.deletedBy = deletedBy
     }
 
-    public get status():Status {
-        if(this.insertedBy)
-        {
+    public get status(): Status {
+        if (this.insertedBy) {
             return this.isDeleted() ? Status.INSERTED_THEN_DELETED : Status.INSERTED
         }
         return this.isDeleted() ? Status.DELETED : Status.INITIAL
@@ -51,7 +48,7 @@ export class Modification
     public shouldAdvanceForTiebreak(branch: string) {
         // use tiebreaking string comparison on inserted branch
         // not an initial insert
-        return (this.insertedBy !== undefined && this.insertedBy < branch)// || (this.insertedBy === undefined && this.isDeletedBy(branch))
+        return this.insertedBy !== undefined && this.insertedBy < branch // || (this.insertedBy === undefined && this.isDeletedBy(branch))
     }
 
     public isInserted() {
@@ -72,13 +69,12 @@ export class Modification
     // }
 
     public equals(md: Modification) {
-        if(this.deletedBy.size !== md.deletedBy.size) {
+        if (this.deletedBy.size !== md.deletedBy.size) {
             return false
         }
 
-        for (const elem in this.deletedBy)
-        {
-            if(!md.deletedBy.has(elem)) {
+        for (const elem in this.deletedBy) {
+            if (!md.deletedBy.has(elem)) {
                 return false
             }
         }

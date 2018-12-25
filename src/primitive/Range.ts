@@ -1,5 +1,5 @@
-import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
+import { ExDelta } from './ExDelta'
 import { IDelta } from './IDelta'
 import { SharedString } from './SharedString'
 import { normalizeOps, normalizeDeltas, deltaLength } from './util'
@@ -95,11 +95,11 @@ export class Range {
     public cropContent(content: IDelta): IDelta {
         const ss = SharedString.fromDelta(content)
         const length = deltaLength(content)
-        const cropper = new Delta([
+        const cropper = new ExDelta([
             { delete: this.start },
             { retain: this.end - this.start },
             { delete: length - this.end },
-        ])
+        ], content.source)
         ss.applyChange(cropper, 'any')
         return ss.toDelta()
     }
@@ -179,7 +179,7 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new Delta(normalizeOps(ops))
+        return new ExDelta(normalizeOps(ops), delta.source)
     }
 
     public cropChangeOpen(delta: IDelta, debug = false): IDelta {
@@ -244,6 +244,6 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new Delta(normalizeOps(ops))
+        return new ExDelta(normalizeOps(ops), delta.source)
     }
 }

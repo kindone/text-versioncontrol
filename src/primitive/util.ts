@@ -4,7 +4,8 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
-import { IDelta } from './IDelta'
+import { ExDelta } from './ExDelta'
+import { IDelta, Source } from './IDelta'
 
 export function JSONStringify(obj: any) {
     return JSON.stringify(obj, (key: string, value: any) => {
@@ -27,8 +28,8 @@ export function expectEqual(obj1: any, obj2: any, msg: string = 'Not equal: ') {
 }
 
 export function asDelta(content: string | IDelta): IDelta {
-    if (content === '') return new Delta([])
-    else if (typeof content === 'string') return new Delta([{ insert: content }])
+    if (content === '') return new ExDelta([])
+    else if (typeof content === 'string') return new ExDelta([{ insert: content }])
     else return content as IDelta
 }
 
@@ -46,7 +47,7 @@ export function deltaLength(delta: IDelta): number {
 
 export function transformPosition(position: number, deltas: IDelta[]): number {
     for (const delta of deltas) {
-        const d = new Delta(delta.ops)
+        const d = new ExDelta(delta.ops)
         position = d.transformPosition(position)
     }
 
@@ -95,7 +96,7 @@ export function normalizeDeltas(deltas: IDelta[]): IDelta[] {
         deltas,
         (newChanges: IDelta[], change) => {
             if (!isDeltaWithNoEffect(change)) {
-                newChanges.push(new Delta(normalizeOps(change.ops)))
+                newChanges.push(new ExDelta(normalizeOps(change.ops), change.source))
                 return newChanges
             } else return newChanges
         },
@@ -109,7 +110,7 @@ export function normalizeDeltasWithRevision(deltas: IDelta[], startRev: number):
         deltas,
         (newChanges: Array<{ delta: IDelta; rev: number }>, change) => {
             if (!isDeltaWithNoEffect(change)) {
-                newChanges.push({ delta: new Delta(normalizeOps(change.ops)), rev })
+                newChanges.push({ delta: new ExDelta(normalizeOps(change.ops), change.source), rev })
             }
 
             rev++
@@ -120,7 +121,7 @@ export function normalizeDeltasWithRevision(deltas: IDelta[], startRev: number):
     )
 }
 
-export function isDeltaWithNoEffect(delta: IDelta) {
+export function isDeltaWithNoEffect(delta: IDelta):boolean {
     for (const op of delta.ops) {
         if (op.insert || op.delete) {
             return false
@@ -141,7 +142,7 @@ export function isDeltaWithNoEffect(delta: IDelta) {
 //     return flattened
 // }
 
-export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boolean) {
+export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boolean):IDelta {
     const iter = new DeltaTransformer(delta1.ops, firstWins)
     let outOps: Op[] = []
     // console.log('delta2:', delta2.ops)
@@ -179,13 +180,15 @@ export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boole
             // console.log('insert out:', outOps)
         }
     }
-    return new Delta(normalizeOps(outOps))
+    return new ExDelta(normalizeOps(outOps), delta2.source)
 }
 
-export function flattenDeltas(...deltas: IDelta[]) {
-    if (deltas.length === 0) return new Delta()
+export function flattenDeltas(...deltas: IDelta[]):IDelta {
+    if (deltas.length === 0) return new ExDelta()
 
     let flattened: IDelta = deltas[0]
+    let source:Source|undefined = deltas[0].source
+
     for (const delta2 of deltas.slice(1)) {
         const iter = new DeltaComposer(flattened.ops)
         let outOps: Op[] = []
@@ -217,12 +220,15 @@ export function flattenDeltas(...deltas: IDelta[]) {
             }
         }
         outOps = outOps.concat(iter.rest())
-        flattened = new Delta(outOps)
+        source = source || delta2.source
+        flattened = new ExDelta(outOps)
     }
-    return new Delta(normalizeOps(flattened.ops))
+    if(source)
+        console.error('warning: source information will be lost by flatten')
+    return new ExDelta(normalizeOps(flattened.ops))
 }
 
-export function opLength(op: Op) {
+export function opLength(op: Op):number {
     if (typeof op.insert === 'string') return op.insert.length
     else if (op.insert) return 1
     else if (op.retain) return op.retain

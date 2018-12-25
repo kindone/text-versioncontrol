@@ -3,6 +3,7 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { Excerpt, ExcerptSource, ExcerptSync, ExcerptTarget, ExcerptUtil } from './excerpt'
 import { History, IHistory } from './history/History'
+import { ExDelta } from './primitive/ExDelta'
 import { IDelta } from './primitive/IDelta'
 import { Range } from './primitive/Range'
 import {
@@ -14,9 +15,9 @@ import {
     expectEqual,
 } from './primitive/util'
 
+
 export class Document {
     private readonly history: IHistory
-    private excerpts: Excerpt[] = []
 
     constructor(public readonly uri: string, content: string | IDelta) {
         this.history = new History(uri, asDelta(content))
@@ -24,10 +25,6 @@ export class Document {
 
     public getCurrentRev(): number {
         return this.history.getCurrentRev()
-    }
-
-    public getExcerpts(): Excerpt[] {
-        return this.excerpts
     }
 
     public getContent(): IDelta {
@@ -78,8 +75,7 @@ export class Document {
         const target = new ExcerptTarget(rev, offset, deltaLength(source.content))
 
         const ops: Op[] = [{ retain: offset }]
-        this.history.append([new Delta(ops.concat(source.content.ops))])
-        this.excerpts.push(new Excerpt(source, target))
+        this.history.append([new ExDelta(ops.concat(source.content.ops), source)])
         return target
     }
 
@@ -140,19 +136,6 @@ export class Document {
         const newTargetRange = targetRange.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
 
         const targetRev = this.getCurrentRev() + 1
-
-        const replaceMarkers: IDelta = new Delta([
-            { retain: targetRange.start },
-            { retain: targetRange.end - targetRange.start },
-        ])
-
-        if (adjustedSourceChanges.length > 0)
-            adjustedSourceChanges[adjustedSourceChanges.length - 1] = flattenTransformedDelta(
-                adjustedSourceChanges[adjustedSourceChanges.length - 1],
-                replaceMarkers,
-            )
-        else adjustedSourceChanges[0] = replaceMarkers
-
         this.merge(target.rev, adjustedSourceChanges)
         return new ExcerptTarget(this.getCurrentRev(), newTargetRange.start, newTargetRange.end - newTargetRange.start)
     }

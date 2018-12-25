@@ -4,7 +4,7 @@ import * as _ from 'underscore'
 import { DeltaIterator } from './DeltaIterator'
 import { Fragment } from './Fragment'
 import { FragmentIterator, IResult } from './FragmentIterator'
-import { IDelta } from './IDelta'
+import { IDelta, Source } from './IDelta'
 import { normalizeOps } from './util'
 
 export class SharedString {
@@ -26,13 +26,15 @@ export class SharedString {
             [],
         )
 
-        return new SharedString(fs)
+        return new SharedString(fs, delta.source)
     }
 
     private fragments: Fragment[]
+    private source?:Source
 
-    constructor(fragments: Fragment[]) {
+    constructor(fragments: Fragment[], source?:Source) {
         this.fragments = fragments
+        this.source = source
     }
 
     public applyChange(delta: IDelta, branch: string, debug = false): IDelta {
@@ -106,13 +108,15 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        return new Delta(normalizeOps(newOps))
+        if(delta.source) return {ops: normalizeOps(newOps), source: delta.source }
+        else return {ops: normalizeOps(newOps) }
     }
 
     public clone() {
-        return new SharedString(this.fragments.concat())
+        return new SharedString(this.fragments.concat(), this.source)
     }
 
+    // TODO: source not considered
     public equals(ss: SharedString) {
         if (this.fragments.length !== ss.fragments.length) return false
 
@@ -140,8 +144,8 @@ export class SharedString {
             },
             [],
         )
-
-        return new Delta(ops)
+        if(this.source) return {ops, source: this.source}
+        else return {ops}
     }
 
     public toDelta(): IDelta {
@@ -155,7 +159,8 @@ export class SharedString {
             [],
         )
 
-        return new Delta(normalizeOps(ops))
+        if(this.source) return {ops: normalizeOps(ops), source: this.source}
+        else return {ops: normalizeOps(ops)}
     }
 
     public toHtml() {
@@ -165,7 +170,7 @@ export class SharedString {
     }
 
     public toString() {
-        return this.fragments
+        return {fragments: this.fragments, source: this.source}
     }
 
     public getFragmentAtIdx(idx: number, branch: string): Fragment | null {

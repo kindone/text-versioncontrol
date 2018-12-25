@@ -21,7 +21,7 @@ describe('Excerpt', () => {
         const source1 = doc1.takeExcerpt(0, 4) // Your
         expectEqual(
             JSONStringify(source1),
-            JSONStringify({ uri: 'doc1', rev: 2, start: 0, end: 4, content: { ops: [{ insert: 'Your' }] } }),
+            JSONStringify({ uri: 'doc1', rev: 2, start: 0, end: 4, content: { ops: [{ insert: 'Your' }] }, type: 'content' }),
         )
 
         const pasted = doc2.pasteExcerpt(5, source1)
@@ -58,7 +58,6 @@ describe('Excerpt', () => {
         console.log('targetInfo:', JSONStringify(target1))
 
         console.log('phases2.doc2: ', JSONStringify(doc2.getContent()))
-        console.log('phases2.doc2.excerpts: ', JSONStringify(doc2.getExcerpts()))
 
         const doc1ChangesAfter = [
             new Delta([{ insert: "No, It's " }, { delete: 4 }, { insert: 'Our' }]), // +8, No, it's Our

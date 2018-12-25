@@ -1,8 +1,6 @@
-import Delta = require('quill-delta')
-import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
+import { ExDelta } from '../primitive/ExDelta'
 import { IDelta } from '../primitive/IDelta'
-import { ExcerptSource } from './ExcerptSource'
 
 export class ExcerptUtil {
     public static take(start: number, end: number, length: number): IDelta {
@@ -15,7 +13,7 @@ export class ExcerptUtil {
 
         if (length - end > 0) ops.push({ delete: length - end })
 
-        return new Delta(ops)
+        return new ExDelta(ops)
     }
 
     // public static excerptMarker(sourceUri:string, sourceRev:number, targetRev:number): {begin:AttributeMap, end:AttributeMap}

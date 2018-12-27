@@ -12,9 +12,4 @@ export class ExcerptSource {
         public end: number,
         public content: IDelta,
     ) {}
-
-    public getSource():Source {
-        const {uri, rev, start, end} = this
-        return {type: 'content', uri, rev, start, end}
-    }
 }

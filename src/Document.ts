@@ -84,20 +84,8 @@ export class Document {
         const rev = this.getCurrentRev()
         const initialRange = new Range(source.start, source.end)
         const changes = this.getChangesFrom(source.rev)
-        const rangeTransformed = initialRange.applyChanges(changes)
         const croppedChanges = initialRange.cropChanges(changes)
-
-        {
-            const changesString = JSONStringify(changes)
-            const excerpt1 = this.takeExcerpt(rangeTransformed.start, rangeTransformed.end)
-            const flattenedChange = flattenDeltas(...changes)
-            const flattenedRange = initialRange.applyChangeOpen(flattenedChange)
-            const excerpt2 = this.takeExcerpt(flattenedRange.start, flattenedRange.end)
-
-            // expectEqual([initialRange.applyChange(flattenDeltas(...changes))], rangeTransformed)
-            // expectEqual([initialRange.cropChange(flattenDeltas(...changes))], croppedChanges)
-            // expectEqual(this.takeExcerpt(rangeTransformed.start, rangeTransformed.end-rangeTransformed.start))
-        }
+        const rangeTransformed = initialRange.applyChanges(changes)
 
         return { uri, rev, changes: croppedChanges, range: rangeTransformed }
     }
@@ -106,17 +94,29 @@ export class Document {
         const uri = source.uri
         const rev = source.rev + 1
         const initialRange = new Range(source.start, source.end)
-        const changesSince = this.getChangesFromTo(source.rev, source.rev) // only 1
-        const rangeTransformed = initialRange.applyChanges(changesSince)
-        const croppedSourceChanges = initialRange.cropChanges(changesSince)
+        const changes = this.getChangesFromTo(source.rev, source.rev) // only 1 change
+        const croppedChanges = initialRange.cropChanges(changes)
+        const rangeTransformed = initialRange.applyChanges(changes)
 
-        return { uri, rev, changes: croppedSourceChanges, range: rangeTransformed }
+        return { uri, rev, changes: croppedChanges, range: rangeTransformed }
     }
 
     public syncExcerpt(sync: ExcerptSync, target: ExcerptTarget): ExcerptTarget {
-        const targetRange = new Range(target.offset, target.offset + target.length)
+        const rangeAtTarget = new Range(target.offset, target.offset + target.length)
 
-        let adjustedSourceChanges = _.map(
+        const syncChanges = this.transformSyncChanges(sync, target)
+
+        const simulateResult = this.history.simulateMergeAt(target.rev, syncChanges, '$simulate$')
+        const newTargetRange = rangeAtTarget.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
+
+        const targetRev = this.getCurrentRev() + 1
+        this.merge(target.rev, syncChanges)
+        return new ExcerptTarget(this.getCurrentRev(), newTargetRange.start, newTargetRange.end - newTargetRange.start)
+    }
+
+    private transformSyncChanges(sync: ExcerptSync, target:ExcerptTarget):IDelta[]
+    {
+        const shiftedSyncChanges = _.map(
             sync.changes,
             change => {
                 // adjust offset
@@ -130,13 +130,8 @@ export class Document {
             [],
         )
 
-        adjustedSourceChanges = [flattenDeltas(...adjustedSourceChanges)]
-
-        const simulateResult = this.history.simulateMergeAt(target.rev, adjustedSourceChanges, '$simulate$')
-        const newTargetRange = targetRange.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
-
-        const targetRev = this.getCurrentRev() + 1
-        this.merge(target.rev, adjustedSourceChanges)
-        return new ExcerptTarget(this.getCurrentRev(), newTargetRange.start, newTargetRange.end - newTargetRange.start)
+        const flattenedSyncChange = flattenDeltas(...shiftedSyncChanges)
+        flattenedSyncChange.source = {type: 'change', uri: sync.uri, rev: sync.rev, start: sync.range.start, end: sync.range.end}
+        return [flattenedSyncChange]
     }
 }

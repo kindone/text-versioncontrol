@@ -1,3 +1,4 @@
+import * as chalk from 'chalk'
 import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
@@ -7,7 +8,9 @@ import { IDelta } from '../primitive/IDelta'
 import { Range } from '../primitive/Range'
 import { deltaLength, JSONStringify, normalizeOps, expectEqual } from '../primitive/util'
 
+
 describe('Excerpt', () => {
+
     it('Document excerpt', () => {
         const doc1 = new Document('doc1', 'My Document 1')
         const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
@@ -188,4 +191,24 @@ describe('Excerpt', () => {
 
     //   }
     // })
+})
+
+
+describe('Recursive Excerpts', () => {
+    it('Self', () => {
+        const source = chalk.default.cyan
+        const target = chalk.default.red
+        const inserted = chalk.default.green
+        const changes = [
+            'abcd',
+            source('[') + 'ab' + target('[') + 'abcd' + target(']') + 'cd' + source(']'),
+            source('[') + 'ab' + target('[') + 'ab' + inserted('x') + 'cd' + target(']') + 'cd' + source(']')
+        ]
+        let i = 0
+        for(const change of changes) {
+            console.log('rev ' + (i++) + ': ' + change)
+        }
+
+
+    })
 })

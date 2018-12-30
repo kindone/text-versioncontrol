@@ -223,8 +223,8 @@ export function flattenDeltas(...deltas: IDelta[]):IDelta {
         source = source || delta2.source
         flattened = new ExDelta(outOps)
     }
-    if(source)
-        console.error('warning: source information will be lost by flatten')
+    // if(source)
+    //     console.error('warning: source information will be lost by flatten')
     return new ExDelta(normalizeOps(flattened.ops))
 }
 

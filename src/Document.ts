@@ -3,6 +3,7 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { Excerpt, ExcerptSource, ExcerptSync, ExcerptTarget, ExcerptUtil } from './excerpt'
 import { History, IHistory } from './history/History'
+import { SyncResponse } from './history/SyncResponse'
 import { ExDelta } from './primitive/ExDelta'
 import { IDelta } from './primitive/IDelta'
 import { Range } from './primitive/Range'
@@ -14,6 +15,7 @@ import {
     flattenDeltas,
     expectEqual,
 } from './primitive/util'
+
 
 
 export class Document {
@@ -106,16 +108,18 @@ export class Document {
 
         const syncChanges = this.transformSyncChanges(sync, target)
 
-        const simulateResult = this.history.simulateMergeAt(target.rev, syncChanges, '$simulate$')
-        const newTargetRange = rangeAtTarget.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
+        const simulateResult = this.simulateMergeAt(target.rev, syncChanges)
+        const newRangeAtTarget = rangeAtTarget.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
 
-        const targetRev = this.getCurrentRev() + 1
         this.merge(target.rev, syncChanges)
-        return new ExcerptTarget(this.getCurrentRev(), newTargetRange.start, newTargetRange.end - newTargetRange.start)
+        return new ExcerptTarget(this.getCurrentRev(), newRangeAtTarget.start, newRangeAtTarget.end - newRangeAtTarget.start)
     }
+
+    /** private methods */
 
     private transformSyncChanges(sync: ExcerptSync, target:ExcerptTarget):IDelta[]
     {
+        // adjust offset to target
         const shiftedSyncChanges = _.map(
             sync.changes,
             change => {
@@ -130,8 +134,15 @@ export class Document {
             [],
         )
 
+        // flatten changes to one
         const flattenedSyncChange = flattenDeltas(...shiftedSyncChanges)
+        // add source info to delta
         flattenedSyncChange.source = {type: 'change', uri: sync.uri, rev: sync.rev, start: sync.range.start, end: sync.range.end}
         return [flattenedSyncChange]
+    }
+
+    private simulateMergeAt(rev:number, changes:IDelta[]):SyncResponse
+    {
+        return this.history.simulateMergeAt(rev, changes, '$simulate$')
     }
 }

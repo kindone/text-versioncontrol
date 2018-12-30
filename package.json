@@ -1,6 +1,6 @@
 {
   "name": "text-versioncontrol",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Text Version Control",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -35,7 +35,9 @@
     "underscore": "^1.9.1"
   },
   "dependencies": {
+    "@types/chalk": "^2.2.0",
     "@types/deep-equal": "^1.0.1",
+    "chalk": "^2.4.1",
     "deep-equal": "^1.0.1",
     "quill-delta": "^4.1.0"
   }

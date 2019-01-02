@@ -169,6 +169,12 @@ export class SharedString {
         }, '')
     }
 
+    public toStyledJSON() {
+        return _.reduce(this.fragments, (result: object[], fragment) => {
+            return result.concat(fragment.toStyledJSON())
+        }, [])
+    }
+
     public toString() {
         return {fragments: this.fragments, source: this.source}
     }

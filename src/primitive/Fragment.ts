@@ -191,6 +191,23 @@ export class Fragment {
         }
     }
 
+    public toStyledJSON(): object {
+        // TODO: attributes
+        const valueStr = typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val.toString()}
+        switch (this.mod.status) {
+            case Status.INITIAL:
+                return {'type': 'initial', 'value': valueStr}
+            case Status.INSERTED_THEN_DELETED:
+            case Status.DELETED: {
+                 return {'type': 'deleted', 'value': valueStr}
+            }
+            case Status.INSERTED:
+                return {'type': 'inserted', 'value': valueStr}
+            default:
+                return {'type': 'unknown', 'value': valueStr}
+        }
+    }
+
 
 
     // flattened attributes

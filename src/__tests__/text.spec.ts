@@ -92,6 +92,7 @@ describe('hand-made scenarios', () => {
         }
         expect(str2.toText()).toBe('fdghe')
         console.log('html:', str2.toHtml(false))
+        console.log('json:', str2.toStyledJSON())
     })
 })
 

@@ -1,4 +1,6 @@
 src
+lib
+coverage
 tsconfig.json
 tslint.json
 .prettierrc

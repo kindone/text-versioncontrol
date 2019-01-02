@@ -91,6 +91,7 @@ describe('hand-made scenarios', () => {
             console.log(JSONStringify(str2))
         }
         expect(str2.toText()).toBe('fdghe')
+        console.log('html:', str2.toHtml(false))
     })
 })
 

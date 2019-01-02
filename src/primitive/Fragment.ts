@@ -161,26 +161,37 @@ export class Fragment {
         }
     }
 
-    public toHtml(): string {
+    public toHtml(includeBranches = true): string {
         // TODO: attributes
-        const valueStr = typeof this.val === 'string' ? this.val : `<span class='embed'>${this.val.toString()}</span>`
+        const valueStr = typeof this.val === 'string' ? this.val : `<span class='fragment-embed'>${this.val.toString()}</span>`
         switch (this.mod.status) {
             case Status.INITIAL:
-                return valueStr
+                return `<span class='fragment-initial'>${valueStr}</span>`
             case Status.DELETED: {
                 const Bclasses = _.map(Array.from(this.mod.deletedBy), key => {
                     return 'B' + key
                 })
-                return `<span class='deleted ${Bclasses}'>${valueStr}</span>`
+                if(includeBranches)
+                    return `<span class='fragment-deleted ${Bclasses}'>${valueStr}</span>`
+                else
+                    return `<span class='fragment-deleted'>${valueStr}</span>`
             }
             case Status.INSERTED:
-                return `<span class='inserted B${this.mod.insertedBy}'>${valueStr}</span>`
+                if(includeBranches)
+                    return `<span class='fragment-inserted B${this.mod.insertedBy}'>${valueStr}</span>`
+                else
+                    return `<span class='fragment-inserted'>${valueStr}</span>`
             case Status.INSERTED_THEN_DELETED:
-                return `<span class='inserted deleted B${this.mod.insertedBy}'>${valueStr}</span>`
+                if(includeBranches)
+                    return `<span class='fragment-inserted fragment-deleted B${this.mod.insertedBy}'>${valueStr}</span>`
+                else
+                    return `<span class='fragment-inserted fragment-deleted'>${valueStr}</span>`
             default:
                 return ''
         }
     }
+
+
 
     // flattened attributes
     public getAttributes(): AttributeMap {

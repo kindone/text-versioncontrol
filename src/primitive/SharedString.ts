@@ -163,10 +163,10 @@ export class SharedString {
         else return {ops: normalizeOps(ops)}
     }
 
-    public toHtml() {
+    public toHtml(includeBranches = true) {
         return _.reduce(this.fragments, (result: string, fragment) => {
-            return result.concat(fragment.toHtml())
-        })
+            return result + (fragment.toHtml(includeBranches))
+        }, '')
     }
 
     public toString() {

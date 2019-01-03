@@ -170,7 +170,7 @@ export class SharedString {
     }
 
     public toStyledJSON() {
-        return _.reduce(this.fragments, (result: object[], fragment) => {
+        return _.reduce(this.fragments, (result: Array<{type:string, value:string|{type:string, value:string}}>, fragment) => {
             return result.concat(fragment.toStyledJSON())
         }, [])
     }

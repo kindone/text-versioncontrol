@@ -191,7 +191,7 @@ export class Fragment {
         }
     }
 
-    public toStyledJSON(): object {
+    public toStyledJSON(): {type:string, value:string|{type:string, value:string}} {
         // TODO: attributes
         const valueStr = typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val.toString()}
         switch (this.mod.status) {

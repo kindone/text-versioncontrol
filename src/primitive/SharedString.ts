@@ -2,7 +2,7 @@ import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { DeltaIterator } from './DeltaIterator'
-import { Fragment } from './Fragment'
+import { Fragment, JSONStyle } from './Fragment'
 import { FragmentIterator, IResult } from './FragmentIterator'
 import { IDelta, Source } from './IDelta'
 import { normalizeOps } from './util'
@@ -170,7 +170,7 @@ export class SharedString {
     }
 
     public toStyledJSON() {
-        return _.reduce(this.fragments, (result: Array<{type:string, value:string|{type:string, value:string}}>, fragment) => {
+        return _.reduce(this.fragments, (result: JSONStyle[], fragment) => {
             return result.concat(fragment.toStyledJSON())
         }, [])
     }

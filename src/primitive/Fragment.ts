@@ -3,6 +3,7 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { Embedded } from './Embedded'
 import { Modification, Status } from './Modification'
+import { JSONStringify } from './util';
 
 export interface AttributeFragment {
     val?: AttributeMap
@@ -11,7 +12,7 @@ export interface AttributeFragment {
 
 export interface JSONEmbed {
     type:'embed'
-    value:string
+    value:object
 }
 
 export interface JSONStyle {
@@ -173,7 +174,7 @@ export class Fragment {
 
     public toHtml(includeBranches = true): string {
         // TODO: attributes
-        const valueStr = typeof this.val === 'string' ? this.val : `<span class='fragment-embed'>${this.val.toString()}</span>`
+        const valueStr = typeof this.val === 'string' ? this.val : `<span class='fragment-embed'>${JSONStringify(this.val)}</span>`
         switch (this.mod.status) {
             case Status.INITIAL:
                 return `<span class='fragment-initial'>${valueStr}</span>`
@@ -203,7 +204,7 @@ export class Fragment {
 
     public toStyledJSON():JSONStyle {
         // TODO: attributes
-        const valueStr:string|JSONEmbed = typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val.toString()}
+        const valueStr:string|JSONEmbed = typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val}
         switch (this.mod.status) {
             case Status.INITIAL:
                 return {'type': 'initial', 'value': valueStr}

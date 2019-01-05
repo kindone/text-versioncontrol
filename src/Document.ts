@@ -14,6 +14,7 @@ import {
     flattenTransformedDelta,
     flattenDeltas,
     expectEqual,
+    normalizeDeltas,
 } from './primitive/util'
 
 
@@ -89,10 +90,11 @@ export class Document {
         const rev = this.getCurrentRev()
         const initialRange = new Range(source.start, source.end)
         const changes = this.getChangesFrom(source.rev)
-        const croppedChanges = initialRange.cropChanges(changes)
-        const rangeTransformed = initialRange.applyChanges(changes)
+        const croppedChanges = normalizeDeltas(initialRange.cropChanges(changes))
+        // normalizeDeltas(croppedChanges)
+        const rangesTransformed = initialRange.mapChanges(changes)
 
-        return { uri, rev, changes: croppedChanges, range: rangeTransformed }
+        return { uri, rev, changes: croppedChanges, ranges: rangesTransformed }
     }
 
     public getSingleSyncSinceExcerpted(source: ExcerptSource): ExcerptSync {
@@ -101,9 +103,10 @@ export class Document {
         const initialRange = new Range(source.start, source.end)
         const changes = this.getChangesFromTo(source.rev, source.rev) // only 1 change
         const croppedChanges = initialRange.cropChanges(changes)
-        const rangeTransformed = initialRange.applyChanges(changes)
+        // normalizeDeltas(croppedChanges)
+        const rangesTransformed = initialRange.mapChanges(changes)
 
-        return { uri, rev, changes: croppedChanges, range: rangeTransformed }
+        return { uri, rev, changes: croppedChanges, ranges: rangesTransformed }
     }
 
     public syncExcerpt(sync: ExcerptSync, target: ExcerptTarget): ExcerptTarget {
@@ -114,19 +117,23 @@ export class Document {
         let targetRange = initialTargetRange
         let sourceRev = sync.rev - syncChanges.length
         let targetRev = target.rev
+        let i = 0
         for(const syncChange of syncChanges) {
             const simulateResult = this.simulateMergeAt(target.rev, [syncChange])
             const changes = simulateResult.resDeltas.concat(simulateResult.reqDeltas)
 
             const newTargetRange = targetRange.applyChanges(changes)
-            const {excerpted} = ExcerptUtil.excerptMarker(sync.uri, sourceRev++, this.getCurrentRev() + 1, newTargetRange.end - newTargetRange.start)
+            const {excerpted} = ExcerptUtil.excerptMarker(sync.uri, sourceRev, this.getCurrentRev() + 1, newTargetRange.end - newTargetRange.start)
             const replaceMarker = new Delta([
                 {retain: targetRange.start},
                 {delete: 1},
                 {insert: excerpted}])
             const flattened = flattenTransformedDelta(syncChange, replaceMarker)
+            const sourceRange = sync.ranges[i++]
+            flattened.source = {type: 'change', uri: sync.uri, rev: sourceRev, start: sourceRange.start, end: sourceRange.end}
             this.merge(targetRev, [flattened])
             // console.log('transformedSync: ', `${targetRev}->${this.getCurrentRev()}`, JSONStringify(flattened))
+            sourceRev ++
             targetRev = this.getCurrentRev()
             targetRange = newTargetRange
         }

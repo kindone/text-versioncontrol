@@ -3,7 +3,7 @@ import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { IDelta } from '../primitive/IDelta'
 import { Range } from '../primitive/Range'
-import { deltaLength, JSONStringify, normalizeOps, expectEqual } from '../primitive/util'
+import { deltaLength, JSONStringify, normalizeOps, expectEqual, normalizeDeltas } from '../primitive/util'
 
 describe('Range', () => {
     it('applyChange', () => {
@@ -345,18 +345,18 @@ describe('Range', () => {
 
         const changes = [new Delta().retain(10), new Delta().retain(20)]
 
-        expectEqual(range.cropChanges(changes), []) // normalized
-        expectEqual(range.cropChanges(changes), []) // normalized
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), []) // normalized
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), []) // normalized
 
         changes.push(new Delta().retain(11).insert('123'))
-        expectEqual(range.cropChanges(changes), [new Delta().retain(1).insert('123')]) // normalized
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // normalized
         changes.push(new Delta().delete(2))
-        expectEqual(range.cropChanges(changes), [new Delta().retain(1).insert('123')]) // left bounded: only range changes
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // left bounded: only range changes
         changes.push(new Delta().retain(8).delete(1))
-        expectEqual(range.cropChanges(changes), [new Delta().retain(1).insert('123'), new Delta().delete(1)])
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123'), new Delta().delete(1)])
 
         changes.push(new Delta().retain(9).insert('456'))
-        expectEqual(range.cropChanges(changes), [
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [
             new Delta().retain(1).insert('123'),
             new Delta().delete(1),
             new Delta().retain(1).insert('456'),

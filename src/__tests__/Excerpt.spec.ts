@@ -111,14 +111,14 @@ describe('Excerpt', () => {
             while (source.rev < doc1.getCurrentRev()) {
                 const sync = doc1.getSingleSyncSinceExcerpted(source)
                 target = doc2.syncExcerpt(sync, target)
-                source = doc1.takeExcerptAt(sync.rev, sync.range.start, sync.range.end)
+                source = doc1.takeExcerptAt(sync.rev, sync.ranges[sync.ranges.length-1].start, sync.ranges[sync.ranges.length-1].end)
                 console.log('phases4.sync: ', JSONStringify(sync))
                 console.log('phases4.target: ', JSONStringify(target))
                 console.log('phases4.source: ', JSONStringify(source))
                 console.log('phases4.doc2: ', doc2.getCurrentRev(), JSONStringify(doc2.getContent()))
             }
             expectEqual(doc2.getContent(), {
-                ops:[{insert:"Actual "},{insert:{sourceUri:"doc1",sourceRev:3,targetRev:6,length:20}},{insert:"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
+                ops:[{insert:"Actual "},{insert:{sourceUri:"doc1",sourceRev:6,targetRev:9,length:20}},{insert:"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
             })
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
         }

@@ -21,6 +21,16 @@ export class Range {
         return range
     }
 
+    public mapChanges(deltas:IDelta[], open = false): Range[] {
+        let range: Range = this
+        const ranges:Range[] = []
+        for (const delta of deltas) {
+            range = open ? range.applyChangeOpen(delta) : range.applyChange(delta)
+            ranges.push(range)
+        }
+        return ranges
+    }
+
     // immutable
     public applyChange(delta: IDelta): Range {
         let cursor = 0
@@ -116,7 +126,7 @@ export class Range {
             newDeltas.push(newDelta)
         }
 
-        return normalizeDeltas(newDeltas)
+        return newDeltas
     }
 
     public cropChange(delta: IDelta, debug = false): IDelta {

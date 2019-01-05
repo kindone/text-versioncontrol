@@ -9,6 +9,16 @@ export interface AttributeFragment {
     mod?: { [branch: string]: AttributeMap }
 }
 
+export interface JSONEmbed {
+    type:'embed'
+    value:string
+}
+
+export interface JSONStyle {
+    type: 'initial'|'inserted'|'deleted'|'unknown'
+    value: string|JSONEmbed
+}
+
 export class Fragment {
     public static initial(str: string, attrs?: AttributeMap): Fragment {
         if (attrs) {
@@ -191,9 +201,9 @@ export class Fragment {
         }
     }
 
-    public toStyledJSON(): {type:string, value:string|{type:string, value:string}} {
+    public toStyledJSON():JSONStyle {
         // TODO: attributes
-        const valueStr = typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val.toString()}
+        const valueStr:string|JSONEmbed = typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val.toString()}
         switch (this.mod.status) {
             case Status.INITIAL:
                 return {'type': 'initial', 'value': valueStr}

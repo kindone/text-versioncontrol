@@ -12,6 +12,7 @@ export interface RangedTransforms {
 export class Range {
     constructor(public readonly start: number, public readonly end: number) {}
 
+    // immutable
     public applyChanges(deltas: IDelta[], open = false): Range {
         let range: Range = this
         for (const delta of deltas) {
@@ -20,6 +21,7 @@ export class Range {
         return range
     }
 
+    // immutable
     public applyChange(delta: IDelta): Range {
         let cursor = 0
         let start = this.start
@@ -56,6 +58,7 @@ export class Range {
         return new Range(start, end)
     }
 
+    // immutable
     public applyChangeOpen(delta: IDelta): Range {
         let cursor = 0
         let start = this.start

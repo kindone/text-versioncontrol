@@ -74,10 +74,13 @@ export class Document {
 
     public pasteExcerpt(offset: number, source: ExcerptSource): ExcerptTarget {
         const rev = this.getCurrentRev() + 1
-        const target = new ExcerptTarget(rev, offset, deltaLength(source.content))
+        const target = new ExcerptTarget(rev, offset, deltaLength(source.content)+1)
+        // const pasted = source.content
+        const pasted = ExcerptUtil.pasteWithMarkers(rev, offset, source)
+        expectEqual(deltaLength(source.content) + 1, deltaLength(pasted))
 
         const ops: Op[] = [{ retain: offset }]
-        this.history.append([new ExDelta(ops.concat(source.content.ops), source)])
+        this.history.append([new ExDelta(ops.concat(pasted.ops), source)])
         return target
     }
 
@@ -104,41 +107,51 @@ export class Document {
     }
 
     public syncExcerpt(sync: ExcerptSync, target: ExcerptTarget): ExcerptTarget {
-        const rangeAtTarget = new Range(target.offset, target.offset + target.length)
+        const initialTargetRange = new Range(target.offset, target.offset + target.length)
 
-        const syncChanges = this.transformSyncChanges(sync, target)
+        const syncChanges = this.shiftSyncChanges(sync, target)
 
-        const simulateResult = this.simulateMergeAt(target.rev, syncChanges)
-        const newRangeAtTarget = rangeAtTarget.applyChanges(simulateResult.resDeltas.concat(simulateResult.reqDeltas))
+        let targetRange = initialTargetRange
+        let sourceRev = sync.rev - syncChanges.length
+        let targetRev = target.rev
+        for(const syncChange of syncChanges) {
+            const simulateResult = this.simulateMergeAt(target.rev, [syncChange])
+            const changes = simulateResult.resDeltas.concat(simulateResult.reqDeltas)
 
-        this.merge(target.rev, syncChanges)
-        return new ExcerptTarget(this.getCurrentRev(), newRangeAtTarget.start, newRangeAtTarget.end - newRangeAtTarget.start)
+            const newTargetRange = targetRange.applyChanges(changes)
+            const {excerpted} = ExcerptUtil.excerptMarker(sync.uri, sourceRev++, this.getCurrentRev() + 1, newTargetRange.end - newTargetRange.start)
+            const replaceMarker = new Delta([
+                {retain: targetRange.start},
+                {delete: 1},
+                {insert: excerpted}])
+            const flattened = flattenTransformedDelta(syncChange, replaceMarker)
+            this.merge(targetRev, [flattened])
+            // console.log('transformedSync: ', `${targetRev}->${this.getCurrentRev()}`, JSONStringify(flattened))
+            targetRev = this.getCurrentRev()
+            targetRange = newTargetRange
+        }
+
+        return new ExcerptTarget(targetRev, targetRange.start, targetRange.end - targetRange.start)
     }
 
     /** private methods */
 
-    private transformSyncChanges(sync: ExcerptSync, target:ExcerptTarget):IDelta[]
+    private shiftSyncChanges(sync: ExcerptSync, target:ExcerptTarget):IDelta[]
     {
-        // adjust offset to target
         const shiftedSyncChanges = _.map(
-            sync.changes,
-            change => {
-                // adjust offset
-                if (change.ops.length > 0 && change.ops[0].retain) {
-                    change.ops[0].retain! += target.offset
-                } else {
-                    change.ops.unshift({ retain: target.offset })
-                }
-                return change
-            },
-            [],
-        )
-
-        // flatten changes to one
-        const flattenedSyncChange = flattenDeltas(...shiftedSyncChanges)
-        // add source info to delta
-        flattenedSyncChange.source = {type: 'change', uri: sync.uri, rev: sync.rev, start: sync.range.start, end: sync.range.end}
-        return [flattenedSyncChange]
+                sync.changes,
+                change => {
+                    // adjust offset
+                    if (change.ops.length > 0 && change.ops[0].retain) {
+                        change.ops[0].retain! += target.offset+1
+                    } else {
+                        change.ops.unshift({ retain: target.offset+1 })
+                    }
+                    return change
+                },
+                [],
+            )
+        return shiftedSyncChanges
     }
 
     private simulateMergeAt(rev:number, changes:IDelta[]):SyncResponse

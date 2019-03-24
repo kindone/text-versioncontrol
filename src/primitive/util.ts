@@ -2,10 +2,11 @@ import Delta = require('quill-delta')
 import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { Change, Source } from './Change'
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
 import { ExDelta } from './ExDelta'
-import { IDelta, Source } from './IDelta'
+
 
 export function JSONStringify(obj: any) {
     return JSON.stringify(obj, (key: string, value: any) => {
@@ -19,35 +20,51 @@ export function JSONStringify(obj: any) {
 export function toJSON(obj: any) {
     return JSON.parse(JSON.stringify(obj))
 }
+type strfunc = () => string
 
-export function expectEqual(obj1: any, obj2: any, msg: string = 'Not equal: ') {
+export function expectEqual(obj1: any, obj2: any, msg: string | strfunc = 'Not equal: ') {
     // expect(JSON.parse(JSONStringify(obj1))).toEqual(JSON.parse(JSONStringify(obj2)))
     if (!_.isEqual(JSON.parse(JSONStringify(obj1)), JSON.parse(JSONStringify(obj2)))) {
-        throw new Error(msg + ': ( ' + JSONStringify(obj1) + ' and ' + JSONStringify(obj2) + ' )')
+        throw new Error((typeof msg === 'string' ? msg : msg()) + ': ( ' + JSONStringify(obj1) + ' and ' + JSONStringify(obj2) + ' )')
     }
 }
 
-export function asDelta(content: string | IDelta): IDelta {
+export function asChange(content: string | Change): Change {
     if (content === '') return new ExDelta([])
     else if (typeof content === 'string') return new ExDelta([{ insert: content }])
-    else return content as IDelta
+    else return content as Change
 }
 
-export function deltaLength(delta: IDelta): number {
+export function contentLength(change: Change): number {
     return _.reduce(
-        delta.ops,
+        change.ops,
         (len, op) => {
             if (typeof op.insert === 'string') return len + op.insert.length
             else if (op.insert) return len + 1
-            else return len
+            else throw new Error("content should only consists of inserts")
         },
         0,
     )
 }
 
-export function transformPosition(position: number, deltas: IDelta[]): number {
-    for (const delta of deltas) {
-        const d = new ExDelta(delta.ops)
+export function contentLengthIncreased(initialLength:number, change:Change):number {
+    return _.reduce(
+        change.ops,
+        (len, op) => {
+            if (typeof op.insert === 'string') return len + op.insert.length
+            else if (op.insert) return len + 1 // embed
+            else if (op.delete) return len - op.delete
+            else return len
+        },
+        initialLength,
+    )
+}
+
+
+// unused
+function transformPosition(position: number, changes: Change[]): number {
+    for (const change of changes) {
+        const d = new ExDelta(change.ops)
         position = d.transformPosition(position)
     }
 
@@ -55,47 +72,67 @@ export function transformPosition(position: number, deltas: IDelta[]): number {
 }
 
 export function normalizeTwoOps(op1: Op, op2: Op): Op[] {
+    // concatenate two strings with no attributes
     if (typeof op1.insert === 'string' && typeof op2.insert === 'string' && !op1.attributes && !op2.attributes) {
         return [{ insert: (op1.insert as string).concat(op2.insert as string) }]
     }
 
+    // concatenate two strings with same attributes
     if (typeof op1.insert === 'string' && typeof op2.insert === 'string' && op1.attributes && op2.attributes) {
         if (_.isEqual(op1.attributes, op2.attributes)) {
             return [{ insert: (op1.insert as string).concat(op2.insert as string), attributes: op1.attributes }]
         }
     }
-
+    // merge two deletes
     if (op1.delete && op2.delete) return [{ delete: op1.delete + op2.delete }]
-    if (op1.retain && op2.retain && !op1.attributes && !op2.attributes) return [{ retain: op1.retain + op2.retain }]
-    if (op1.retain && op2.retain && op1.attributes && op2.attributes && _.isEqual(op1.attributes, op2.attributes)) {
+    // merge two retains with no attributes
+    if (op1.retain && op2.retain && !op1.attributes && !op2.attributes)
+        return [{ retain: op1.retain + op2.retain }]
+    // merge two retains with same attributes
+    if (op1.retain && op2.retain && op1.attributes && op2.attributes && _.isEqual(op1.attributes, op2.attributes))
         return [{ retain: op1.retain + op2.retain, attributes: op1.attributes }]
-    }
+
+    // cannot merge
     return [op1, op2]
 }
 
+export function lastRetainsRemoved(ops:Op[]): Op[] {
+    let newOps = ops.concat()
+
+    while(newOps.length > 0 && newOps[newOps.length - 1].retain && !newOps[newOps.length - 1].attributes) {
+        newOps = newOps.slice(0, newOps.length - 1)
+    }
+
+    return newOps
+}
+
 export function normalizeOps(ops: Op[]): Op[] {
-    if (ops.length === 0) return ops
+    if (ops.length === 0)
+        return ops
+
     const newOps: Op[] = [ops[0]]
     for (const op of ops.slice(1)) {
+        // try normalize last of newOps and first of oldOps
         const normalized = normalizeTwoOps(newOps[newOps.length - 1], op)
+        // normalization succeded, replace last of newOps
         if (normalized.length === 1) {
             newOps[newOps.length - 1] = normalized[0]
-        } // 2
+        }
+        // normalization failed, add old op
         else {
             newOps.push(normalized[1])
         }
     }
-    if (newOps[newOps.length - 1].retain && !newOps[newOps.length - 1].attributes) {
-        return newOps.slice(0, newOps.length - 1)
-    } else return newOps
+    // remove meaningless retain in the back
+    return lastRetainsRemoved(newOps)
 }
 
 // remove all retain-only deltas in array
-export function normalizeDeltas(deltas: IDelta[]): IDelta[] {
+export function normalizeChanges(changes: Change[]): Change[] {
     return _.reduce(
-        deltas,
-        (newChanges: IDelta[], change) => {
-            if (!isDeltaWithNoEffect(change)) {
+        changes,
+        (newChanges: Change[], change) => {
+            if (!hasNoEffect(change)) {
                 newChanges.push(new ExDelta(normalizeOps(change.ops), change.source))
                 return newChanges
             } else return newChanges
@@ -104,12 +141,12 @@ export function normalizeDeltas(deltas: IDelta[]): IDelta[] {
     )
 }
 
-export function normalizeDeltasWithRevision(deltas: IDelta[], startRev: number): Array<{ delta: IDelta; rev: number }> {
+export function normalizeDeltasWithRevision(deltas: Change[], startRev: number): Array<{ delta: Change; rev: number }> {
     let rev = startRev
     return _.reduce(
         deltas,
-        (newChanges: Array<{ delta: IDelta; rev: number }>, change) => {
-            if (!isDeltaWithNoEffect(change)) {
+        (newChanges: Array<{ delta: Change; rev: number }>, change) => {
+            if (!hasNoEffect(change)) {
                 newChanges.push({ delta: new ExDelta(normalizeOps(change.ops), change.source), rev })
             }
 
@@ -121,8 +158,8 @@ export function normalizeDeltasWithRevision(deltas: IDelta[], startRev: number):
     )
 }
 
-export function isDeltaWithNoEffect(delta: IDelta):boolean {
-    for (const op of delta.ops) {
+export function hasNoEffect(change: Change):boolean {
+    for (const op of change.ops) {
         if (op.insert || op.delete) {
             return false
         }
@@ -142,11 +179,11 @@ export function isDeltaWithNoEffect(delta: IDelta):boolean {
 //     return flattened
 // }
 
-export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boolean):IDelta {
-    const iter = new DeltaTransformer(delta1.ops, firstWins)
+export function transformChanges(change1: Change, change2: Change, firstWins: boolean):Change {
+    const iter = new DeltaTransformer(change1.ops, firstWins)
     let outOps: Op[] = []
     // console.log('delta2:', delta2.ops)
-    for (const op of delta2.ops) {
+    for (const op of change2.ops) {
         if (!iter.hasNext()) {
             outOps.push(op)
             // console.log('rest out:', outOps)
@@ -180,19 +217,19 @@ export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boole
             // console.log('insert out:', outOps)
         }
     }
-    return new ExDelta(normalizeOps(outOps), delta2.source)
+    return new ExDelta(normalizeOps(outOps), change2.source)
 }
 
-export function flattenDeltas(...deltas: IDelta[]):IDelta {
-    if (deltas.length === 0) return new ExDelta()
+export function flattenChanges(...changes: Change[]):Change {
+    if (changes.length === 0) return new ExDelta()
 
-    let flattened: IDelta = deltas[0]
-    let source:Source|undefined = deltas[0].source
+    let flattened: Change = changes[0]
+    let source:Source|undefined = changes[0].source
 
-    for (const delta2 of deltas.slice(1)) {
+    for (const change2 of changes.slice(1)) {
         const iter = new DeltaComposer(flattened.ops)
         let outOps: Op[] = []
-        for (const op of delta2.ops) {
+        for (const op of change2.ops) {
             if (!iter.hasNext()) outOps.push(op)
             else if (op.retain && op.attributes) {
                 // attribute
@@ -220,7 +257,7 @@ export function flattenDeltas(...deltas: IDelta[]):IDelta {
             }
         }
         outOps = outOps.concat(iter.rest())
-        source = source || delta2.source
+        source = source || change2.source
         flattened = new ExDelta(outOps)
     }
     // if(source)
@@ -244,24 +281,31 @@ export function opLength(op: Op):number {
 //     return new ExtendedDelta(new Delta(prev.ops).transform(new Delta(target.ops)).ops, sync, excerpt)
 // }
 
-export function flattenTransformedDelta(delta1: IDelta, delta2: IDelta, firstWins = false): IDelta {
-    return flattenDeltas(delta1, transformDeltas(delta1, delta2, firstWins))
+export function flattenTransformedChange(change1: Change, change2: Change, firstWins = false): Change {
+    return flattenChanges(change1, transformChanges(change1, change2, firstWins))
 }
 
 export function sliceOp(op: Op, begin: number, end?: number): Op {
     if (typeof op.insert === 'string') {
-        if (op.attributes) return { insert: op.insert.slice(begin, end), attributes: op.attributes }
-        else return { insert: op.insert.slice(begin, end) }
+        if (op.attributes)
+            return { insert: op.insert.slice(begin, end), attributes: op.attributes }
+        else
+            return { insert: op.insert.slice(begin, end) }
     } else if (op.insert) {
-        if (begin > 0) return { insert: '' }
+        if (begin > 0)
+            return { insert: '' }
         else {
-            if (op.attributes) return { insert: op.insert, attributes: op.attributes }
-            else return { insert: op.insert }
+            if (op.attributes)
+                return { insert: op.insert, attributes: op.attributes }
+            else
+                return { insert: op.insert }
         }
     } else if (op.retain) {
         end = end ? end : op.retain
-        if (op.attributes) return { retain: end - begin, attributes: op.attributes }
-        else return { retain: end - begin }
+        if (op.attributes)
+            return { retain: end - begin, attributes: op.attributes }
+        else
+            return { retain: end - begin }
     } else if (op.delete) {
         end = end ? end : op.delete
         return { delete: end - begin }
@@ -276,12 +320,14 @@ export function sliceOpWithAttributes(op: Op, attr: AttributeMap, begin: number,
     return sliceOp(newOp, begin, end)
 }
 
-export function sliceOpWithDelete(op: Op, attr: AttributeMap, begin: number, end?: number): Op {
+// unused
+function sliceOpWithDelete(op: Op, attr: AttributeMap, begin: number, end?: number): Op {
     const newOp: Op = { ...op }
     newOp.attributes = mergeAttributes(op.attributes, attr)
     return sliceOp(newOp, begin, end)
 }
 
+// precedence: attr2 > attr1
 export function mergeAttributes(attr1?: AttributeMap, attr2?: AttributeMap): AttributeMap | undefined {
     if (!attr1 && !attr2) return undefined
 

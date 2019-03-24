@@ -1,10 +1,10 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { Change, Source } from './Change'
 import { DeltaIterator } from './DeltaIterator'
 import { Fragment, JSONStyle } from './Fragment'
 import { FragmentIterator, IResult } from './FragmentIterator'
-import { IDelta, Source } from './IDelta'
 import { normalizeOps } from './util'
 
 export class SharedString {
@@ -12,7 +12,7 @@ export class SharedString {
         return new SharedString([new Fragment(str)])
     }
 
-    public static fromDelta(delta: IDelta) {
+    public static fromDelta(delta: Change) {
         const fs = _.reduce(
             delta.ops,
             (fragments: Fragment[], op) => {
@@ -37,7 +37,7 @@ export class SharedString {
         this.source = source
     }
 
-    public applyChange(delta: IDelta, branch: string, debug = false): IDelta {
+    public applyChange(delta: Change, branch: string, debug = false): Change {
         const fragmentIter = new FragmentIterator(branch, this.fragments)
         const deltaIter = new DeltaIterator(branch, this.fragments)
 
@@ -136,7 +136,7 @@ export class SharedString {
         )
     }
 
-    public toFlattenedDelta(): IDelta {
+    public toFlattenedDelta(): Change {
         const ops = _.map(
             this.fragments,
             fragment => {
@@ -148,7 +148,7 @@ export class SharedString {
         else return {ops}
     }
 
-    public toDelta(): IDelta {
+    public toDelta(): Change {
         const ops = _.reduce(
             this.fragments,
             (result: Op[], fragment) => {

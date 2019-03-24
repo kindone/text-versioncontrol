@@ -80,7 +80,7 @@ export class DeltaComposer {
         return ops
     }
 
-    private mapCurrent<T = undefined>(opGen: (op: Op, begin: number, end?: number) => Op[], amount: number): Op[] {
+    private mapCurrent(opGen: (op: Op, begin: number, end?: number) => Op[], amount: number): Op[] {
         let ops: Op[] = []
 
         do {

@@ -74,9 +74,9 @@ export function randomInsert(withAttr = true): Op {
     }
 }
 
-export function randomUserDeltas(baseLength: number, numOps: number, withAttr = true) {
+export function randomUserDeltas(baseLength: number, numDeltas: number, withAttr = true) {
     const deltas: Delta[] = []
-    for (let i = 0; i < numOps; i++) {
+    for (let i = 0; i < numDeltas; i++) {
         const delta = new Delta(baseLength > 0 ? randomUserOps(baseLength, withAttr) : [randomInsert(withAttr)])
         deltas.push(delta)
         baseLength += _.reduce(

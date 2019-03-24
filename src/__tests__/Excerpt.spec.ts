@@ -1,13 +1,9 @@
 import * as chalk from 'chalk'
-import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { Document } from '../Document'
-import { ExcerptUtil } from '../excerpt/ExcerptUtil'
-import { IDelta } from '../primitive/IDelta'
-import { Range } from '../primitive/Range'
-import { deltaLength, JSONStringify, normalizeOps, expectEqual } from '../primitive/util'
-
+import {printChange, printContent, printChangedContent, printChanges} from '../primitive/printer'
+import { contentLength, JSONStringify, normalizeOps, expectEqual } from '../primitive/util'
 
 describe('Excerpt', () => {
 
@@ -24,15 +20,15 @@ describe('Excerpt', () => {
         const source1 = doc1.takeExcerpt(0, 4) // Your
         expectEqual(
             JSONStringify(source1),
-            JSONStringify({ uri: 'doc1', rev: 2, start: 0, end: 4, content: { ops: [{ insert: 'Your' }] }, type: 'content' }),
+            JSONStringify({ uri: 'doc1', rev: 2, start: 0, end: 4, content: { ops: [{ insert: 'Your' }] }, type: 'excerpt' }),
         )
 
-        const pasted = doc2.pasteExcerpt(5, source1)
-        expectEqual(JSONStringify(pasted), JSONStringify({ rev: 2, offset: 5, length: 5 }))
+        const excerpt = doc2.pasteExcerpt(5, source1)
+        expectEqual(JSONStringify(excerpt.target), JSONStringify({ rev: 2, offset: 5, length: 5 }))
 
         expectEqual(
             JSONStringify(doc2.getContent().ops),
-            JSONStringify([{insert:"Some "},{insert:{sourceUri:"doc1",sourceRev:2,targetRev:2,length:4}},{insert:"Yourintroduction here: Here comes the trouble. HAHAHAHA"}])
+            JSONStringify([{insert:"Some "},{insert:{excerpted: {sourceUri:"doc1",sourceRev:2,targetUri:"doc2",targetRev:2,length:4}}},{insert:"Yourintroduction here: Here comes the trouble. HAHAHAHA"}])
         )
     })
 
@@ -66,26 +62,28 @@ describe('Excerpt', () => {
         doc1.append(doc1Changes)
         doc2.append(doc2Changes)
 
-        console.log('phases1.doc1: ', JSONStringify(doc1.getContent()))
-        console.log('phases1.doc2: ', JSONStringify(doc2.getContent()))
+        console.log('phases1.doc1: ', printContent(doc1.getContent()))
+        console.log('phases1.doc2: ', printContent(doc2.getContent()))
 
         const source1 = doc1.takeExcerpt(5, 14) // 'precious '
         console.log('sourceInfo:', JSONStringify(source1))
 
-        const target1 = doc2.pasteExcerpt(5, source1) // Some precious introduction here: ...'
+        const excerpt1 = doc2.pasteExcerpt(5, source1) // Some precious introduction here: ...'
+        const target1 = excerpt1.target
         console.log('targetInfo:', JSONStringify(target1))
 
-        console.log('phases2.doc2: ', JSONStringify(doc2.getContent()))
+        console.log('phases2.doc2: ', printContent(doc2.getContent()))
 
-
+        const doc1Content = doc1.getContent()
+        const doc2Content = doc2.getContent()
         doc1.append(doc1ChangesAfterExcerpt)
         doc2.append(doc2ChangesAfterExcerpt)
 
-        console.log('phases2.doc1 changes: ', JSONStringify(doc1ChangesAfterExcerpt))
-        console.log('phases2.doc2 changes: ', JSONStringify(doc2ChangesAfterExcerpt))
+        console.log('phases2.doc1 changes: ', printChangedContent(doc1Content, doc1ChangesAfterExcerpt))
+        console.log('phases2.doc2 changes: ', printChangedContent(doc2Content, doc2ChangesAfterExcerpt))
 
-        console.log('phases3.doc1: ', doc1.getCurrentRev(), JSONStringify(doc1.getContent()))
-        console.log('phases3.doc2: ', doc2.getCurrentRev(), JSONStringify(doc2.getContent()))
+        console.log('phases3.doc1: ', doc1.getCurrentRev(), printContent(doc1.getContent()))
+        console.log('phases3.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
 
 
         console.log('phases4.target: ', JSONStringify(target1))
@@ -93,12 +91,12 @@ describe('Excerpt', () => {
 
         // method 1
         if (true) {
-            const sync = doc1.getSyncSinceExcerpted(source1)
-            const target2 = doc2.syncExcerpt(sync, target1)
+            const syncs = doc1.getSyncSinceExcerpted(source1)
+            const target2 = doc2.syncExcerpt(syncs, target1)
             expectEqual(doc2.getContent(), {
                 "ops":[
                     {"insert":"Actual "},
-                    {"insert":{"sourceUri":"doc1","sourceRev":5,"targetRev":6,"length":20}},
+                    {"insert":{"excerpted": {"sourceUri":"doc1","sourceRev":6,"targetUri": "doc2", "targetRev":6,"length":20}}},
                     {"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}
                 ],
             })
@@ -109,10 +107,13 @@ describe('Excerpt', () => {
             let source = source1
             let target = target1
             while (source.rev < doc1.getCurrentRev()) {
-                const sync = doc1.getSingleSyncSinceExcerpted(source)
-                target = doc2.syncExcerpt(sync, target)
-                source = doc1.takeExcerptAt(sync.rev, sync.ranges[sync.ranges.length-1].start, sync.ranges[sync.ranges.length-1].end)
-                console.log('phases4.sync: ', JSONStringify(sync))
+                const syncs = doc1.getSingleSyncSinceExcerpted(source)
+                if(syncs.length == 0)
+                    break
+                const sync = syncs[0]
+                target = doc2.syncExcerpt(syncs, target)
+                source = doc1.takeExcerptAt(sync.rev, sync.range.start, sync.range.end)
+                console.log('phases4.sync: ', JSONStringify(syncs))
                 console.log('phases4.target: ', JSONStringify(target))
                 console.log('phases4.source: ', JSONStringify(source))
                 console.log('phases4.doc2: ', doc2.getCurrentRev(), JSONStringify(doc2.getContent()))
@@ -148,10 +149,10 @@ describe('Excerpt', () => {
         doc2.append(doc2Changes)
 
         const s1 = doc1.getSyncSinceExcerpted(e1)
-        doc2.syncExcerpt(s1, d1)
+        doc2.syncExcerpt(s1, d1.target)
 
-        console.log(JSONStringify(doc1.getContent()))
-        console.log(JSONStringify(doc2.getContent()))
+        console.log(printContent(doc1.getContent()))
+        console.log(printContent(doc2.getContent()))
     })
 
     // it('Document retain on excerpt', () => {

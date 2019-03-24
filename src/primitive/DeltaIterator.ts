@@ -4,7 +4,7 @@ import * as _ from 'underscore'
 import { AttributeFragment, Fragment } from './Fragment'
 
 // result fragments and transformed ops
-export interface OpsWithDiff {
+interface OpsWithDiff {
     ops: Op[]
     diff: number
 }

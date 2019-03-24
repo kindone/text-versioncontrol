@@ -1,10 +1,10 @@
-import { IDelta } from '../primitive/IDelta'
+import { Change } from '../primitive/Change'
 
 export interface SyncResponse {
     rev: number
-    content: IDelta
-    reqDeltas: IDelta[]
-    resDeltas: IDelta[]
+    content: Change
+    reqDeltas: Change[]
+    resDeltas: Change[]
 }
 
 export type MergeResult = SyncResponse

@@ -24,20 +24,22 @@
   ],
   "devDependencies": {
     "@types/jest": "^23.3.2",
+    "fast-check": "^1.10.0",
     "jest": "^23.5.0",
     "jsverify": "^0.8.3",
     "prettier": "^1.14.2",
+    "pure-rand": "^1.6.2",
     "ts-jest": "^23.1.4",
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.0.3"
   },
   "dependencies": {
-    "@types/underscore": "^1.8.9",
     "@types/deep-equal": "^1.0.1",
+    "@types/underscore": "^1.8.9",
     "chalk": "^2.4.1",
     "deep-equal": "^1.0.1",
-    "quill-delta": "^4.1.0",
+    "quill-delta": "^4.2.1",
     "underscore": "^1.9.1"
   }
 }

@@ -1,4 +1,3 @@
-import { random } from 'jsverify'
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'

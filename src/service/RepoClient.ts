@@ -1,6 +1,6 @@
 import { History } from '../history/History'
 import { SyncRequest } from '../history/SyncRequest'
-import { IDelta } from '../primitive/IDelta'
+import { Change } from '../primitive/Change'
 import { DocClient } from './DocClient'
 import { RepoSyncResponse } from './RepoServer'
 
@@ -17,7 +17,7 @@ export class RepoClient {
         }
     }
 
-    public apply(docName: string, deltas: IDelta[]) {
+    public apply(docName: string, deltas: Change[]) {
         this.docs[docName].apply(deltas)
     }
 

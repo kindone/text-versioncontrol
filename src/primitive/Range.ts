@@ -1,19 +1,19 @@
 import Op from 'quill-delta/dist/Op'
+import { Change } from './Change'
 import { ExDelta } from './ExDelta'
-import { IDelta } from './IDelta'
 import { SharedString } from './SharedString'
-import { normalizeOps, normalizeDeltas, deltaLength } from './util'
+import { normalizeOps, normalizeChanges, contentLength } from './util'
 
 export interface RangedTransforms {
     range: Range
-    deltas: IDelta[]
+    deltas: Change[]
 }
 
 export class Range {
     constructor(public readonly start: number, public readonly end: number) {}
 
     // immutable
-    public applyChanges(deltas: IDelta[], open = false): Range {
+    public applyChanges(deltas: Change[], open = false): Range {
         let range: Range = this
         for (const delta of deltas) {
             range = open ? range.applyChangeOpen(delta) : range.applyChange(delta)
@@ -21,18 +21,18 @@ export class Range {
         return range
     }
 
-    public mapChanges(deltas:IDelta[], open = false): Range[] {
+    public mapChanges(changes:Change[], open = false): Range[] {
         let range: Range = this
         const ranges:Range[] = []
-        for (const delta of deltas) {
-            range = open ? range.applyChangeOpen(delta) : range.applyChange(delta)
+        for (const change of changes) {
+            range = open ? range.applyChangeOpen(change) : range.applyChange(change)
             ranges.push(range)
         }
         return ranges
     }
 
     // immutable
-    public applyChange(delta: IDelta): Range {
+    public applyChange(delta: Change): Range {
         let cursor = 0
         let start = this.start
         let end = this.end
@@ -69,7 +69,7 @@ export class Range {
     }
 
     // immutable
-    public applyChangeOpen(delta: IDelta): Range {
+    public applyChangeOpen(delta: Change): Range {
         let cursor = 0
         let start = this.start
         let end = this.end
@@ -105,9 +105,9 @@ export class Range {
         return new Range(start, end)
     }
 
-    public cropContent(content: IDelta): IDelta {
+    public cropContent(content: Change): Change {
         const ss = SharedString.fromDelta(content)
-        const length = deltaLength(content)
+        const length = contentLength(content)
         const cropper = new ExDelta([
             { delete: this.start },
             { retain: this.end - this.start },
@@ -117,9 +117,9 @@ export class Range {
         return ss.toDelta()
     }
 
-    public cropChanges(deltas: IDelta[], open: boolean = false): IDelta[] {
+    public cropChanges(deltas: Change[], open: boolean = false): Change[] {
         let range: Range = this
-        const newDeltas: IDelta[] = []
+        const newDeltas: Change[] = []
         for (const delta of deltas) {
             const newDelta = open ? range.cropChangeOpen(delta) : range.cropChange(delta)
             range = range.applyChange(delta)
@@ -129,7 +129,7 @@ export class Range {
         return newDeltas
     }
 
-    public cropChange(delta: IDelta, debug = false): IDelta {
+    public cropChange(delta: Change, debug = false): Change {
         let cursor = 0
         let start = this.start
         let end = this.end
@@ -195,7 +195,7 @@ export class Range {
         return new ExDelta(normalizeOps(ops), delta.source)
     }
 
-    public cropChangeOpen(delta: IDelta, debug = false): IDelta {
+    public cropChangeOpen(delta: Change, debug = false): Change {
         let cursor = 0
         let start = this.start
         let end = this.end

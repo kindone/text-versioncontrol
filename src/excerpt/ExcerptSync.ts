@@ -1,7 +1,6 @@
-import { IDelta, Source } from '../primitive/IDelta'
+import { Change, Source } from '../primitive/Change'
 import { Range } from '../primitive/Range'
 
 export class ExcerptSync {
-
-    constructor(public uri: string, public rev: number, public changes: IDelta[], public ranges: Range[]) {}
+    constructor(public uri: string, public rev: number, public change: Change, public range: Range) {}
 }

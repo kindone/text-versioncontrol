@@ -1,15 +1,15 @@
 import Delta = require('quill-delta')
-import { IDelta, Source } from '../primitive/IDelta'
+import { Change, Source } from '../primitive/Change'
 
-export class ExcerptSource {
+export class ExcerptSource implements Source {
 
-    public readonly type = 'content'
+    public readonly type = 'excerpt'
 
     constructor(
         public uri: string,
         public rev: number,
         public start: number,
         public end: number,
-        public content: IDelta,
+        public content: Change,
     ) {}
 }

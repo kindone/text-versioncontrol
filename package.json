@@ -26,6 +26,7 @@
     "@types/jest": "^23.3.2",
     "fast-check": "^1.10.0",
     "jest": "^23.5.0",
+    "jest-each": "^24.7.1",
     "jsverify": "^0.8.3",
     "prettier": "^1.14.2",
     "pure-rand": "^1.6.2",

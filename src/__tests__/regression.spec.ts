@@ -4,7 +4,7 @@ import * as _ from 'underscore'
 import { IDelta } from '../primitive/IDelta'
 import { Range } from '../primitive/Range'
 import { SharedString } from '../primitive/SharedString'
-import { expectEqual, JSONStringify, flattenDeltas } from '../primitive/util'
+import { expectEqual, JSONStringify, flattenChanges } from '../primitive/util'
 import { randomUserDeltas, randomString, randomInt } from './random'
 
 describe('text spec regression', () => {
@@ -541,7 +541,7 @@ describe('text spec regression2', () => {
                 { ops: [{ retain: 16 }, { insert: 'ete' }, { delete: 6 }] },
             ]
 
-            const flattened = [flattenDeltas(...deltas)]
+            const flattened = [flattenChanges(...deltas)]
 
             for (const delta of deltas) {
                 ss1.applyChange(delta, 'a')

@@ -13,10 +13,10 @@ export class Range {
     constructor(public readonly start: number, public readonly end: number) {}
 
     // immutable
-    public applyChanges(deltas: Change[], open = false): Range {
+    public applyChanges(changes: Change[], open = false): Range {
         let range: Range = this
-        for (const delta of deltas) {
-            range = open ? range.applyChangeOpen(delta) : range.applyChange(delta)
+        for (const change of changes) {
+            range = open ? range.applyChangeOpen(change) : range.applyChange(change)
         }
         return range
     }
@@ -32,12 +32,12 @@ export class Range {
     }
 
     // immutable
-    public applyChange(delta: Change): Range {
+    public applyChange(change: Change): Range {
         let cursor = 0
         let start = this.start
         let end = this.end
 
-        for (const op of delta.ops) {
+        for (const op of change.ops) {
             // console.log('  op:', op, 'cursor:', cursor, 'start:', start, 'end:', end)
             if (op.retain) {
                 cursor += op.retain
@@ -69,12 +69,12 @@ export class Range {
     }
 
     // immutable
-    public applyChangeOpen(delta: Change): Range {
+    public applyChangeOpen(change: Change): Range {
         let cursor = 0
         let start = this.start
         let end = this.end
 
-        for (const op of delta.ops) {
+        for (const op of change.ops) {
             // console.log('  op:', op, 'cursor:', cursor, 'start:', start, 'end:', end)
             if (op.retain) {
                 cursor += op.retain
@@ -117,25 +117,25 @@ export class Range {
         return ss.toDelta()
     }
 
-    public cropChanges(deltas: Change[], open: boolean = false): Change[] {
+    public cropChanges(changes: Change[], open: boolean = false): Change[] {
         let range: Range = this
-        const newDeltas: Change[] = []
-        for (const delta of deltas) {
-            const newDelta = open ? range.cropChangeOpen(delta) : range.cropChange(delta)
-            range = range.applyChange(delta)
-            newDeltas.push(newDelta)
+        const newChanges: Change[] = []
+        for (const change of changes) {
+            const newDelta = open ? range.cropChangeOpen(change) : range.cropChange(change)
+            range = range.applyChange(change)
+            newChanges.push(newDelta)
         }
 
-        return newDeltas
+        return newChanges
     }
 
-    public cropChange(delta: Change, debug = false): Change {
+    public cropChange(change: Change, debug = false): Change {
         let cursor = 0
         let start = this.start
         let end = this.end
         const ops: Op[] = []
 
-        for (const op of delta.ops) {
+        for (const op of change.ops) {
             if (op.retain) {
                 const left = Math.max(cursor, start)
                 const right = cursor + op.retain
@@ -192,16 +192,16 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new ExDelta(normalizeOps(ops), delta.source)
+        return new ExDelta(normalizeOps(ops), change.source)
     }
 
-    public cropChangeOpen(delta: Change, debug = false): Change {
+    public cropChangeOpen(change: Change, debug = false): Change {
         let cursor = 0
         let start = this.start
         let end = this.end
         const ops: Op[] = []
 
-        for (const op of delta.ops) {
+        for (const op of change.ops) {
             if (op.retain) {
                 const left = Math.max(cursor, start)
                 const right = cursor + op.retain
@@ -257,6 +257,6 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new ExDelta(normalizeOps(ops), delta.source)
+        return new ExDelta(normalizeOps(ops), change.source)
     }
 }

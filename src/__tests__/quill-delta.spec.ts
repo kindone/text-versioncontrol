@@ -1,6 +1,6 @@
 import * as _ from 'underscore'
 import {ExDelta} from '../primitive/ExDelta'
-import { expectEqual, flattenDeltas, transformDeltas } from '../primitive/util'
+import { expectEqual, flattenChanges, transformChanges, cropContent } from '../primitive/util'
 
 describe('Quill Delta basic operations', () => {
     it('negative value ignored', () => {
@@ -18,6 +18,7 @@ describe('Quill Delta basic operations', () => {
                 .length(),
         ).toBe(4)
     })
+
     it('order of insert over delete', () => {
         expect(
             new ExDelta()
@@ -32,6 +33,17 @@ describe('Quill Delta basic operations', () => {
                 .delete(2).ops,
         ).toEqual([{ retain: 2 }, { insert: 'Hello' }, { delete: 2 }])
     })
+
+    it('compose on empty', () => {
+        const initial = new ExDelta()
+        const delta = new ExDelta()
+            .retain(1)
+            .insert('x')
+            .delete(1)
+        expectEqual(initial.compose(delta), delta)
+        expectEqual(flattenChanges(initial, delta), delta)
+    })
+
     it('compose1', () => {
         const initial = new ExDelta().insert('Hello')
         const delta = new ExDelta()
@@ -39,7 +51,7 @@ describe('Quill Delta basic operations', () => {
             .insert('x')
             .delete(1)
         expect(initial.compose(delta).ops).toEqual([{ insert: 'Hxllo' }])
-        expect(flattenDeltas(initial, delta).ops).toEqual([{ insert: 'Hxllo' }])
+        expect(flattenChanges(initial, delta).ops).toEqual([{ insert: 'Hxllo' }])
     })
 
     it('compose2', () => {
@@ -50,7 +62,7 @@ describe('Quill Delta basic operations', () => {
             .delete(6)
         // console.log('compose2:', delta.compose(target).ops)
         expectEqual(delta.compose(target).ops, [{ insert: 'irst' }, { delete: 3 }, { retain: 1 }, { delete: 6 }])
-        expectEqual(flattenDeltas(delta, target).ops, [{ delete: 3 }, { insert: 'irst' }, { retain: 1 }, { delete: 6 }])
+        expectEqual(flattenChanges(delta, target).ops, [{ delete: 3 }, { insert: 'irst' }, { retain: 1 }, { delete: 6 }])
     })
 
     it('compose3', () => {
@@ -67,7 +79,7 @@ describe('Quill Delta basic operations', () => {
             { retain: 2 },
             { delete: 6 },
         ])
-        expectEqual(flattenDeltas(delta, target).ops, [
+        expectEqual(flattenChanges(delta, target).ops, [
             { delete: 4 },
             { retain: 3 },
             { insert: 'first' },
@@ -98,7 +110,7 @@ describe('Quill Delta basic operations', () => {
             { insert: 'eautiful ' },
             { delete: 1 },
         ])
-        expectEqual(flattenDeltas(delta, target).ops, [
+        expectEqual(flattenChanges(delta, target).ops, [
             { retain: 7 },
             { insert: { beginExcerpt: { uri: 'doc1', srcRev: 4, destRev: 7 } } },
             { delete: 1 },
@@ -120,7 +132,7 @@ describe('Quill Delta basic operations', () => {
             { insert: ' beautiful ' },
             { delete: 1 },
         ])
-        expectEqual(flattenDeltas(delta, target).ops, [
+        expectEqual(flattenChanges(delta, target).ops, [
             { retain: 1, attributes: { a: null, b: null } },
             { retain: 15 },
             { insert: ' beautiful ' },
@@ -133,7 +145,7 @@ describe('Quill Delta basic operations', () => {
         const delta = new ExDelta([{ insert: ' beautiful ' }, { delete: 1 }])
         const target = new ExDelta([{ retain: 1, attributes: { a: null, b: null } }])
         expectEqual(delta.compose(target).ops, [{ insert: ' beautiful ' }, { delete: 1 }])
-        expectEqual(flattenDeltas(delta, target).ops, [
+        expectEqual(flattenChanges(delta, target).ops, [
             { insert: ' ', attributes: { a: null, b: null } },
             { insert: 'beautiful ' },
             { delete: 1 },
@@ -161,7 +173,7 @@ describe('Quill Delta basic operations', () => {
             { insert: '9e' },
             { delete: 2 },
         ])
-        expectEqual(flattenDeltas(delta, target).ops, [
+        expectEqual(flattenChanges(delta, target).ops, [
             { insert: 'lt' },
             { insert: { y: 'wt' }, attributes: { b: null, i: null } },
             { insert: { y: 'tb' }, attributes: { b: 1, i: 1 } },
@@ -176,7 +188,7 @@ describe('Quill Delta basic operations', () => {
         const delta = new ExDelta([{ insert: { y: 'ah' } }, { retain: 1 }, { retain: 1 }, { insert: { y: 'fj' } }])
         const target = new ExDelta([{ delete: 3 }, { retain: 1 }])
         expectEqual(delta.compose(target).ops, [{ insert: { y: 'fj' } }, { delete: 2 }])
-        expectEqual(flattenDeltas(delta, target).ops, [{ delete: 2 }, { insert: { y: 'fj' } }])
+        expectEqual(flattenChanges(delta, target).ops, [{ delete: 2 }, { insert: { y: 'fj' } }])
     })
 
     it('compose example', () => {
@@ -184,12 +196,35 @@ describe('Quill Delta basic operations', () => {
         const delta = new ExDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
         const target = new ExDelta([{ retain: 4 }])
         expectEqual(delta.compose(target).ops, [{ insert: '71nw' }, { delete: 1 }])
-        expectEqual(flattenDeltas(delta, target).ops, [{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
+        expectEqual(flattenChanges(delta, target).ops, [{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
+    })
+
+    it('crop by compose', () => {
+        // delete reordered to back of all inserts
+        const delta = new ExDelta([{ insert: 'ab' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
+        const target = new ExDelta([{ delete: 1 }, {retain:3}, {delete: 2}])
+        // expectEqual(delta.compose(target).ops, [{ insert: '71nw' }, { delete: 1 }])
+        expectEqual(flattenChanges(delta, target).ops, [{ insert: 'b' }, { insert: 'cd', attributes:{x: "ef"} }])
+    })
+
+    it('crop by offset and length', () => {
+        const delta = new ExDelta([{ insert: 'ab' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
+        expectEqual(cropContent(delta, 0, 6), delta)
+        expectEqual(cropContent(delta, 1, 5).ops, [{ insert: 'b' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
+        expectEqual(cropContent(delta, 2, 4).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
+        expectEqual(cropContent(delta, 2, 3).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'g' }])
+        expectEqual(cropContent(delta, 2, 2).ops, [{ insert: 'cd', attributes:{x: "ef"} }])
+        expectEqual(cropContent(delta, 2, 1).ops, [{ insert: 'c', attributes:{x: "ef"} }])
     })
 
     it('mutable', () => {
         const delta = new ExDelta()
         expectEqual(delta.insert('a'), delta)
+    })
+
+    it('transformation on empty delta', () => {
+        const delta = new ExDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
+        expectEqual(transformChanges(new ExDelta(), delta, true), delta)
     })
 
     it('transformation of delta', () => {
@@ -199,7 +234,7 @@ describe('Quill Delta basic operations', () => {
             .delete(6)
         const target = new ExDelta().retain(3).insert('first')
         expectEqual(delta.transform(target, true).ops, [{ insert: 'first' }])
-        expectEqual(transformDeltas(delta, target, true).ops, [{ insert: 'first' }])
+        expectEqual(transformChanges(delta, target, true).ops, [{ insert: 'first' }])
     })
 
     it('transformation of delta2', () => {
@@ -209,7 +244,7 @@ describe('Quill Delta basic operations', () => {
             .delete(6)
         const target = new ExDelta().retain(3).insert('first')
         expectEqual(delta.transform(target, false).ops, [{ insert: 'first' }])
-        expectEqual(transformDeltas(delta, target, false).ops, [{ insert: 'first' }])
+        expectEqual(transformChanges(delta, target, false).ops, [{ insert: 'first' }])
     })
 
     it('transformation of delta3', () => {
@@ -225,7 +260,7 @@ describe('Quill Delta basic operations', () => {
             { retain: 5 },
             { delete: 6 },
         ])
-        expectEqual(transformDeltas(delta, target, true).ops, [
+        expectEqual(transformChanges(delta, target, true).ops, [
             { delete: 3 },
             { retain: 5 },
             { delete: 1 },
@@ -247,7 +282,7 @@ describe('Quill Delta basic operations', () => {
             { retain: 5 },
             { delete: 6 },
         ])
-        expectEqual(transformDeltas(delta, target, false).ops, [
+        expectEqual(transformChanges(delta, target, false).ops, [
             { delete: 3 },
             { retain: 5 },
             { delete: 1 },
@@ -263,7 +298,7 @@ describe('Quill Delta basic operations', () => {
             .retain(5)
             .delete(6)
         expectEqual(delta.transform(target, true).ops, [{ delete: 4 }, { retain: 10 }, { delete: 6 }])
-        expectEqual(transformDeltas(delta, target, true).ops, [{ delete: 4 }, { retain: 10 }, { delete: 6 }])
+        expectEqual(transformChanges(delta, target, true).ops, [{ delete: 4 }, { retain: 10 }, { delete: 6 }])
     })
 
     it('transformation of delta6', () => {
@@ -273,7 +308,7 @@ describe('Quill Delta basic operations', () => {
             .retain(5)
             .delete(6)
         expectEqual(delta.transform(target, false).ops, [{ delete: 4 }, { retain: 10 }, { delete: 6 }])
-        expectEqual(transformDeltas(delta, target, false).ops, [{ delete: 4 }, { retain: 10 }, { delete: 6 }])
+        expectEqual(transformChanges(delta, target, false).ops, [{ delete: 4 }, { retain: 10 }, { delete: 6 }])
     })
 
     it('transformation of delta7', () => {
@@ -288,7 +323,7 @@ describe('Quill Delta basic operations', () => {
             { retain: 5 },
             { delete: 4 },
         ])
-        expectEqual(transformDeltas(delta, target, false).ops, [
+        expectEqual(transformChanges(delta, target, false).ops, [
             { insert: 'second' },
             { delete: 6 },
             { retain: 5 },
@@ -305,7 +340,7 @@ describe('Quill Delta basic operations', () => {
             { retain: 5 },
             { delete: 4 },
         ])
-        expectEqual(transformDeltas(delta, target, false).ops, [
+        expectEqual(transformChanges(delta, target, false).ops, [
             { delete: 2 },
             { insert: 'second' },
             { delete: 2 },
@@ -319,7 +354,7 @@ describe('Quill Delta basic operations', () => {
     //     {
     //         const delta = randomUserDeltas(5, 1, false)[0]
     //         const target = randomUserDeltas(5, 1, false)[0]
-    //         expectEqual(delta.transform(target, false).ops, transformDeltas(delta, target, false).ops, JSONStringify(delta.ops) + " and " + JSONStringify(target.ops))
+    //         expectEqual(delta.transform(target, false).ops, transformChanges(delta, target, false).ops, JSONStringify(delta.ops) + " and " + JSONStringify(target.ops))
     //     }
 
     // })

@@ -3,7 +3,7 @@ import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { History } from '../History/History'
-import { deltaLength, expectEqual, JSONStringify } from '../primitive/util'
+import {  expectEqual, JSONStringify, contentLength } from '../primitive/util'
 import { DocClient } from '../service/DocClient'
 import { DocServer } from '../service/DocServer'
 import { randomUserDeltas } from './random'
@@ -183,10 +183,10 @@ describe('generated scenarios', () => {
             serverRev = serverHistory.getCurrentRev()
             clientRev = clientHistory.getCurrentRev()
 
-            const set5 = randomUserDeltas(deltaLength(serverHistory.getContent()), 2)
+            const set5 = randomUserDeltas(contentLength(serverHistory.getContent()), 2)
             serverHistory.append(set5)
 
-            const set6 = randomUserDeltas(deltaLength(clientHistory.getContent()), 2)
+            const set6 = randomUserDeltas(contentLength(clientHistory.getContent()), 2)
             clientHistory.append(set6)
 
             const set5ForClient = serverHistory.merge({

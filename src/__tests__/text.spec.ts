@@ -2,7 +2,7 @@ import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { IDelta } from '../primitive/IDelta'
 import { SharedString } from '../primitive/SharedString'
-import { expectEqual, JSONStringify, flattenDeltas } from '../primitive/util'
+import { expectEqual, JSONStringify, flattenChanges } from '../primitive/util'
 import { randomInt, randomSharedString, randomUserDeltas } from './random'
 
 describe('hand-made scenarios', () => {
@@ -143,9 +143,9 @@ function testCombination(
     const combined1 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
     const combined2 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
     const flattened = combineRandom([
-        [flattenDeltas(...user1Deltas)],
-        [flattenDeltas(...user2Deltas)],
-        [flattenDeltas(...user3Deltas)],
+        [flattenChanges(...user1Deltas)],
+        [flattenChanges(...user2Deltas)],
+        [flattenChanges(...user3Deltas)],
     ])
 
     const mergedDeltas: IDelta[] = []
@@ -245,7 +245,7 @@ describe('flatten', () => {
                 ss.applyChange(delta, 'branch')
             }
 
-            ss2.applyChange(flattenDeltas(...deltas), 'branch')
+            ss2.applyChange(flattenChanges(...deltas), 'branch')
 
             expectEqual(ss.toDelta(), ss2.toDelta())
         }

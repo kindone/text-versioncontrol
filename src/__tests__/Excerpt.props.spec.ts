@@ -107,11 +107,11 @@ class TakeAndPasteExcerptCommand implements fc.Command<ExcerptModel, Document[]>
         expectEqual(model.getExcerpts(1).length, docSet[1].getPastedExcerpts().length)
 
         const takeDoc = docSet[this.take.id]
-        const takeLen = contentLength(takeDoc.getContent())
+        const takeRev = takeDoc.getCurrentRev() > 0 ? (this.take.rev % takeDoc.getCurrentRev()) : 0
+        const takeLen = contentLength(takeDoc.getContentAt(takeRev))
         if(takeLen === 0) // nothing to excerpt from
             return
 
-        const takeRev = takeDoc.getCurrentRev() > 0 ? (this.take.rev % takeDoc.getCurrentRev()) : 0
         const takeFrom = takeLen > 1 ? (this.take.from % (takeLen-1)) : 0
         let takeTo = (takeLen - takeFrom) > 0 ? ((this.take.to % (takeLen - takeFrom)) + takeFrom) : 0
         if(takeFrom === takeTo) {

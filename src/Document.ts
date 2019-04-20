@@ -6,6 +6,7 @@ import { History, IHistory } from './history/History'
 import { SyncResponse } from './history/SyncResponse'
 import { Change } from './primitive/Change'
 import { ExDelta } from './primitive/ExDelta'
+import { printChange } from './primitive/printer';
 import { Range } from './primitive/Range'
 import {
     asChange,
@@ -15,7 +16,10 @@ import {
     expectEqual,
     normalizeChanges,
     contentLength,
+    cropContent,
+    isEqual
 } from './primitive/util'
+
 
 
 
@@ -91,19 +95,25 @@ export class Document {
     }
 
     public takeExcerpt(start: number, end: number): ExcerptSource {
-        const fullContentLength = contentLength(this.history.getContent())
-        const takePartialContent = [ExcerptUtil.take(start, end, fullContentLength)]
-        const croppedContent = this.history.simulateAppend(takePartialContent).content
+        const croppedContent = this.take(start, end)
         const safeCroppedContent = {...croppedContent, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedContent.ops)}
         return new ExcerptSource(this.uri, this.history.getCurrentRev(), start, end, safeCroppedContent)
     }
 
     public takeExcerptAt(rev: number, start: number, end: number): ExcerptSource {
-        const fullContentLength = contentLength(this.history.getContentAt(rev))
-        const takePartialContent = [ExcerptUtil.take(start, end, fullContentLength)]
-        const croppedContent = this.history.simulateAppendAt(rev, takePartialContent).content
+        const croppedContent = this.takeAt(rev, start, end)
         const safeCroppedContent = {...croppedContent, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedContent.ops)}
         return new ExcerptSource(this.uri, rev, start, end, safeCroppedContent)
+    }
+
+    public take(start:number, end:number):Change {
+        const content = this.history.getContent()
+        return cropContent(content, start, end - start)
+    }
+
+    public takeAt(rev:number, start:number, end:number):Change {
+        const content = this.history.getContentAt(rev)
+        return cropContent(content, start, end - start)
     }
 
     public pasteExcerpt(offset: number, source: ExcerptSource): Excerpt {
@@ -111,10 +121,13 @@ export class Document {
         const target = new ExcerptTarget(rev, offset, contentLength(source.content)+1)
         // const pasted = source.content
         const pasted = ExcerptUtil.getPasteWithMarkers(this.uri, rev, offset, source)
-        expectEqual(contentLength(source.content) + 1, contentLength(pasted))
+        expectEqual(source.content, cropContent(pasted, 1))
 
         const ops: Op[] = [{ retain: offset }]
-        this.history.append([new ExDelta(ops.concat(pasted.ops), source)])
+        const change = new ExDelta(ops.concat(pasted.ops), source)
+        this.history.append([change])
+        // expectEqual([change], this.history.getChange(this.history.getCurrentRev()-1))
+
         return new Excerpt(source, target)
     }
 
@@ -123,8 +136,37 @@ export class Document {
         const lastRev = this.getCurrentRev()
         const initialRange = new Range(source.start, source.end)
         const changes = this.getChangesFrom(source.rev)
-        const croppedChanges = normalizeChanges(initialRange.cropChanges(changes))
-        const rangesTransformed = initialRange.mapChanges(croppedChanges)
+        // const croppedChanges = normalizeChanges(initialRange.cropChanges(changes))
+        const croppedChanges = initialRange.cropChanges(changes)
+        const rangesTransformed = initialRange.mapChanges(changes)
+
+        //  check
+        for(let i = 0; i < changes.length; i++) {
+            const change = changes[i]
+            const croppedChange = croppedChanges[i]
+            const range = (i === 0 ? initialRange : rangesTransformed[i-1])
+
+            if(!isEqual(range.cropChange(change), croppedChange)) {
+                console.error("failed in iteration: ", i)
+                console.error('initial range:', initialRange)
+                console.error('changes:' , JSONStringify(changes))
+                console.error('croppedChanges:' , JSONStringify(croppedChanges))
+                console.error('ranges:' , JSONStringify(rangesTransformed))
+                console.error('range.cropChange(change):', range.cropChange(change))
+                for(let j = 0; j < changes.length; j++) {
+                    console.error(`range[${j}].cropChange(changes[${j}]):`, rangesTransformed[j].cropChange(changes[j]))
+                }
+                console.error('croppedChange:', croppedChange)
+            }
+        }
+
+        // if(JSONStringify(normalizeChanges(croppedChanges)) !== JSONStringify(croppedChanges)) {
+        //     console.error('croppedChanges:' , JSONStringify(croppedChanges))
+        //     console.error('normalizeChanges(croppedChanges):' , JSONStringify(normalizeChanges(croppedChanges)))
+        //     console.error('initialRange.mapChanges(changes):' , initialRange.mapChanges(changes))
+        //     console.error('initialRange.mapChanges(croppedChanges):' , initialRange.mapChanges(croppedChanges))
+        //     console.error('initialRange.mapChanges(normalizeChanges(croppedChanges)):' , initialRange.mapChanges(normalizeChanges(croppedChanges)))
+        // }
 
         return this.composeSyncs(uri, lastRev, croppedChanges, rangesTransformed)
     }
@@ -135,45 +177,49 @@ export class Document {
         const initialRange = new Range(source.start, source.end)
         const changes = this.getChangesFromTo(source.rev, source.rev) // only 1 change
         const croppedChanges = initialRange.cropChanges(changes)
-        const rangesTransformed = initialRange.mapChanges(croppedChanges)
+        const rangesTransformed = initialRange.mapChanges(changes)
         return this.composeSyncs(uri, rev, croppedChanges, rangesTransformed)
     }
 
     public syncExcerpt(syncs: ExcerptSync[], target: ExcerptTarget): ExcerptTarget {
+        // const syncChanges = this.changesShiftedToTarget(syncs, target)
         const initialTargetRange = new Range(target.offset, target.offset + target.length)
-
-        const syncChanges = this.changesShiftedToTarget(syncs, target)
-
         let targetRange = initialTargetRange
-        // let sourceRev = syncs.rev - syncChanges.length
         let targetRev = target.rev
 
-        for(let i = 0; i < syncs.length; i++) {
-            const sync = syncs[i]
+        for(const sync of syncs) {
+            // const sync = syncs[i]
             const sourceUri = sync.uri
             const sourceRev = sync.rev
             const sourceRange = sync.range
             const targetUri = this.uri
-            const syncChange = syncChanges[i]
-            // simulate
-            const simulateResult = this.simulateMergeAt(target.rev, [syncChange])
-            const changes = simulateResult.resDeltas.concat(simulateResult.reqDeltas)
+            const syncChange = this.changeShifted(sync, targetRange.start+1) // +1 for marker
+            // simulate without marker
+            const simulatedResult = this.simulateMergeAt(targetRev, [syncChange])
+            const simulatedChangesMerged = simulatedResult.resDeltas.concat(simulatedResult.reqDeltas)
 
             // calculate range from simulation
-            const newTargetRange = targetRange.applyChanges(changes)
+            const newTargetRange = targetRange.applyChanges(simulatedChangesMerged)
             // get updated excerpt marker from range
-            const excerpted = ExcerptUtil.makeExcerptMarker(sourceUri, sourceRev, targetUri, this.getCurrentRev() + 1, newTargetRange.end - newTargetRange.start)
-            const replaceMarker = new Delta([
+            const excerptMarker = ExcerptUtil.makeExcerptMarker(sourceUri, sourceRev, targetUri, this.getCurrentRev() + 1, newTargetRange.end - newTargetRange.start)
+            const excerptMarkerReplaceChange = new Delta([
                 {retain: targetRange.start},
                 {delete: 1},
-                {insert: excerpted}])
-            // flatten change and marker into single change
-            const flattened = flattenTransformedChange(syncChange, replaceMarker)
-
-            flattened.source = {type: 'sync', uri: sync.uri, rev: sourceRev, start: sourceRange.start, end: sourceRange.end}
+                {insert: excerptMarker}])
+            // flatten the change and the marker into single change
+            const flattenedChange = flattenTransformedChange(syncChange, excerptMarkerReplaceChange)
+            flattenedChange.source = {type: 'sync', uri: sync.uri, rev: sourceRev, start: sourceRange.start, end: sourceRange.end}
             // actual merge
-            this.merge(targetRev, [flattened])
-            // console.log('transformedSync: ', `${targetRev}->${this.getCurrentRev()}`, JSONStringify(flattened))
+            const result = this.merge(targetRev, [flattenedChange])
+            console.log('transformedSync.rev: ', `${targetRev}->${this.getCurrentRev()}`)
+            console.log('transformedSync.syncChange: ', JSONStringify(sync.change))
+            console.log("transformedSync.syncChangeShifted:", JSONStringify(syncChange))
+            console.log("transformedSync.excerptMarkerReplaceChange:", JSONStringify(excerptMarkerReplaceChange))
+            console.log("transformedSync.flattenedChange:", JSONStringify(flattenedChange))
+            console.log("transformedSync.result:", JSONStringify(result))
+            console.log("transformedSync.content:", printChange(this.getContent()))
+            console.log("transformedSync.targetRange:", newTargetRange)
+            expectEqual(cropContent(this.getContent(), newTargetRange.start, 1), new ExDelta([{insert: excerptMarker}]))
 
             // update targetRev
             targetRev = this.getCurrentRev()
@@ -186,9 +232,23 @@ export class Document {
 
     /** private methods */
 
+    private changeShifted(sync: ExcerptSync, offset:number):Change {
+        const shiftAmount = offset
+        const change = new ExDelta(sync.change.ops, sync.change.source)
+        // adjust offset:
+        // utilize first retain if it exists
+        if (change.ops.length > 0 && change.ops[0].retain) {
+            change.ops[0].retain! += shiftAmount
+        // otherwise just append new retain
+        } else {
+            change.ops.unshift({ retain: shiftAmount })
+        }
+        return change
+    }
+
     private changesShiftedToTarget(syncs: ExcerptSync[], target:ExcerptTarget):Change[]
     {
-        const shiftAmount = target.offset+1
+        const shiftAmount = target.offset+1 // +1 for marker
         const shiftedSyncChanges = _.map(syncs, sync => {
             const change = sync.change
             // adjust offset:

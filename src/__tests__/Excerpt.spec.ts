@@ -1,11 +1,52 @@
 import * as chalk from 'chalk'
+import each from 'jest-each'
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { Document } from '../Document'
 import {printChange, printContent, printChangedContent, printChanges} from '../primitive/printer'
 import { contentLength, JSONStringify, normalizeOps, expectEqual } from '../primitive/util'
+import { ExDelta } from '../primitive/ExDelta';
+import { Source } from '../primitive/Change';
 
 describe('Excerpt', () => {
+
+    it('Document crop', () => {
+        const doc1 = new Document('doc1', 'My Document 1')
+        const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
+
+        const source:Source = { type: 'excerpt', uri: "", rev: 0, start: 0, end: 0}
+        const doc1Changes = [new ExDelta([], source).delete(3).insert('Your '), new Delta().retain(5).insert('precious ')]
+
+        const doc2Changes = [new Delta().insert('Some introduction here: ')]
+        doc1.append(doc1Changes)
+        doc2.append(doc2Changes)
+
+        expectEqual(
+            JSONStringify(doc1.takeAt(0, 0, 2)),
+            JSONStringify({ ops: [{ insert: 'My' }] })
+        )
+
+        expectEqual(
+            JSONStringify(doc1.takeAt(1, 0, 4)),
+            JSONStringify({ ops: [{ insert: 'Your' }] })
+        )
+
+        expectEqual(
+            JSONStringify(doc1.takeAt(2, 0, 4)),
+            JSONStringify({ ops: [{ insert: 'Your' }] })
+        )
+
+        expectEqual(
+            JSONStringify(doc1.takeAt(2, 5, 9)),
+            JSONStringify({ ops: [{ insert: 'prec' }] })
+        )
+
+        expectEqual(
+            JSONStringify(doc1.take(0, 4)),
+            JSONStringify({ ops: [{ insert: 'Your' }] })
+        )
+
+    })
 
     it('Document excerpt', () => {
         const doc1 = new Document('doc1', 'My Document 1')
@@ -32,7 +73,7 @@ describe('Excerpt', () => {
         )
     })
 
-    it('Document sync', () => {
+    each([[false],[true]]).it('Document sync', (method) => {
         const doc1 = new Document('doc1', 'My Document 1')
         const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
@@ -90,17 +131,19 @@ describe('Excerpt', () => {
         console.log('phases4.source: ', JSONStringify(source1))
 
         // method 1
-        if (true) {
+        if (method) {
             const syncs = doc1.getSyncSinceExcerpted(source1)
+            console.log('phases4.sync: ', JSONStringify(syncs))
             const target2 = doc2.syncExcerpt(syncs, target1)
             expectEqual(doc2.getContent(), {
                 "ops":[
                     {"insert":"Actual "},
-                    {"insert":{"excerpted": {"sourceUri":"doc1","sourceRev":6,"targetUri": "doc2", "targetRev":6,"length":20}}},
+                    {"insert":{"excerpted": {"sourceUri":"doc1","sourceRev":6,"targetUri": "doc2", "targetRev":9,"length":20}}},
                     {"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}
                 ],
             })
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
+            console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
         }
         // method2
         else {
@@ -116,10 +159,10 @@ describe('Excerpt', () => {
                 console.log('phases4.sync: ', JSONStringify(syncs))
                 console.log('phases4.target: ', JSONStringify(target))
                 console.log('phases4.source: ', JSONStringify(source))
-                console.log('phases4.doc2: ', doc2.getCurrentRev(), JSONStringify(doc2.getContent()))
+                console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
             }
             expectEqual(doc2.getContent(), {
-                ops:[{insert:"Actual "},{insert:{sourceUri:"doc1",sourceRev:6,targetRev:9,length:20}},{insert:"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
+                ops:[{insert:"Actual "},{insert:{excerpted: {sourceUri:"doc1",sourceRev:6, targetUri:"doc2", targetRev:9,length:20}}},{insert:"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
             })
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
         }

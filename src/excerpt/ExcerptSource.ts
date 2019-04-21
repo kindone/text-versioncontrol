@@ -3,7 +3,7 @@ import { Change, Source } from '../primitive/Change'
 
 export class ExcerptSource implements Source {
 
-    public readonly type = 'excerpt'
+    public readonly type:'excerpt'|'sync' = 'excerpt'
 
     constructor(
         public uri: string,

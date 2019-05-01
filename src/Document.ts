@@ -202,7 +202,7 @@ export class Document {
             const excerptMarkerReplaceChange = new Delta([
                 {retain: curTargetRange.start},
                 {delete: 1},
-                {insert: excerptMarker}])
+                excerptMarker])
             // flatten the change and the marker into single change
             const flattenedChange = flattenTransformedChange(syncChange, excerptMarkerReplaceChange)
             flattenedChange.source = {type: 'sync', uri: sync.uri, rev: sourceRev, start: sourceRange.start, end: sourceRange.end}

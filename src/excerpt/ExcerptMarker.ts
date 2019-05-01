@@ -1,7 +1,5 @@
-import { IExcerpt } from "./Excerpt";
-
-
 
 export interface ExcerptMarker {
-    excerpted: IExcerpt
+    insert: { excerpted: string },
+    attributes: { targetUri: string, targetRev: number, length: number }
 }

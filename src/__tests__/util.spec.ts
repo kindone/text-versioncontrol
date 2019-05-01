@@ -130,15 +130,13 @@ describe('Misc', () => {
             {insert: 'a'},
             {retain: 6},
             {delete: 3},
-            {insert: ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2)},
+            ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2),
             {retain: 5, attributes: {x: 65}},
-            {insert: ExcerptUtil.makeExcerptMarker('a', 1, 'b', 2, 3)}
+            ExcerptUtil.makeExcerptMarker('a', 1, 'b', 2, 3)
         ]
 
         // temp test
-        expectEqual('excerpted' in {insert: ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2)}.insert, true)
-        const insert:any = typeof ops[3].insert === 'string' ? {} : ops[3].insert
-        expectEqual(typeof insert.excerpted.sourceUri, 'string')
+        expectEqual('excerpted' in ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2).insert, true)
 
         const toBoolean = ops.map(op => ExcerptUtil.isExcerptMarker(op))
         expectEqual(toBoolean, [false, false, false, true, false, true])
@@ -149,18 +147,25 @@ describe('Misc', () => {
             {insert: 'a'},
             {retain: 6},
             {delete: 3},
-            {insert: ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2)},
+            ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2),
             {retain: 5, attributes: {x: 65}},
-            {insert: ExcerptUtil.makeExcerptMarker('a', 1, 'b', 2, 3), attributes: {x:1}} // not realistic to have attributes in excerpt marker but...
+            { attributes: {x:1}, ...ExcerptUtil.makeExcerptMarker('a', 1, 'b', 2, 3)} // not realistic to have attributes in excerpt marker but...
         ]
+
+        const marker3:Op = {...ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2)}
+        marker3.attributes.copied = true
+        const marker5:Op = {...ExcerptUtil.makeExcerptMarker('a', 1, 'b', 2, 3)}
+        marker5.attributes.copied = true
+
         const copiedOps = [
             {insert: 'a'},
             {retain: 6},
             {delete: 3},
-            {insert: {copied: true, ...ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2)}},
+            marker3,
             {retain: 5, attributes: {x: 65}},
-            {insert: {copied: true, ...ExcerptUtil.makeExcerptMarker('a', 1, 'b', 2, 3)}, attributes: {x:1}}
+            marker5
         ]
+        console.log(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
         expectEqual(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
     })
 })

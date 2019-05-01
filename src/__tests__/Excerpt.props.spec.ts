@@ -143,11 +143,14 @@ class TakeAndPasteExcerptCommand implements fc.Command<ExcerptModel, Document[]>
         expectEqual(source.content, pasteDoc.takeExcerpt(target.offset+1, target.offset + target.length).content, JSONStringify(debugInfo))
 
         // check marker
-        const actualMarker = pasteDoc.takeExcerpt(target.offset, target.offset+1).content.ops[0].insert
-        // const expectedMarker = {copied:true, excerpted: {sourceUri: "doc" + this.take.id, sourceRev: takeRev,
-        //  targetUri: "doc" + this.paste.id, targetRev: pasteRev+1, length:contentLength(source.content)}}
-        const expectedMarker = {excerpted: "doc"+this.take.id + "?rev=" + takeRev}
+        const actualOp = pasteDoc.takeExcerpt(target.offset, target.offset+1).content.ops[0]
+        const actualMarker = actualOp.insert
+        const actualAttributes = actualOp.attributes
+
+        const expectedMarker = {excerpted: "doc" + this.take.id + "?rev=" + takeRev}
+        const expectedAttributes = {targetUri: "doc" + this.paste.id, targetRev: pasteRev+1, length: contentLength(source.content), copied: true}
         expectEqual(actualMarker, expectedMarker)
+        expectEqual(actualAttributes, expectedAttributes)
 
         expectEqual(model.getExcerpts(this.paste.id).length + 1, pasteDoc.getPastedExcerpts().length, () => JSONStringify(model.getExcerpts(this.paste.id)) + " != " + JSONStringify(pasteDoc.getPastedExcerpts()))
 

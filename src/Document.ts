@@ -26,13 +26,17 @@ import {
 export class Document {
     private history: IHistory
 
-    constructor(public readonly uri: string, content: string | Change) {
-        this.history = new History(uri, asChange(content))
+    constructor(public readonly name: string, content: string | Change) {
+        this.history = new History(name, asChange(content))
+    }
+
+    public getName():string {
+        return this.history.name
     }
 
     public clone():Document
     {
-        const doc = new Document(this.uri, '')
+        const doc = new Document(this.name, '')
         doc.history = this.history.clone()
         return doc
     }
@@ -97,13 +101,13 @@ export class Document {
     public takeExcerpt(start: number, end: number): ExcerptSource {
         const croppedContent = this.take(start, end)
         const safeCroppedContent = {...croppedContent, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedContent.ops)}
-        return new ExcerptSource(this.uri, this.history.getCurrentRev(), start, end, safeCroppedContent)
+        return new ExcerptSource(this.name, this.history.getCurrentRev(), start, end, safeCroppedContent)
     }
 
     public takeExcerptAt(rev: number, start: number, end: number): ExcerptSource {
         const croppedContent = this.takeAt(rev, start, end)
         const safeCroppedContent = {...croppedContent, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedContent.ops)}
-        return new ExcerptSource(this.uri, rev, start, end, safeCroppedContent)
+        return new ExcerptSource(this.name, rev, start, end, safeCroppedContent)
     }
 
     public take(start:number, end:number):Change {
@@ -120,7 +124,7 @@ export class Document {
         const rev = this.getCurrentRev() + 1
         const target = new ExcerptTarget(rev, offset, contentLength(source.content)+1)
         // const pasted = source.content
-        const pasted = ExcerptUtil.getPasteWithMarkers(this.uri, rev, offset, source)
+        const pasted = ExcerptUtil.getPasteWithMarkers(this.name, rev, offset, source)
         expectEqual(source.content, cropContent(pasted, 1))
 
         const ops: Op[] = [{ retain: offset }]
@@ -189,7 +193,7 @@ export class Document {
             const sourceUri = sync.uri
             const sourceRev = sync.rev
             const sourceRange = sync.range
-            const targetUri = this.uri
+            const targetUri = this.name
             const syncChange = this.changeShifted(sync.change, curTargetRange.start+1) // +1 for marker
             // simulate without marker
             const simulatedResult = this.simulateMergeAt(targetRev, [syncChange])

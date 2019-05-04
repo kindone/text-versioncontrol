@@ -17,38 +17,38 @@ describe('server-client scenarios', () => {
         client1.apply([new Delta().insert('client1 text')])
         client2.apply([new Delta().insert('Hello world')])
 
-        // console.log(server.getText(), "-", client1.getText(), "-", client2.getText())
+        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
 
         let req = client1.getSyncRequest()
         let merged = server.merge(req)
         // console.log(client1, req, merged)
         client1.sync(merged)
 
-        // console.log(server.getText(), "-", client1.getText(), "-", client2.getText())
+        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
 
         req = client2.getSyncRequest()
         merged = server.merge(req)
         // console.log(client2, req, merged)
         client2.sync(merged)
 
-        // console.log(server.getText(), "-", client1.getText(), "-", client2.getText())
+        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
 
         req = client1.getSyncRequest()
         merged = server.merge(req)
         // console.log(client1, req, merged)
         client1.sync(merged)
-        // console.log(server.getText(), "-", client1.getText(), "-", client2.getText())
+        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
 
-        expect(client1.getText()).toBe(client2.getText())
-        expect(client1.getText()).toBe(server.getText())
+        expect(client1.getContent()).toEqual(client2.getContent())
+        expect(client1.getContent()).toEqual(server.getContent())
 
         client1.apply([new Delta().delete(3).insert('replace')])
         client1.sync(server.merge(client1.getSyncRequest()))
 
         client2.sync(server.merge(client2.getSyncRequest()))
 
-        expect(client1.getText()).toBe(client2.getText())
-        expect(client1.getText()).toBe(server.getText())
+        expect(client1.getContent()).toEqual(client2.getContent())
+        expect(client1.getContent()).toEqual(server.getContent())
     })
 })
 
@@ -60,11 +60,11 @@ describe('History hand-made scenarios', () => {
 
         const set1 = [new Delta().retain(7).insert(' text'), new Delta().insert('The ')]
         serverHistory.append(set1)
-        // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getText())
+        // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getContent())
 
         const set2 = [new Delta().retain(7).insert(' string'), new Delta().insert('An ')]
         clientHistory.append(set2)
-        // console.log(clientHistory.name, clientHistory.getCurrentRev(), clientHistory.getText())
+        // console.log(clientHistory.name, clientHistory.getCurrentRev(), clientHistory.getContent())
 
         const set1ForClient = serverHistory.merge({
             rev: 0,
@@ -77,7 +77,7 @@ describe('History hand-made scenarios', () => {
             deltas: set1ForClient.resDeltas,
         })
 
-        expect(clientHistory.getText()).toBe(serverHistory.getText())
+        expect(clientHistory.getContent()).toEqual(serverHistory.getContent())
 
         const clientRev = clientHistory.getCurrentRev()
         const serverRev = serverHistory.getCurrentRev()
@@ -96,7 +96,7 @@ describe('History hand-made scenarios', () => {
         const clientRebased = clientHistory.rebase({ rev: clientRev, branchName: serverHistory.name, deltas: set4 })
         const serverRebased = serverHistory.rebase({ rev: serverRev, branchName: clientHistory.name, deltas: set3 })
 
-        expect(clientHistory.getText()).toBe(serverHistory.getText())
+        expect(clientHistory.getContent()).toEqual(serverHistory.getContent())
     })
 
     it('scenario 2', () => {
@@ -106,11 +106,11 @@ describe('History hand-made scenarios', () => {
 
         const serverSet = [new Delta().retain(7).insert(' text'), new Delta().insert('The ')]
         serverHistory.append(serverSet)
-        // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getText())
+        // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getContent())
 
         const client1Set = [new Delta().retain(7).insert(' string'), new Delta().insert('An ')]
         c1History.append(client1Set)
-        // console.log(c1History.name, c1History.getCurrentRev(), c1History.getText())
+        // console.log(c1History.name, c1History.getCurrentRev(), c1History.getContent())
 
         const serverSetForClient1 = serverHistory.merge({
             rev: 0,
@@ -123,9 +123,9 @@ describe('History hand-made scenarios', () => {
             deltas: serverSetForClient1.resDeltas,
         })
 
-        expect(c1History.getText()).toBe(serverHistory.getText())
+        expect(c1History.getContent()).toEqual(serverHistory.getContent())
 
-        // const c2History = new TextWithHistory("client2", serverHistory.getText())
+        // const c2History = new TextWithHistory("client2", serverHistory.getContent())
         // const server_rev = serverHistory.getCurrentRev()
         // const client2_rev =
 
@@ -157,10 +157,10 @@ describe('generated scenarios', () => {
 
             expectEqual(clientHistory.getContent(), serverHistory.getContent()) // , "<" + JSONStringify(set1) + " and " + JSONStringify(set2) + " and " + JSONStringify(set1ForClient) + ">")
 
-            const set3 = randomUserDeltas(serverHistory.getText().length, 2)
+            const set3 = randomUserDeltas(contentLength(serverHistory.getContent()), 2)
             serverHistory.append(set3)
 
-            const set4 = randomUserDeltas(clientHistory.getText().length, 2)
+            const set4 = randomUserDeltas(contentLength(clientHistory.getContent()), 2)
             clientHistory.append(set4)
 
             const set3ForClient = serverHistory.merge({

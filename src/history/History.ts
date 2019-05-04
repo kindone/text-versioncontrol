@@ -11,9 +11,6 @@ export interface IHistory {
     readonly name: string
     getCurrentRev(): number
 
-    getText(): string
-    getTextAt(rev: number): string
-
     getContent(): Change
     getContentAt(rev: number): Change
 
@@ -27,7 +24,6 @@ export interface IHistory {
     simulateRebaseAt(baseRev: number, deltas: Change[], branchName: string): MergeResult
 
     append(deltas: Change[]): number
-
     merge(mergeRequest: SyncRequest): MergeResult
     rebase(rebaseRequest: SyncRequest): MergeResult
 
@@ -124,20 +120,6 @@ export class History implements IHistory {
 
     public getCurrentRev(): number {
         return this.deltas.length + this.initialRev
-    }
-
-    public getText(): string {
-        return this.getTextAt(this.getCurrentRev())
-    }
-
-    public getTextAt(rev: number): string {
-        const savepoint = this.getNearestSavepointForRev(rev)
-        const ss = SharedString.fromDelta(savepoint.content)
-        for (let i = savepoint.rev; i < rev; i++) {
-            ss.applyChange(this.deltas[i - this.initialRev], '_')
-        }
-
-        return ss.toText()
     }
 
     public getContent(): Change {

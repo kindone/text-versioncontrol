@@ -41,7 +41,4 @@ export class RepoClient {
         return repoSyncRequest
     }
 
-    public getText(docName: string) {
-        return this.docs[docName].getText()
-    }
 }

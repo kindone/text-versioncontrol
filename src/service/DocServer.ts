@@ -13,7 +13,7 @@ export class DocServer {
         return this.history.merge(syncRequest)
     }
 
-    public getText() {
-        return this.history.getText()
+    public getContent() {
+        return this.history.getContent()
     }
 }

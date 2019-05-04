@@ -37,7 +37,7 @@ export class DocClient {
         }
     }
 
-    public getText() {
-        return this.history.getText()
+    public getContent() {
+        return this.history.getContent()
     }
 }

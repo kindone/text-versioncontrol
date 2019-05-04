@@ -26,8 +26,4 @@ export class RepoServer {
         }
         return syncResponse
     }
-
-    public getText(docName: string) {
-        return this.docs[docName].getText()
-    }
 }

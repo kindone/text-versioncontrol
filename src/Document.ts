@@ -124,7 +124,7 @@ export class Document {
         const rev = this.getCurrentRev() + 1
         const target = new ExcerptTarget(rev, offset, contentLength(source.content)+1)
         // const pasted = source.content
-        const pasted = ExcerptUtil.getPasteWithMarkers(this.name, rev, offset, source)
+        const pasted = ExcerptUtil.getPasteWithMarkers(this.name, rev, source)
         expectEqual(source.content, cropContent(pasted, 1))
 
         const ops: Op[] = [{ retain: offset }]

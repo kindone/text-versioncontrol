@@ -69,7 +69,7 @@ describe('Excerpt', () => {
 
         expectEqual(
             JSONStringify(doc2.getContent().ops),
-            JSONStringify([{"insert":"Some "},{"insert":{"excerpted":"doc1?rev=2"},"attributes":{"targetUri":"doc2","targetRev":2,"length":4}},{"insert":"Yourintroduction here: Here comes the trouble. HAHAHAHA"}])
+            JSONStringify([{"insert":"Some "},{"insert":{"excerpted":"doc1?rev=2"},"attributes":{"targetUri":"doc2","targetRev":"2","length":"4"}},{"insert":"Yourintroduction here: Here comes the trouble. HAHAHAHA"}])
         )
     })
 
@@ -135,7 +135,7 @@ describe('Excerpt', () => {
             const syncs = doc1.getSyncSinceExcerpted(source1)
             console.log('phases4.sync: ', JSONStringify(syncs))
             const target2 = doc2.syncExcerpt(syncs, target1)
-            expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6"},"attributes":{"targetUri":"doc2","targetRev":9,"length":20}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
+            expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6"},"attributes":{"targetUri":"doc2","targetRev":"9","length":"20"}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
             console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
         }
@@ -156,7 +156,7 @@ describe('Excerpt', () => {
                 console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
             }
             expectEqual(doc2.getContent(), {
-                "ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6"},"attributes":{"targetUri":"doc2","targetRev":9,"length":20}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
+                "ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6"},"attributes":{"targetUri":"doc2","targetRev":"9","length":"20"}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
             })
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
         }

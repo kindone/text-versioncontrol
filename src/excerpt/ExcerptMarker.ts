@@ -1,5 +1,5 @@
 
 export interface ExcerptMarker {
     insert: { excerpted: string },
-    attributes: { targetUri: string, targetRev: number, length: number }
+    attributes: { targetUri: string, targetRev: string, length: string }
 }

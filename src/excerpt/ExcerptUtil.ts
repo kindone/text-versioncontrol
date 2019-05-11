@@ -25,7 +25,7 @@ export class ExcerptUtil {
     {
         // const header = { sourceUri, sourceRev, targetUri, targetRev, length}
         const value = { excerpted: sourceUri + "?rev=" + sourceRev }
-        const attributes = {targetUri, targetRev, length}
+        const attributes = {targetUri, targetRev:targetRev.toString(), length: length.toString()}
         const op = {insert: value, attributes}
 
         if(!ExcerptUtil.isExcerptMarker(op))
@@ -33,7 +33,7 @@ export class ExcerptUtil {
         return op
     }
 
-    public static getPasteWithMarkers(uri:string, rev:number, offset:number, source:ExcerptSource):Change {
+    public static getPasteWithMarkers(uri:string, rev:number, source:ExcerptSource):Change {
         const markerOp = this.makeExcerptMarker(source.uri, source.rev, uri, rev, contentLength(source.content))
         let ops:Op[] = []
         if(!ExcerptUtil.isExcerptMarker(markerOp))
@@ -69,14 +69,14 @@ export class ExcerptUtil {
             return false
 
         return (typeof attributes.targetUri === 'string')
-             && (typeof attributes.targetRev === 'number')
-             && (typeof attributes.length === 'number')
+             && (typeof attributes.targetRev === 'string')
+             && (typeof attributes.length === 'string')
     }
 
     public static setExcerptMarkersAsCopied(ops:Op[]):Op[] {
         return ops.map(op => {
             if(ExcerptUtil.isExcerptMarker(op)) {
-                return {...op, attributes: {...op.attributes, copied:true}}
+                return {...op, attributes: {...op.attributes, copied:"true"}}
             }
             else {
                 return op

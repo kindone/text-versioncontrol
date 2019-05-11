@@ -153,9 +153,9 @@ describe('Misc', () => {
         ]
 
         const marker3:Op = {...ExcerptUtil.makeExcerptMarker('c', 1, 'd', 1, 2)}
-        marker3.attributes.copied = true
+        marker3.attributes.copied = "true"
         const marker5:Op = {...ExcerptUtil.makeExcerptMarker('a', 1, 'b', 2, 3)}
-        marker5.attributes.copied = true
+        marker5.attributes.copied = "true"
 
         const copiedOps = [
             {insert: 'a'},

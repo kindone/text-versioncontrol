@@ -6,8 +6,11 @@ import { ExDelta } from '../primitive/ExDelta'
 import { contentLength, JSONStringify } from '../primitive/util';
 import { ExcerptMarker } from './ExcerptMarker';
 import { ExcerptSource } from './ExcerptSource';
+import { ExcerptTarget } from './ExcerptTarget';
+import { Excerpt } from './Excerpt';
 
 export class ExcerptUtil {
+
     public static take(start: number, end: number, length: number): Change {
         // ....start....end...length
         const ops: Op[] = []
@@ -21,11 +24,12 @@ export class ExcerptUtil {
         return new ExDelta(ops)
     }
 
-    public static makeExcerptMarker(sourceUri:string, sourceRev:number, targetUri:string, targetRev:number, length:number): ExcerptMarker
+    public static makeExcerptMarker(sourceUri:string, sourceRev:number, sourceStart:number, sourceEnd:number, targetUri:string, targetRev:number, targetStart:number): ExcerptMarker
     {
         // const header = { sourceUri, sourceRev, targetUri, targetRev, length}
-        const value = { excerpted: sourceUri + "?rev=" + sourceRev }
-        const attributes = {targetUri, targetRev:targetRev.toString(), length: length.toString()}
+        const value = { excerpted: sourceUri + "?rev=" + sourceRev + "&start=" + sourceStart + "&end=" + sourceEnd}
+        const targetEnd = targetStart + sourceEnd - sourceStart
+        const attributes = {targetUri, targetRev:targetRev.toString(), targetStart: targetStart.toString(), targetEnd: targetEnd.toString()}
         const op = {insert: value, attributes}
 
         if(!ExcerptUtil.isExcerptMarker(op))
@@ -33,8 +37,8 @@ export class ExcerptUtil {
         return op
     }
 
-    public static getPasteWithMarkers(uri:string, rev:number, source:ExcerptSource):Change {
-        const markerOp = this.makeExcerptMarker(source.uri, source.rev, uri, rev, contentLength(source.content))
+    public static getPasteWithMarkers(source:ExcerptSource, targetUri:string, targetRev:number, targetStart:number):Change {
+        const markerOp = this.makeExcerptMarker(source.uri, source.rev, source.start, source.end, targetUri, targetRev,  targetStart)
         let ops:Op[] = []
         if(!ExcerptUtil.isExcerptMarker(markerOp))
             throw new Error("Unexpected error. Check marker and checker implementation: " + JSONStringify(markerOp))
@@ -49,7 +53,7 @@ export class ExcerptUtil {
         if(split.length !== 2)
             return false
 
-        return /^rev=[0-9]+$/.test(split[1])
+        return /^rev=[0-9]+&start=[0-9]+&end=[0-9]+$/.test(split[1])
     }
 
     public static isExcerptMarker(op:Op, includeCopied = false):boolean {
@@ -70,7 +74,8 @@ export class ExcerptUtil {
 
         return (typeof attributes.targetUri === 'string')
              && (typeof attributes.targetRev === 'string')
-             && (typeof attributes.length === 'string')
+             && (typeof attributes.targetStart === 'string')
+             && (typeof attributes.targetEnd === 'string')
     }
 
     public static setExcerptMarkersAsCopied(ops:Op[]):Op[] {
@@ -84,7 +89,36 @@ export class ExcerptUtil {
         })
     }
 
-    // public static paste(rev:number, offset:number, source:ExcerptSource):IDelta {
-    //     return new Delta(source.content.ops)
-    // }
+    public static decomposeMarker(op:Op) {
+        if(!this.isExcerptMarker(op))
+            throw new Error("Given op is not a marker: " + JSONStringify(op))
+
+        const marker:any = op
+        const source = marker.insert.excerpted
+        const {sourceUri, sourceRev, sourceStart, sourceEnd} = this.splitSource(source)
+        const targetUri = marker.attributes.targetUri as string
+        const targetRev = Number.parseInt(marker.attributes.targetRev, 10)
+        const targetStart = Number.parseInt(marker.attributes.targetStart, 10)
+        const targetEnd = Number.parseInt(marker.attributes.targetEnd, 10)
+
+        return new Excerpt({type:'excerpt', uri:sourceUri, rev: sourceRev, start:sourceStart, end:sourceEnd},
+             new ExcerptTarget(targetUri, targetRev, targetStart, targetEnd))
+    }
+
+    public static splitSource(source:string) {
+        if(!ExcerptUtil.isExcerptURI(source))
+            throw new Error('unsupported value: ' + source)
+
+        const [sourceUri,rest] = source.split("?")
+
+        const result = /^rev=([0-9]+)&start=([0-9]+)&end=([0-9]+)$/.exec(rest)
+        if(!result)
+            throw new Error('unsupported value: ' + source)
+
+        const [full, sourceRevStr, sourceStartStr, sourceEndStr] = result
+        const sourceRev = Number.parseInt(sourceRevStr, 10)
+        const sourceStart = Number.parseInt(sourceStartStr, 10)
+        const sourceEnd = Number.parseInt(sourceEndStr, 10)
+        return {sourceUri, sourceRev, sourceStart, sourceEnd}
+    }
 }

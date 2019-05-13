@@ -4,7 +4,7 @@ import * as _ from 'underscore'
 import { Excerpt, ExcerptSource, BatchExcerptSync, ExcerptTarget, ExcerptUtil, ExcerptSync } from './excerpt'
 import { History, IHistory } from './history/History'
 import { SyncResponse } from './history/SyncResponse'
-import { Change } from './primitive/Change'
+import { Change, Source } from './primitive/Change'
 import { ExDelta } from './primitive/ExDelta'
 import { printChange } from './primitive/printer';
 import { Range } from './primitive/Range'
@@ -101,12 +101,14 @@ export class Document {
     public takeExcerpt(start: number, end: number): ExcerptSource {
         const croppedContent = this.take(start, end)
         const safeCroppedContent = {...croppedContent, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedContent.ops)}
+        expectEqual(contentLength(safeCroppedContent), end - start)
         return new ExcerptSource(this.name, this.history.getCurrentRev(), start, end, safeCroppedContent)
     }
 
     public takeExcerptAt(rev: number, start: number, end: number): ExcerptSource {
         const croppedContent = this.takeAt(rev, start, end)
         const safeCroppedContent = {...croppedContent, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedContent.ops)}
+        expectEqual(contentLength(safeCroppedContent), end - start)
         return new ExcerptSource(this.name, rev, start, end, safeCroppedContent)
     }
 
@@ -122,9 +124,9 @@ export class Document {
 
     public pasteExcerpt(offset: number, source: ExcerptSource): Excerpt {
         const rev = this.getCurrentRev() + 1
-        const target = new ExcerptTarget(rev, offset, contentLength(source.content)+1)
+        const target = new ExcerptTarget(this.name, rev, offset, offset + contentLength(source.content)+1)
         // const pasted = source.content
-        const pasted = ExcerptUtil.getPasteWithMarkers(this.name, rev, source)
+        const pasted = ExcerptUtil.getPasteWithMarkers(source, this.name, rev, offset)
         expectEqual(source.content, cropContent(pasted, 1))
 
         const ops: Op[] = [{ retain: offset }]
@@ -135,7 +137,7 @@ export class Document {
         return new Excerpt(source, target)
     }
 
-    public getSyncSinceExcerpted(source: ExcerptSource): ExcerptSync[] {
+    public getSyncSinceExcerpted(source: Source): ExcerptSync[] {
         const uri = source.uri
         const lastRev = this.getCurrentRev()
         const initialRange = new Range(source.start, source.end)
@@ -186,7 +188,7 @@ export class Document {
 
     public syncExcerpt(syncs: ExcerptSync[], target: ExcerptTarget): ExcerptTarget {
         // const syncChanges = this.changesShiftedToTarget(syncs, target)
-        let curTargetRange = new Range(target.offset, target.offset + target.length)
+        let curTargetRange = new Range(target.start, target.end)
         let targetRev = target.rev
 
         for(const sync of syncs) {
@@ -202,7 +204,7 @@ export class Document {
             // calculate range from simulation
             const newTargetRange = curTargetRange.applyChanges(simulatedChangesMerged)
             // get updated excerpt marker from range
-            const excerptMarker = ExcerptUtil.makeExcerptMarker(sourceUri, sourceRev, targetUri, this.getCurrentRev() + 1, newTargetRange.end - newTargetRange.start)
+            const excerptMarker = ExcerptUtil.makeExcerptMarker(sourceUri, sourceRev, sourceRange.start, sourceRange.end, targetUri, this.getCurrentRev() + 1, newTargetRange.start)
             const excerptMarkerReplaceChange = new Delta([
                 {retain: curTargetRange.start},
                 {delete: 1},
@@ -231,7 +233,7 @@ export class Document {
         }
 
         // return updated target
-        return new ExcerptTarget(targetRev, curTargetRange.start, curTargetRange.end - curTargetRange.start)
+        return new ExcerptTarget(this.name, targetRev, curTargetRange.start, curTargetRange.end)
     }
 
     /** private methods */

@@ -1,7 +1,7 @@
-import { ExcerptSource } from './ExcerptSource'
+import { Source } from '../primitive/Change';
 import { ExcerptTarget } from './ExcerptTarget'
 
 
 export class Excerpt {
-    constructor(public source: ExcerptSource, public target: ExcerptTarget) {}
+    constructor(public source: Source, public target: ExcerptTarget) {}
 }

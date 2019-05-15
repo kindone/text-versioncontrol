@@ -114,12 +114,12 @@ export class Document {
 
     public take(start:number, end:number):Change {
         const content = this.history.getContent()
-        return cropContent(content, start, end - start)
+        return cropContent(content, start, end)
     }
 
     public takeAt(rev:number, start:number, end:number):Change {
         const content = this.history.getContentAt(rev)
-        return cropContent(content, start, end - start)
+        return cropContent(content, start, end)
     }
 
     public pasteExcerpt(offset: number, source: ExcerptSource): Excerpt {
@@ -127,7 +127,7 @@ export class Document {
         const target = new ExcerptTarget(this.name, rev, offset, offset + contentLength(source.content)+1)
         // const pasted = source.content
         const pasted = ExcerptUtil.getPasteWithMarkers(source, this.name, rev, offset)
-        expectEqual(source.content, cropContent(pasted, 1))
+        expectEqual(source.content, cropContent(pasted, 1, contentLength(pasted)))
 
         const ops: Op[] = [{ retain: offset }]
         const change = new ExDelta(ops.concat(pasted.ops), source)

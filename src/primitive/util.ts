@@ -289,14 +289,14 @@ export function flattenTransformedChange(change1: Change, change2: Change, first
     return flattenChanges(change1, transformChanges(change1, change2, firstWins))
 }
 
-export function sliceOp(op: Op, begin: number, end?: number): Op {
+export function sliceOp(op: Op, start: number, end?: number): Op {
     if (typeof op.insert === 'string') {
         if (op.attributes)
-            return { insert: op.insert.slice(begin, end), attributes: op.attributes }
+            return { insert: op.insert.slice(start, end), attributes: op.attributes }
         else
-            return { insert: op.insert.slice(begin, end) }
+            return { insert: op.insert.slice(start, end) }
     } else if (op.insert) {
-        if (begin > 0)
+        if (start > 0)
             return { insert: '' }
         else {
             if (op.attributes)
@@ -307,28 +307,28 @@ export function sliceOp(op: Op, begin: number, end?: number): Op {
     } else if (op.retain) {
         end = end ? end : op.retain
         if (op.attributes)
-            return { retain: end - begin, attributes: op.attributes }
+            return { retain: end - start, attributes: op.attributes }
         else
-            return { retain: end - begin }
+            return { retain: end - start }
     } else if (op.delete) {
         end = end ? end : op.delete
-        return { delete: end - begin }
+        return { delete: end - start }
     }
 
     throw new Error('invalid op')
 }
 
-export function sliceOpWithAttributes(op: Op, attr: AttributeMap, begin: number, end?: number): Op {
+export function sliceOpWithAttributes(op: Op, attr: AttributeMap, start: number, end?: number): Op {
     const newOp: Op = { ...op }
     newOp.attributes = mergeAttributes(op.attributes, attr)
-    return sliceOp(newOp, begin, end)
+    return sliceOp(newOp, start, end)
 }
 
 // unused
-function sliceOpWithDelete(op: Op, attr: AttributeMap, begin: number, end?: number): Op {
+function sliceOpWithDelete(op: Op, attr: AttributeMap, start: number, end?: number): Op {
     const newOp: Op = { ...op }
     newOp.attributes = mergeAttributes(op.attributes, attr)
-    return sliceOp(newOp, begin, end)
+    return sliceOp(newOp, start, end)
 }
 
 // precedence: attr2 > attr1
@@ -350,16 +350,18 @@ export function mergeAttributes(attr1?: AttributeMap, attr2?: AttributeMap): Att
     return result
 }
 
-export function cropContent(content:Change, offset:number, length:number = -1):Change
+export function cropContent(content:Change, start:number, end:number):Change
 {
     const fullLength = contentLength(content)
-    length = length > 0 ? length : fullLength - offset
+    const length = end - start
 
-    if(fullLength < offset + length)
-        throw new Error("invalid argument: " + JSONStringify(content) + ", offset: " + offset +", length: "+ length)
+    if(fullLength < end)
+        throw new Error("invalid argument: " + JSONStringify(content) + ", start: " + start +", end: "+ end)
 
-    if(fullLength >  offset + length)
-        return flattenChanges(content, new ExDelta([{delete:offset}, {retain:length}, {delete:fullLength - offset - length}]))
+    if(fullLength ===  end)
+        return flattenChanges(content, new ExDelta([{delete:start}, {retain:length}]))
     else
-        return flattenChanges(content, new ExDelta([{delete:offset}, {retain:length}]))
+        return flattenChanges(content, new ExDelta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
+
+
 }

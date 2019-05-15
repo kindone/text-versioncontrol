@@ -1,13 +1,13 @@
 import Delta = require('quill-delta')
-import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import { Change } from '../primitive/Change'
 import { ExDelta } from '../primitive/ExDelta'
-import { contentLength, JSONStringify } from '../primitive/util';
+import { JSONStringify } from '../primitive/util';
+import { Excerpt } from './Excerpt';
 import { ExcerptMarker } from './ExcerptMarker';
 import { ExcerptSource } from './ExcerptSource';
 import { ExcerptTarget } from './ExcerptTarget';
-import { Excerpt } from './Excerpt';
+
 
 export class ExcerptUtil {
 

@@ -204,7 +204,7 @@ export class Fragment {
 
     public toStyledJSON():JSONStyle {
         // TODO: attributes
-        const valueStr:string|JSONEmbed = typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val}
+        const valueStr:string|JSONEmbed = (typeof this.val === 'string' ? this.val : {'type': 'embed', 'value': this.val})
         switch (this.mod.status) {
             case Status.INITIAL:
                 return {'type': 'initial', 'value': valueStr}

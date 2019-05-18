@@ -52,9 +52,9 @@ describe('Excerpt', () => {
         const doc1 = new Document('doc1', 'My Document 1')
         const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
-        const doc1Changes = [new Delta().delete(3).insert('Your '), new Delta().retain(5).insert('precious ')]
+        const doc1Changes = [new Delta().delete(3).insert('Your '), new Delta().retain(5).insert('precious ')] // Your precious Document 1
 
-        const doc2Changes = [new Delta().insert('Some introduction here: ')]
+        const doc2Changes = [new Delta().insert('Some introduction here: ')] // Some introduction here: Here comes ...
         doc1.append(doc1Changes)
         doc2.append(doc2Changes)
 
@@ -69,7 +69,7 @@ describe('Excerpt', () => {
 
         expectEqual(
             JSONStringify(doc2.getContent().ops),
-            JSONStringify([{"insert":"Some "},{"insert":{"excerpted":"doc1?rev=2&start=0&end=4"},"attributes":{"targetUri":"doc2","targetRev":"2","targetStart":"5", "targetEnd":"9"}},{"insert":"Yourintroduction here: Here comes the trouble. HAHAHAHA"}])
+            JSONStringify([{"insert":"Some "},{"insert":{"excerpted":"doc1?rev=2&start=0&end=4"},"attributes":{"targetUri":"doc2","targetRev":"2","targetStart":"5", "targetEnd":"10"}},{"insert":"Yourintroduction here: Here comes the trouble. HAHAHAHA"}])
         )
     })
 
@@ -135,7 +135,7 @@ describe('Excerpt', () => {
             const syncs = doc1.getSyncSinceExcerpted(source1)
             console.log('phases4.sync: ', JSONStringify(syncs))
             const target2 = doc2.syncExcerpt(syncs, target1)
-            expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"targetUri":"doc2","targetRev":"9","targetStart":"7", "targetEnd":"26"}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
+            expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"targetUri":"doc2","targetRev":"9","targetStart":"7", "targetEnd":"27"}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]})
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
             console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
         }
@@ -156,7 +156,7 @@ describe('Excerpt', () => {
                 console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
             }
             expectEqual(doc2.getContent(), {
-                "ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"targetUri":"doc2","targetRev":"9","targetStart":"7", "targetEnd":"26"}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
+                "ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"targetUri":"doc2","targetRev":"9","targetStart":"7", "targetEnd":"27"}},{"insert":"prettier beautiful introduction here: Here comes the trouble. HAHAHAHA"}]
             })
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
         }

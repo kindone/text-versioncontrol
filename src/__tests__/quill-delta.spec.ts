@@ -210,11 +210,11 @@ describe('Quill Delta basic operations', () => {
     it('crop by offset and length', () => {
         const delta = new ExDelta([{ insert: 'ab' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
         expectEqual(cropContent(delta, 0, 6), delta)
-        expectEqual(cropContent(delta, 1, 5).ops, [{ insert: 'b' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
-        expectEqual(cropContent(delta, 2, 4).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
-        expectEqual(cropContent(delta, 2, 3).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'g' }])
-        expectEqual(cropContent(delta, 2, 2).ops, [{ insert: 'cd', attributes:{x: "ef"} }])
-        expectEqual(cropContent(delta, 2, 1).ops, [{ insert: 'c', attributes:{x: "ef"} }])
+        expectEqual(cropContent(delta, 1, 6).ops, [{ insert: 'b' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
+        expectEqual(cropContent(delta, 2, 6).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
+        expectEqual(cropContent(delta, 2, 5).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'g' }])
+        expectEqual(cropContent(delta, 2, 4).ops, [{ insert: 'cd', attributes:{x: "ef"} }])
+        expectEqual(cropContent(delta, 2, 3).ops, [{ insert: 'c', attributes:{x: "ef"} }])
     })
 
     it('mutable', () => {

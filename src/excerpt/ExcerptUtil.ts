@@ -28,7 +28,7 @@ export class ExcerptUtil {
     {
         // const header = { sourceUri, sourceRev, targetUri, targetRev, length}
         const value = { excerpted: sourceUri + "?rev=" + sourceRev + "&start=" + sourceStart + "&end=" + sourceEnd}
-        const targetEnd = targetStart + sourceEnd - sourceStart
+        const targetEnd = targetStart + sourceEnd - sourceStart + 1 // marker itself is included
         const attributes = {targetUri, targetRev:targetRev.toString(), targetStart: targetStart.toString(), targetEnd: targetEnd.toString()}
         const op = {insert: value, attributes}
 
@@ -37,6 +37,7 @@ export class ExcerptUtil {
         return op
     }
 
+    // target ranges: marker itself is included
     public static getPasteWithMarkers(source:ExcerptSource, targetUri:string, targetRev:number, targetStart:number):Change {
         const markerOp = this.makeExcerptMarker(source.uri, source.rev, source.start, source.end, targetUri, targetRev,  targetStart)
         let ops:Op[] = []

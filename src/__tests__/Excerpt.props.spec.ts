@@ -148,7 +148,7 @@ class TakeAndPasteExcerptCommand implements fc.Command<ExcerptModel, Document[]>
         const actualAttributes = actualOp.attributes
 
         const expectedMarker = {excerpted: "doc" + this.take.id + "?rev=" + takeRev + "&start=" + takeFrom + "&end=" + takeTo}
-        const expectedAttributes = {targetUri: "doc" + this.paste.id, targetRev: (pasteRev+1).toString(), targetStart: pasteOffset.toString(), targetEnd: (pasteOffset + (takeTo-takeFrom)).toString()/*length: contentLength(source.content).toString()*/, copied: "true"}
+        const expectedAttributes = {targetUri: "doc" + this.paste.id, targetRev: (pasteRev+1).toString(), targetStart: pasteOffset.toString(), targetEnd: (pasteOffset + (takeTo-takeFrom)+ 1).toString()/*length: contentLength(source.content).toString()*/, copied: "true"}
         expectEqual(actualMarker, expectedMarker)
         expectEqual(actualAttributes, expectedAttributes)
 

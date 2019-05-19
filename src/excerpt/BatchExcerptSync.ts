@@ -1,4 +1,4 @@
-import { Change, Source } from '../primitive/Change'
+import { Change } from '../primitive/Change'
 import { Range } from '../primitive/Range'
 
 export class BatchExcerptSync {

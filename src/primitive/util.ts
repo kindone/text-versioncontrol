@@ -2,7 +2,7 @@ import Delta = require('quill-delta')
 import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Change, Source } from './Change'
+import { Change } from './Change'
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
 import { ExDelta } from './ExDelta'
@@ -137,7 +137,7 @@ export function normalizeChanges(changes: Change[]): Change[] {
         changes,
         (newChanges: Change[], change) => {
             if (!hasNoEffect(change)) {
-                newChanges.push(new ExDelta(normalizeOps(change.ops), change.source))
+                newChanges.push(new ExDelta(normalizeOps(change.ops)))
                 return newChanges
             } else return newChanges
         },
@@ -151,7 +151,7 @@ export function normalizeDeltasWithRevision(deltas: Change[], startRev: number):
         deltas,
         (newChanges: Array<{ delta: Change; rev: number }>, change) => {
             if (!hasNoEffect(change)) {
-                newChanges.push({ delta: new ExDelta(normalizeOps(change.ops), change.source), rev })
+                newChanges.push({ delta: new ExDelta(normalizeOps(change.ops)), rev })
             }
 
             rev++
@@ -221,14 +221,13 @@ export function transformChanges(change1: Change, change2: Change, firstWins: bo
             // console.log('insert out:', outOps)
         }
     }
-    return new ExDelta(normalizeOps(outOps), change2.source)
+    return new ExDelta(normalizeOps(outOps))
 }
 
 export function flattenChanges(...changes: Change[]):Change {
     if (changes.length === 0) return new ExDelta()
 
     let flattened: Change = changes[0]
-    let source:Source|undefined = changes[0].source
 
     for (const change2 of changes.slice(1)) {
         const iter = new DeltaComposer(flattened.ops)
@@ -261,7 +260,6 @@ export function flattenChanges(...changes: Change[]):Change {
             }
         }
         outOps = outOps.concat(iter.rest())
-        source = source || change2.source
         flattened = new ExDelta(outOps)
     }
     // if(source)

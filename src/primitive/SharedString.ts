@@ -1,10 +1,9 @@
-import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Change, Source } from './Change'
+import { Change } from './Change'
 import { DeltaIterator } from './DeltaIterator'
 import { Fragment, JSONStyle } from './Fragment'
-import { FragmentIterator, IResult } from './FragmentIterator'
+import { FragmentIterator } from './FragmentIterator'
 import { normalizeOps } from './util'
 
 export class SharedString {
@@ -26,15 +25,13 @@ export class SharedString {
             [],
         )
 
-        return new SharedString(fs, delta.source)
+        return new SharedString(fs)
     }
 
     private fragments: Fragment[]
-    private source?:Source
 
-    constructor(fragments: Fragment[], source?:Source) {
+    constructor(fragments: Fragment[]) {
         this.fragments = fragments
-        this.source = source
     }
 
     public applyChange(delta: Change, branch: string, debug = false): Change {
@@ -108,12 +105,11 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        if(delta.source) return {ops: normalizeOps(newOps), source: delta.source }
-        else return {ops: normalizeOps(newOps) }
+        return {ops: normalizeOps(newOps) }
     }
 
     public clone() {
-        return new SharedString(this.fragments.concat(), this.source)
+        return new SharedString(this.fragments.concat())
     }
 
     // TODO: source not considered
@@ -144,8 +140,7 @@ export class SharedString {
             },
             [],
         )
-        if(this.source) return {ops, source: this.source}
-        else return {ops}
+        return {ops}
     }
 
     public toDelta(): Change {
@@ -158,9 +153,7 @@ export class SharedString {
             },
             [],
         )
-
-        if(this.source) return {ops: normalizeOps(ops), source: this.source}
-        else return {ops: normalizeOps(ops)}
+        return {ops: normalizeOps(ops)}
     }
 
     public toHtml(includeBranches = true) {
@@ -176,7 +169,7 @@ export class SharedString {
     }
 
     public toString() {
-        return {fragments: this.fragments, source: this.source}
+        return {fragments: this.fragments}
     }
 
     public getFragmentAtIdx(idx: number, branch: string): Fragment | null {

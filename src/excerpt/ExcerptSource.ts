@@ -1,5 +1,6 @@
 import Delta = require('quill-delta')
-import { Change, Source } from '../primitive/Change'
+import { Change } from '../primitive/Change'
+import { Source } from '../primitive/Source';
 
 export class ExcerptSource implements Source {
 

@@ -112,7 +112,7 @@ export class Range {
             { delete: this.start },
             { retain: this.end - this.start },
             { delete: length - this.end },
-        ], content.source)
+        ])
         ss.applyChange(cropper, 'any')
         return ss.toDelta()
     }
@@ -192,7 +192,7 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new ExDelta(normalizeOps(ops), change.source)
+        return new ExDelta(normalizeOps(ops))
     }
 
     public cropChangeOpen(change: Change, debug = false): Change {
@@ -257,6 +257,6 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new ExDelta(normalizeOps(ops), change.source)
+        return new ExDelta(normalizeOps(ops))
     }
 }

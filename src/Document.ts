@@ -4,10 +4,11 @@ import * as _ from 'underscore'
 import { Excerpt, ExcerptSource, BatchExcerptSync, ExcerptTarget, ExcerptUtil, ExcerptSync } from './excerpt'
 import { History, IHistory } from './history/History'
 import { SyncResponse } from './history/SyncResponse'
-import { Change, Source } from './primitive/Change'
+import { Change } from './primitive/Change'
 import { ExDelta } from './primitive/ExDelta'
 import { printChange } from './primitive/printer';
 import { Range } from './primitive/Range'
+import { Source } from './primitive/Source'
 import {
     asChange,
     JSONStringify,
@@ -19,6 +20,7 @@ import {
     cropContent,
     isEqual
 } from './primitive/util'
+
 
 
 
@@ -130,7 +132,7 @@ export class Document {
         expectEqual(source.content, cropContent(pasted, 1, contentLength(pasted)))
 
         const ops: Op[] = [{ retain: offset }]
-        const change = new ExDelta(ops.concat(pasted.ops), source)
+        const change = new ExDelta(ops.concat(pasted.ops))
         this.history.append([change])
         // expectEqual([change], this.history.getChange(this.history.getCurrentRev()-1))
 
@@ -211,10 +213,8 @@ export class Document {
                 excerptMarker])
             // flatten the change and the marker into single change
             const flattenedChange = flattenTransformedChange(syncChange, excerptMarkerReplaceChange)
-            flattenedChange.source = {type: 'sync', uri: sync.uri, rev: sourceRev, start: sourceRange.start, end: sourceRange.end}
             // actual merge
             this.merge(targetRev, [flattenedChange])
-            expectEqual(this.getChange(this.history.getCurrentRev()-1)[0].source, flattenedChange.source)
 
             // // check
             // console.log('transformedSync.rev: ', `${targetRev}->${this.getCurrentRev()}`)
@@ -240,7 +240,7 @@ export class Document {
 
     private changeShifted(change: Change, offset:number):Change {
         const shiftAmount = offset
-        change = new ExDelta(change.ops, change.source)
+        change = new ExDelta(change.ops)
         // adjust offset:
         // utilize first retain if it exists
         if (change.ops.length > 0 && change.ops[0].retain) {

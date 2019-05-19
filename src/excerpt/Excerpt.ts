@@ -1,4 +1,4 @@
-import { Source } from '../primitive/Change';
+import { Source } from '../primitive/Source';
 import { ExcerptTarget } from './ExcerptTarget'
 
 

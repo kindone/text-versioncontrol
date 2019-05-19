@@ -1,6 +1,6 @@
 {
   "name": "text-versioncontrol",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "description": "Text Version Control",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

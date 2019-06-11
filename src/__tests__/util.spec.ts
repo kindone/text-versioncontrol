@@ -130,13 +130,13 @@ describe('Misc', () => {
             {insert: 'a'},
             {retain: 6},
             {delete: 3},
-            ExcerptUtil.makeExcerptMarker('c', 1, 0, 3, 'd', 1, 2),
+            ExcerptUtil.makeExcerptMarker('left', 'c', 1, 0, 3, 'd', 1, 2),
             {retain: 5, attributes: {x: 65}},
-            ExcerptUtil.makeExcerptMarker('a', 1, 2, 3, 'b', 2, 3)
+            ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 3, 'b', 2, 3)
         ]
 
         // temp test
-        expectEqual('excerpted' in ExcerptUtil.makeExcerptMarker('c', 1, 0, 3, 'd', 1, 2).insert, true)
+        expectEqual('excerpted' in ExcerptUtil.makeExcerptMarker('left', 'c', 1, 0, 3, 'd', 1, 2).insert, true)
 
         const toBoolean = ops.map(op => ExcerptUtil.isExcerptMarker(op))
         expectEqual(toBoolean, [false, false, false, true, false, true])
@@ -147,14 +147,14 @@ describe('Misc', () => {
             {insert: 'a'},
             {retain: 6},
             {delete: 3},
-            ExcerptUtil.makeExcerptMarker('c', 1, 1, 3, 'd', 1, 2),
+            ExcerptUtil.makeExcerptMarker('left', 'c', 1, 1, 3, 'd', 1, 2),
             {retain: 5, attributes: {x: 65}},
-            { attributes: {x:1}, ...ExcerptUtil.makeExcerptMarker('a', 1, 2, 4, 'b', 2, 3)} // not realistic to have attributes in excerpt marker but...
+            { attributes: {x:1}, ...ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 4, 'b', 2, 3)} // not realistic to have attributes in excerpt marker but...
         ]
 
-        const marker3:Op = {...ExcerptUtil.makeExcerptMarker('c', 1, 1, 3, 'd', 1, 2)}
+        const marker3:Op = {...ExcerptUtil.makeExcerptMarker('left', 'c', 1, 1, 3, 'd', 1, 2)}
         marker3.attributes.copied = "true"
-        const marker5:Op = {...ExcerptUtil.makeExcerptMarker('a', 1, 2, 4, 'b', 2, 3)}
+        const marker5:Op = {...ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 4, 'b', 2, 3)}
         marker5.attributes.copied = "true"
 
         const copiedOps = [

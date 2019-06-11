@@ -337,6 +337,34 @@ describe('Range', () => {
         )
     })
 
+    it('cropChange regression', () => {
+        const range = new Range(1, 3)
+
+        const changes = [
+            {ops: [
+                {retain:3}, {insert: {x: "1"}, attributes: {y:"2"}}, {insert: {x: "3"}, attributes: {y:"4"}}, {insert: "a"}, {insert: {x: "5"}, attributes: {y:"6"}}
+            ]}
+        ]
+
+        expectEqual(range.cropChange(changes[0]),
+            {ops: []}
+        )
+    })
+
+    it('applyChange regression', () => {
+        const range = new Range(1, 3)
+
+        const changes = [
+            {ops: [
+                {retain:3}, {insert: {x: "1"}, attributes: {y:"2"}}, {insert: {x: "3"}, attributes: {y:"4"}}, {insert: "a"}, {insert: {x: "5"}, attributes: {y:"6"}}
+            ]}
+        ]
+
+        expectEqual(range.applyChange(changes[0]),
+            new Range(1,3)
+        )
+    })
+
     it('cropChanges', () => {
         const range = new Range(10, 20)
 

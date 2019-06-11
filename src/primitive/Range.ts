@@ -121,9 +121,9 @@ export class Range {
         let range: Range = this
         const newChanges: Change[] = []
         for (const change of changes) {
-            const newDelta = open ? range.cropChangeOpen(change) : range.cropChange(change)
+            const newChange = open ? range.cropChangeOpen(change) : range.cropChange(change)
             range = range.applyChange(change)
-            newChanges.push(newDelta)
+            newChanges.push(newChange)
         }
 
         return newChanges
@@ -151,7 +151,10 @@ export class Range {
                 if (cursor <= start) {
                     start += amount
                 } else {
-                    ops.push({ insert: op.insert })
+                    if(op.attributes)
+                        ops.push({ insert: op.insert, attributes: op.attributes })
+                    else
+                        ops.push({ insert: op.insert })
                 }
                 end += amount
                 cursor += amount
@@ -165,7 +168,10 @@ export class Range {
                 if (cursor <= start) {
                     start += 1
                 } else {
-                    ops.push({ insert: op.insert })
+                    if(op.attributes)
+                        ops.push({ insert: op.insert, attributes: op.attributes })
+                    else
+                        ops.push({ insert: op.insert })
                 }
                 end += 1
                 cursor += 1
@@ -189,10 +195,13 @@ export class Range {
                 // }
             }
 
-            if (cursor > end) break
+            if (cursor >= end) break
         }
 
-        return new ExDelta(normalizeOps(ops))
+        if(change.source)
+            return new ExDelta(normalizeOps(ops), change.source)
+        else
+            return new ExDelta(normalizeOps(ops))
     }
 
     public cropChangeOpen(change: Change, debug = false): Change {
@@ -218,7 +227,10 @@ export class Range {
                 if (cursor < start) {
                     start += amount
                 } else {
-                    ops.push({ insert: op.insert })
+                    if(op.attributes)
+                        ops.push({ insert: op.insert, attributes: op.attributes })
+                    else
+                        ops.push({ insert: op.insert })
                 }
                 end += amount
                 cursor += amount
@@ -229,7 +241,10 @@ export class Range {
                 if (cursor < start) {
                     start += 1
                 } else {
-                    ops.push({ insert: op.insert })
+                    if(op.attributes)
+                        ops.push({ insert: op.insert, attributes: op.attributes })
+                    else
+                        ops.push({ insert: op.insert })
                 }
 
                 end += 1
@@ -257,6 +272,9 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new ExDelta(normalizeOps(ops))
+        if(change.source)
+            return new ExDelta(normalizeOps(ops), change.source)
+        else
+            return new ExDelta(normalizeOps(ops))
     }
 }

@@ -105,7 +105,10 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        return {ops: normalizeOps(newOps) }
+        if(delta.source)
+            return {ops: normalizeOps(newOps), source: delta.source}
+        else
+            return {ops: normalizeOps(newOps)}
     }
 
     public clone() {

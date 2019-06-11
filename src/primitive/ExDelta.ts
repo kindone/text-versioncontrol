@@ -3,7 +3,7 @@ import Op from 'quill-delta/dist/Op';
 import { Change } from './Change';
 
 export class ExDelta extends Delta implements Change {
-    constructor(ops:Op[] = []) {
+    constructor(ops:Op[] = [], public source?:{uri:string, rev: number}) {
         super(ops)
     }
 }

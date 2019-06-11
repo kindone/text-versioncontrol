@@ -137,7 +137,8 @@ export function normalizeChanges(changes: Change[]): Change[] {
         changes,
         (newChanges: Change[], change) => {
             if (!hasNoEffect(change)) {
-                newChanges.push(new ExDelta(normalizeOps(change.ops)))
+                const newChange = change.source ? new ExDelta(normalizeOps(change.ops), change.source) : new ExDelta(normalizeOps(change.ops))
+                newChanges.push(newChange)
                 return newChanges
             } else return newChanges
         },
@@ -145,22 +146,22 @@ export function normalizeChanges(changes: Change[]): Change[] {
     )
 }
 
-export function normalizeDeltasWithRevision(deltas: Change[], startRev: number): Array<{ delta: Change; rev: number }> {
-    let rev = startRev
-    return _.reduce(
-        deltas,
-        (newChanges: Array<{ delta: Change; rev: number }>, change) => {
-            if (!hasNoEffect(change)) {
-                newChanges.push({ delta: new ExDelta(normalizeOps(change.ops)), rev })
-            }
+// export function normalizeDeltasWithRevision(deltas: Change[], startRev: number): Array<{ delta: Change; rev: number }> {
+//     let rev = startRev
+//     return _.reduce(
+//         deltas,
+//         (newChanges: Array<{ delta: Change; rev: number }>, change) => {
+//             if (!hasNoEffect(change)) {
+//                 newChanges.push({ delta: new ExDelta(normalizeOps(change.ops)), rev })
+//             }
 
-            rev++
+//             rev++
 
-            return newChanges
-        },
-        [],
-    )
-}
+//             return newChanges
+//         },
+//         [],
+//     )
+// }
 
 export function hasNoEffect(change: Change):boolean {
     for (const op of change.ops) {

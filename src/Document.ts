@@ -2,6 +2,7 @@ import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { Excerpt, ExcerptSource, BatchExcerptSync, ExcerptTarget, ExcerptUtil, ExcerptSync } from './excerpt'
+import { ExcerptMarker } from './excerpt/ExcerptMarker';
 import { History, IHistory } from './history/History'
 import { SyncResponse } from './history/SyncResponse'
 import { Change } from './primitive/Change'
@@ -23,6 +24,9 @@ import {
 
 
 
+export interface ExcerptMarkerWithOffset extends ExcerptMarker{
+    offset: number
+}
 
 
 export class Document {
@@ -75,8 +79,50 @@ export class Document {
         return this.history.getChangesFromTo(fromRev, toRev)
     }
 
-    public getPastedExcerpts() {
-        const excerpts = []
+    // returns {offset, insert, attributes}
+    public getFullExcerpts(): ExcerptMarkerWithOffset[] {
+        const excerpts:ExcerptMarkerWithOffset[] = []
+        const excerptMap = new Map<string, ExcerptMarker>()
+        let offset = 0
+        const content = this.getContent()
+        for(const op of content.ops)
+        {
+            if(!op.insert)
+                throw new Error('content is in invalid state: ' + JSONStringify(op))
+
+            if(typeof op.insert === 'string')
+            {
+                offset += op.insert.length
+            }
+            else {
+                if(ExcerptUtil.isExcerptMarker(op)) {
+                    const excerptedOp:ExcerptMarker = op as ExcerptMarker
+                    const targetInfo = {uri:excerptedOp.attributes.targetUri, rev:excerptedOp.attributes.targetRev}
+                    const key = excerptedOp.insert.excerpted + "/" + JSONStringify(targetInfo)
+                    if(excerptedOp.attributes.markedAt === 'left') {
+                        excerptMap.set(key, excerptedOp)
+                    }
+                    else if(excerptedOp.attributes.markedAt === 'right') {
+                        if(excerptMap.has(key)) {
+                            const marker = excerptMap.get(key)!
+                            if(marker.attributes.targetUri === excerptedOp.attributes.targetUri &&
+                                marker.attributes.targetRev === excerptedOp.attributes.targetRev)
+                                excerpts.push({offset, ...excerptedOp})
+                        }
+                    }
+
+                }
+                offset ++ // all embeds have length of 1
+            }
+        }
+
+        return excerpts
+    }
+
+    // returns {offset, insert, attributes}
+    public getPartialExcerpts(): ExcerptMarkerWithOffset[] {
+        const fullExcerpts = new Set<string>() // A ^ B
+        const anyExcerpts = new Map<string, any>() // A U B
         let offset = 0
         const content = this.getContent()
         for(const op of content.ops)
@@ -91,13 +137,32 @@ export class Document {
             else {
                 if(ExcerptUtil.isExcerptMarker(op)) {
                     const excerptedOp:any = op
-                    excerpts.push({offset, ...excerptedOp.insert.excerpted})
+                    const targetInfo = {uri:excerptedOp.attributes.targetUri, rev:excerptedOp.attributes.targetRev}
+                    const key = excerptedOp.insert.excerpted + "/" + JSONStringify(targetInfo)
+
+                    if(excerptedOp.attributes.markedAt === 'left') {
+                        anyExcerpts.set(key, {offset, ...op})
+                    }
+                    else if(excerptedOp.attributes.markedAt === 'right') {
+                        if(anyExcerpts.has(key)) {
+                            const marker = anyExcerpts.get(key)!
+                            if(marker.attributes.targetUri === excerptedOp.attributes.targetUri &&
+                                marker.attributes.targetRev === excerptedOp.attributes.targetRev)
+                                fullExcerpts.add(key)
+                        }
+                        anyExcerpts.set(key, {offset, ...op})
+                    }
                 }
-                offset ++
+                offset ++ // all embeds have length of 1
             }
         }
+        const partialExcerpts:ExcerptMarkerWithOffset[] = []
+        for(const key of Array.from(anyExcerpts.keys())) {
+            if(!fullExcerpts.has(key))
+                partialExcerpts.push(anyExcerpts.get(key))
+        }
 
-        return excerpts
+        return partialExcerpts
     }
 
     public takeExcerpt(start: number, end: number): ExcerptSource {
@@ -124,17 +189,32 @@ export class Document {
         return cropContent(content, start, end)
     }
 
-    public pasteExcerpt(offset: number, source: ExcerptSource): Excerpt {
+    public pasteExcerpt(offset: number, source: ExcerptSource, check=false): Excerpt {
         const rev = this.getCurrentRev() + 1
         const target = new ExcerptTarget(this.name, rev, offset, offset + contentLength(source.content)+1)
-        // const pasted = source.content
+
         const pasted = ExcerptUtil.getPasteWithMarkers(source, this.name, rev, offset)
-        expectEqual(source.content, cropContent(pasted, 1, contentLength(pasted)))
+        expectEqual(source.content, cropContent(pasted, 1, contentLength(pasted) - 1))
 
         const ops: Op[] = [{ retain: offset }]
         const change = new ExDelta(ops.concat(pasted.ops))
         this.history.append([change])
         // expectEqual([change], this.history.getChange(this.history.getCurrentRev()-1))
+
+        // check
+        if(check)
+        {
+            const leftMarker = this.take(target.start, target.start+1)
+            const rightMarker = this.take(target.end, target.end+1)
+
+            if(leftMarker.ops.length !== 1 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0]))
+                throw new Error('left marker check failed: L:' + JSONStringify(leftMarker) + " |R: " + JSONStringify(rightMarker) + ", " + JSONStringify(this.getContentAt(target.rev)))
+            if(rightMarker.ops.length !== 1  || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0]))
+                throw new Error('right marker check failed: L:' + JSONStringify(leftMarker) + " |R: " + JSONStringify(rightMarker) + ", " + JSONStringify(this.getContentAt(target.rev)))
+
+            expectEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, target)
+            expectEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, target)
+        }
 
         return new Excerpt(source, target)
     }
@@ -145,6 +225,8 @@ export class Document {
         const initialRange = new Range(source.start, source.end)
         const changes = this.getChangesFrom(source.rev)
         const croppedChanges = initialRange.cropChanges(changes)
+        const safeCroppedÇhanges = croppedChanges.map(croppedChange => ({...croppedChange, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops)}))
+
         const rangesTransformed = initialRange.mapChanges(changes)
 
         //  check
@@ -175,7 +257,7 @@ export class Document {
         //     console.error('initialRange.mapChanges(normalizeChanges(croppedChanges)):' , initialRange.mapChanges(normalizeChanges(croppedChanges)))
         // }
 
-        return this.composeSyncs(uri, lastRev, croppedChanges, rangesTransformed)
+        return this.composeSyncs(uri, lastRev, safeCroppedÇhanges, rangesTransformed)
     }
 
     public getSingleSyncSinceExcerpted(source: ExcerptSource): ExcerptSync[] {
@@ -184,37 +266,152 @@ export class Document {
         const initialRange = new Range(source.start, source.end)
         const changes = this.getChangesFromTo(source.rev, source.rev) // only 1 change
         const croppedChanges = initialRange.cropChanges(changes)
+        const safeCroppedÇhanges = croppedChanges.map(croppedChange => ({...croppedChange, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops)}))
         const rangesTransformed = initialRange.mapChanges(changes)
         return this.composeSyncs(uri, rev, croppedChanges, rangesTransformed)
     }
 
-    public syncExcerpt(syncs: ExcerptSync[], target: ExcerptTarget): ExcerptTarget {
-        // const syncChanges = this.changesShiftedToTarget(syncs, target)
+    // update markers up-to-date at target
+    public updateExcerptMarkers(target:ExcerptTarget, check = false, revive=false):ExcerptTarget {
+
+        // check if the target correctly holds the markers at old revision (must)
+        if(check)
+        {
+            const leftMarker = this.takeAt(target.rev, target.start, target.start+1)
+            const rightMarker = this.takeAt(target.rev, target.end, target.end+1)
+            if(leftMarker.ops.length !== 1 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0]))
+                throw new Error('left marker check failed:' + JSONStringify(leftMarker))
+            if(rightMarker.ops.length !== 1  || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0]))
+                throw new Error('right marker check failed:' + JSONStringify(rightMarker) + ", " + JSONStringify(this.getContentAt(target.rev)))
+
+            expectEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, target)
+            expectEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, target)
+        }
+
+        if(target.rev === this.getCurrentRev())
+            return target
+
+        // getChanges since target.rev
+        const changes = this.getChangesFrom(target.rev)
+        const range = new Range(target.start, target.end)
+        const newRange = range.applyChanges(changes)
+        let reviveLeft = false
+        let reviveRight = false
+        // check if the target holds the markers at new revision. if not, throw
+        // this assumes the target is not synced previously. only altered by user interaction, etc.
+        // this assumption comes from the target should always come from current revision directly
+        if(check || revive)
+        {
+            const leftMarker = this.take(newRange.start, newRange.start+1)
+            const rightMarker = this.take(newRange.end, newRange.end+1)
+            if(leftMarker.ops.length !== 1
+                 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0])
+                 || !isEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, target)) {
+                if(revive)
+                    reviveLeft = true
+                else if(check)
+                    throw new Error('left marker check failed:' + JSONStringify(leftMarker))
+            }
+
+            if(rightMarker.ops.length !== 1
+                 || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0])
+                 || !isEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, target)) {
+                if(revive)
+                    reviveRight = true
+                else if(check)
+                    throw new Error('right marker check failed:' + JSONStringify(rightMarker))
+            }
+
+            if(reviveLeft && reviveRight) {
+                throw new Error('marker not found')
+            }
+        }
+
+        const marker = this.take(newRange.start, newRange.start+1)
+        const {source, } = ExcerptUtil.decomposeMarker(marker.ops[0])
+
+        // apply changes
+        const newTarget = new ExcerptTarget(target.uri, this.getCurrentRev() + 1, newRange.start, newRange.end)
+        const leftExcerptMarker = ExcerptUtil.makeExcerptMarker('left', source.uri, source.rev, source.start, source.end, target.uri, newTarget.rev, newTarget.start)
+        const rightExcerptMarker = ExcerptUtil.makeExcerptMarker('right', source.uri, source.rev, source.start, source.end, target.uri, newTarget.rev, newTarget.start)
+        const excerptMarkerReplaceChange = new Delta([
+            {retain: newTarget.start},
+            {delete: reviveLeft ? 0 : 1},
+            leftExcerptMarker,
+            {retain: newTarget.end-newTarget.start-1},
+            {delete: reviveRight ? 0 : 1},
+            rightExcerptMarker])
+
+        this.append([excerptMarkerReplaceChange])
+
+        // check again
+        if(check)
+        {
+            const leftMarker = this.take(newRange.start, newRange.start+1)
+            const rightMarker = this.take(newRange.end, newRange.end+1)
+            if(leftMarker.ops.length !== 1 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0]))
+                throw new Error('left marker check failed:' + JSONStringify(leftMarker))
+            if(rightMarker.ops.length !== 1  || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0]))
+                throw new Error('right marker check failed:' + JSONStringify(rightMarker))
+
+            expectEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, newTarget)
+            expectEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, newTarget)
+        }
+
+        return newTarget
+    }
+
+    public syncExcerpt(syncs: ExcerptSync[], target: ExcerptTarget, check=false): ExcerptTarget {
+
+        // first, update marker at target to reflect latest change
+        target = this.updateExcerptMarkers(target)
+
         let curTargetRange = new Range(target.start, target.end)
         let targetRev = target.rev
 
         for(const sync of syncs) {
+            expectEqual(targetRev, this.getCurrentRev())
             const sourceUri = sync.uri
             const sourceRev = sync.rev
             const sourceRange = sync.range
             const targetUri = this.name
             const syncChange = this.changeShifted(sync.change, curTargetRange.start+1) // +1 for marker
             // simulate without marker
-            const simulatedResult = this.simulateMergeAt(targetRev, [syncChange])
+            const simulatedResult = this.simulateAppend([syncChange])
             const simulatedChangesMerged = simulatedResult.resDeltas.concat(simulatedResult.reqDeltas)
 
             // calculate range from simulation
             const newTargetRange = curTargetRange.applyChanges(simulatedChangesMerged)
             // get updated excerpt marker from range
-            const excerptMarker = ExcerptUtil.makeExcerptMarker(sourceUri, sourceRev, sourceRange.start, sourceRange.end, targetUri, this.getCurrentRev() + 1, newTargetRange.start)
+            const leftExcerptMarker = ExcerptUtil.makeExcerptMarker('left', sourceUri, sourceRev, sourceRange.start, sourceRange.end, targetUri, this.getCurrentRev() + 1, newTargetRange.start)
+            const rightExcerptMarker = ExcerptUtil.makeExcerptMarker('right', sourceUri, sourceRev, sourceRange.start, sourceRange.end, targetUri, this.getCurrentRev() + 1, newTargetRange.start)
+            // [x=0] x=1 x=2 x=3 [x=4] // start=0 end=4 end-start=4
             const excerptMarkerReplaceChange = new Delta([
                 {retain: curTargetRange.start},
                 {delete: 1},
-                excerptMarker])
+                leftExcerptMarker,
+                {retain: curTargetRange.end-curTargetRange.start-1},
+                {delete: 1},
+                rightExcerptMarker])
             // flatten the change and the marker into single change
             const flattenedChange = flattenTransformedChange(syncChange, excerptMarkerReplaceChange)
+            flattenedChange.source = {uri: sync.uri, rev: sync.rev}
             // actual merge
-            this.merge(targetRev, [flattenedChange])
+            this.append([flattenedChange])
+
+            if(check)
+            {
+                const leftMarker = this.take(newTargetRange.start, newTargetRange.start+1)
+                const rightMarker = this.take(newTargetRange.end, newTargetRange.end+1)
+
+                if(leftMarker.ops.length !== 1 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0]))
+                    throw new Error('left marker check failed: l: ' + JSONStringify(leftMarker) + " |r: " + JSONStringify(rightMarker) + " |R1: " + JSONStringify(curTargetRange) + " |R2: " + JSONStringify(newTargetRange) + " |C: " + JSONStringify(this.getContent()) + " |S: " + JSONStringify(syncChange))
+                if(rightMarker.ops.length !== 1  || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0]))
+                    throw new Error('right marker check failed: l: ' + JSONStringify(leftMarker) + " |r: " + JSONStringify(rightMarker) + " |R1: " + JSONStringify(curTargetRange) + " |R2: " + JSONStringify(newTargetRange) + " |C: "  + JSONStringify(this.getContent()) +  " |S: " + JSONStringify(syncChange))
+
+                // expectEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, newTarget)
+                // expectEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, newTarget)
+            }
 
             // // check
             // console.log('transformedSync.rev: ', `${targetRev}->${this.getCurrentRev()}`)
@@ -226,6 +423,7 @@ export class Document {
             // console.log("transformedSync.content:", printChange(this.getContent()))
             // console.log("transformedSync.targetRange:", newTargetRange)
             // expectEqual(cropContent(this.getContent(), newTargetRange.start, 1), new ExDelta([{insert: excerptMarker}]))
+            // expectEqual(this.getChange(this.getCurrentRev()-1)[0].source, {uri: sync.uri, rev:sync.rev})
 
             // update targetRev
             targetRev = this.getCurrentRev()
@@ -252,9 +450,9 @@ export class Document {
         return change
     }
 
-    private simulateMergeAt(rev:number, changes:Change[]):SyncResponse
+    private simulateAppend(changes:Change[]):SyncResponse
     {
-        return this.history.simulateMergeAt(rev, changes, '$simulate$')
+        return this.history.simulateAppend(changes)
     }
 
     private composeSyncs(uri:string, lastRev:number, changes:Change[], ranges:Range[]) {

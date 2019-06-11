@@ -5,10 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug jest test Excerpt.props",
+            "type": "node",
+            "request": "launch",
+            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.props.spec.ts"],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "port": 9229
+        },
+        {
             "name": "Debug jest test",
             "type": "node",
             "request": "launch",
-            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.spec.ts", "-t", "Document crop"],
+            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.spec.ts", "-t", "TODO: Overlapping excerpt"],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "port": 9229

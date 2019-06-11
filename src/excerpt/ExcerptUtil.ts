@@ -24,12 +24,14 @@ export class ExcerptUtil {
         return new ExDelta(ops)
     }
 
-    public static makeExcerptMarker(sourceUri:string, sourceRev:number, sourceStart:number, sourceEnd:number, targetUri:string, targetRev:number, targetStart:number): ExcerptMarker
+    public static makeExcerptMarker(markedAt:'left'|'right', sourceUri:string, sourceRev:number, sourceStart:number, sourceEnd:number, targetUri:string, targetRev:number, targetStart:number): ExcerptMarker
     {
         // const header = { sourceUri, sourceRev, targetUri, targetRev, length}
         const value = { excerpted: sourceUri + "?rev=" + sourceRev + "&start=" + sourceStart + "&end=" + sourceEnd}
+
         const targetEnd = targetStart + sourceEnd - sourceStart + 1 // marker itself is included
-        const attributes = {targetUri, targetRev:targetRev.toString(), targetStart: targetStart.toString(), targetEnd: targetEnd.toString()}
+        const attributes = {markedAt, targetUri, targetRev:targetRev.toString(), targetStart: targetStart.toString(), targetEnd: targetEnd.toString()}
+
         const op = {insert: value, attributes}
 
         if(!ExcerptUtil.isExcerptMarker(op))
@@ -39,13 +41,16 @@ export class ExcerptUtil {
 
     // target ranges: marker itself is included
     public static getPasteWithMarkers(source:ExcerptSource, targetUri:string, targetRev:number, targetStart:number):Change {
-        const markerOp = this.makeExcerptMarker(source.uri, source.rev, source.start, source.end, targetUri, targetRev,  targetStart)
-        let ops:Op[] = []
-        if(!ExcerptUtil.isExcerptMarker(markerOp))
-            throw new Error("Unexpected error. Check marker and checker implementation: " + JSONStringify(markerOp))
-        ops.push(markerOp)
-        // const safeSourceOps = ExcerptUtil.setExcerptMarkersAsCopied(source.content.ops)
-        ops = ops.concat(source.content.ops)
+        const leftMarkerOp:Op = this.makeExcerptMarker('left', source.uri, source.rev, source.start, source.end, targetUri, targetRev,  targetStart)
+        const rightMarkerOp:Op = this.makeExcerptMarker('right', source.uri, source.rev, source.start, source.end, targetUri, targetRev,  targetStart)
+
+        if(!ExcerptUtil.isExcerptMarker(leftMarkerOp))
+            throw new Error("Unexpected error. Check marker and checker implementation: " + JSONStringify(leftMarkerOp))
+        if(!ExcerptUtil.isExcerptMarker(rightMarkerOp))
+            throw new Error("Unexpected error. Check marker and checker implementation: " + JSONStringify(rightMarkerOp))
+
+        const ops:Op[] = [leftMarkerOp].concat(source.content.ops).concat([rightMarkerOp])
+
         return new Delta(ops)
     }
 
@@ -55,6 +60,26 @@ export class ExcerptUtil {
             return false
 
         return /^rev=[0-9]+&start=[0-9]+&end=[0-9]+$/.test(split[1])
+    }
+
+    public static isLeftExcerptMarker(op: Op, includeCopied = false):boolean {
+        if(!this.isExcerptMarker(op, includeCopied))
+            return false
+
+            if(!op.attributes)
+                return false
+
+            return (op.attributes.markedAt === 'left')
+    }
+
+    public static isRightExcerptMarker(op: Op, includeCopied = false):boolean {
+        if(!this.isExcerptMarker(op, includeCopied))
+            return false
+
+            if(!op.attributes)
+                return false
+
+            return (op.attributes.markedAt === 'right')
     }
 
     public static isExcerptMarker(op:Op, includeCopied = false):boolean {
@@ -77,6 +102,7 @@ export class ExcerptUtil {
              && (typeof attributes.targetRev === 'string')
              && (typeof attributes.targetStart === 'string')
              && (typeof attributes.targetEnd === 'string')
+             && (typeof attributes.markedAt === 'string')
     }
 
     public static setExcerptMarkersAsCopied(ops:Op[]):Op[] {

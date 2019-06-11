@@ -1,6 +1,6 @@
 {
   "name": "text-versioncontrol",
-  "version": "0.8.11",
+  "version": "0.8.12",
   "description": "Text Version Control",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -24,7 +24,7 @@
   ],
   "devDependencies": {
     "@types/jest": "^23.3.2",
-    "fast-check": "^1.10.0",
+    "fast-check": "^1.14.0",
     "jest": "^23.5.0",
     "jest-each": "^24.7.1",
     "jsverify": "^0.8.3",

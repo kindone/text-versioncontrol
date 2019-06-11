@@ -33,7 +33,7 @@ export function printContent(delta:Change):string {
             str += initial(op.insert)
         }
         else if(op.insert) {
-            str += initialObj(JSON.stringify(op.insert))
+            str += initialObj(JSON.stringify(op.insert) + (op.attributes ? ":" + JSONStringify(op.attributes) : ""))
         }
         else if(op.retain && op.attributes) {
             str += retainAttr(op.retain)

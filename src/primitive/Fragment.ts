@@ -18,6 +18,7 @@ export interface JSONEmbed {
 export interface JSONStyle {
     type: 'initial'|'inserted'|'deleted'|'unknown'
     value: string|JSONEmbed
+    attributes?: AttributeMap
 }
 
 export class Fragment {
@@ -203,19 +204,19 @@ export class Fragment {
     }
 
     public toStyledJSON():JSONStyle {
-        // TODO: attributes
+        const attributes = this.getAttributes()
         const valueStr:string|JSONEmbed = (typeof this.val === 'string' ? this.val : {type: 'embed', value: this.val.value})
         switch (this.mod.status) {
             case Status.INITIAL:
-                return {'type': 'initial', 'value': valueStr}
+                return {'type': 'initial', 'value': valueStr, attributes}
             case Status.INSERTED_THEN_DELETED:
             case Status.DELETED: {
-                 return {'type': 'deleted', 'value': valueStr}
+                 return {'type': 'deleted', 'value': valueStr, attributes}
             }
             case Status.INSERTED:
-                return {'type': 'inserted', 'value': valueStr}
+                return {'type': 'inserted', 'value': valueStr, attributes}
             default:
-                return {'type': 'unknown', 'value': valueStr}
+                return {'type': 'unknown', 'value': valueStr, attributes}
         }
     }
 

@@ -1,7 +1,7 @@
 import * as _ from 'underscore'
-import { Fragment } from '../primitive/Fragment'
-import { FragmentIterator } from '../primitive/FragmentIterator'
-import { expectEqual } from '../primitive/util'
+import { Fragment } from '../Fragment'
+import { FragmentIterator } from '../FragmentIterator'
+import { expectEqual } from '../util'
 
 describe('hand-made scenarios', () => {
     it('fragment 1', () => {

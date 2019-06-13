@@ -1,15 +1,15 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Excerpt, ExcerptSource, BatchExcerptSync, ExcerptTarget, ExcerptUtil, ExcerptSync } from './excerpt'
-import { ExcerptMarker } from './excerpt/ExcerptMarker';
-import { History, IHistory } from './history/History'
-import { SyncResponse } from './history/SyncResponse'
-import { Change } from './primitive/Change'
-import { ExDelta } from './primitive/ExDelta'
-import { printChange } from './primitive/printer';
-import { Range } from './primitive/Range'
-import { Source } from './primitive/Source'
+import { Excerpt, ExcerptSource, BatchExcerptSync, ExcerptTarget, ExcerptUtil, ExcerptSync } from '../excerpt'
+import { ExcerptMarker } from '../excerpt/ExcerptMarker';
+import { History, IHistory } from '../history/History'
+import { SyncResponse } from '../history/SyncResponse'
+import { Change } from '../primitive/Change'
+import { ExDelta } from '../primitive/ExDelta'
+import { printChange } from '../primitive/printer';
+import { Range } from '../primitive/Range'
+import { Source } from '../primitive/Source'
 import {
     asChange,
     JSONStringify,
@@ -20,7 +20,7 @@ import {
     contentLength,
     cropContent,
     isEqual
-} from './primitive/util'
+} from '../primitive/util'
 
 
 

@@ -2,11 +2,11 @@
 import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { History } from '../History/History'
-import {  expectEqual, JSONStringify, contentLength } from '../primitive/util'
-import { DocClient } from '../service/DocClient'
-import { DocServer } from '../service/DocServer'
-import { randomUserDeltas } from './random'
+import { History } from '../History'
+import {  expectEqual, JSONStringify, contentLength } from '../../primitive/util'
+import { DocClient } from '../../service/DocClient'
+import { DocServer } from '../../service/DocServer'
+import { randomUserDeltas } from '../../__tests__/random'
 
 describe('server-client scenarios', () => {
     it('scenario 1', () => {

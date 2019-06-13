@@ -1,5 +1,5 @@
-import { expectEqual, normalizeChanges } from "../primitive/util";
-import { Range } from "../primitive/Range";
+import { expectEqual, normalizeChanges } from "../util";
+import { Range } from "../Range";
 import Delta = require("quill-delta");
 
 describe('Range', () => {

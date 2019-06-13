@@ -1,7 +1,7 @@
 import fc from "fast-check";
-import { expectEqual, contentLength, JSONStringify } from "../primitive/util";
+import { expectEqual, contentLength, JSONStringify } from "../../primitive/util";
 import { Document } from "../Document";
-import { ChangeList, ChangeListArbitrary } from "./generator/ChangeList";
+import { ChangeList, ChangeListArbitrary } from "../../__tests__/generator/ChangeList";
 
 
 const DocumentInitialGen = (name:string) => fc.asciiString(20).map(content => new Document(name, content))

@@ -12,6 +12,6 @@ export { Source } from './primitive/Source'
 export { ExDelta } from './primitive/ExDelta'
 export { Range, RangedTransforms } from './primitive/Range'
 export { Delta }
-export { Document } from './Document'
+export { Document } from './document/Document'
 export { ExcerptUtil, ExcerptSync } from './excerpt'
 export * from './primitive/util'

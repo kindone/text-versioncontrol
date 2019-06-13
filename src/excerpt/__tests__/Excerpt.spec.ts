@@ -2,11 +2,11 @@ import * as chalk from 'chalk'
 import each from 'jest-each'
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { Document } from '../Document'
-import {printChange, printContent, printChangedContent, printChanges} from '../primitive/printer'
-import { contentLength, JSONStringify, normalizeOps, expectEqual } from '../primitive/util'
-import { ExDelta } from '../primitive/ExDelta';
-import { Source } from '../primitive/Source';
+import { Document } from '../../document/Document'
+import {printChange, printContent, printChangedContent, printChanges} from '../../primitive/printer'
+import { contentLength, JSONStringify, normalizeOps, expectEqual } from '../../primitive/util'
+import { ExDelta } from '../../primitive/ExDelta';
+import { Source } from '../../primitive/Source';
 
 describe('Excerpt', () => {
 

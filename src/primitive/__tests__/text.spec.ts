@@ -1,9 +1,9 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { IDelta } from '../primitive/IDelta'
-import { SharedString } from '../primitive/SharedString'
-import { expectEqual, JSONStringify, flattenChanges } from '../primitive/util'
-import { randomInt, randomSharedString, randomUserDeltas } from './random'
+import { SharedString } from '../SharedString'
+import { expectEqual, JSONStringify, flattenChanges } from '../util'
+import { randomInt, randomSharedString, randomUserDeltas } from '../../__tests__/random'
+import { Change } from '../Change';
 
 describe('hand-made scenarios', () => {
     it('scenario 1', () => {
@@ -61,7 +61,7 @@ describe('hand-made scenarios', () => {
     it('scenario 4 delete', () => {
         const str = SharedString.fromString('abcde')
         expect(str.toText()).toBe('abcde')
-        const deltas: IDelta[] = []
+        const deltas: Change[] = []
         // NOTE:
         // new Delta().retain(2).delete(1).insert("f"))) is saved as {"ops":[{"retain":2},{"insert":"f"},{"delete":1}]}
         let delta = str.applyChange(
@@ -96,12 +96,12 @@ describe('hand-made scenarios', () => {
     })
 })
 
-function combineRandom(deltasForUsers: IDelta[][]) {
+function combineRandom(deltasForUsers: Change[][]) {
     const cpDeltasForUsers = _.map(deltasForUsers, deltas => {
         return deltas.slice(0)
     })
 
-    const combined: Array<{ delta: IDelta; branch: string }> = []
+    const combined: Array<{ delta: Change; branch: string }> = []
 
     while (
         _.reduce(
@@ -127,9 +127,9 @@ function combineRandom(deltasForUsers: IDelta[][]) {
 
 function testCombination(
     ssInitial: SharedString,
-    user1Deltas: IDelta[],
-    user2Deltas: IDelta[],
-    user3Deltas: IDelta[] = [],
+    user1Deltas: Change[],
+    user2Deltas: Change[],
+    user3Deltas: Change[] = [],
 ) {
     const ssClient1 = ssInitial.clone()
     const ssClient2 = ssInitial.clone()
@@ -148,7 +148,7 @@ function testCombination(
         [flattenChanges(...user3Deltas)],
     ])
 
-    const mergedDeltas: IDelta[] = []
+    const mergedDeltas: Change[] = []
     for (const comb of combined1) {
         mergedDeltas.push(ssClient1.applyChange(comb.delta, comb.branch))
     }

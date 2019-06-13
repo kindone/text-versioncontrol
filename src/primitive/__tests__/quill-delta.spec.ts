@@ -1,6 +1,6 @@
 import * as _ from 'underscore'
-import {ExDelta} from '../primitive/ExDelta'
-import { expectEqual, flattenChanges, transformChanges, cropContent } from '../primitive/util'
+import {ExDelta} from '../ExDelta'
+import { expectEqual, flattenChanges, transformChanges, cropContent } from '../util'
 
 describe('Quill Delta basic operations', () => {
     it('negative value ignored', () => {

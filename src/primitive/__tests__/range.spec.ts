@@ -3,6 +3,28 @@ import { Range } from "../Range";
 import Delta = require("quill-delta");
 
 describe('Range', () => {
+    it('crop0-1', () => {
+        const range = new Range(0, 1)
+
+        expectEqual(range.cropContent({ops:[{insert:"a"}]}),
+            {ops: [{insert:"a"}]}
+        )
+    })
+
+    it('crop0-0', () => {
+        const range = new Range(0, 0)
+
+        expectEqual(range.cropContent({ops:[{insert:"a"}]}),
+            {ops: []}
+        )
+    })
+
+    it('crop empty', () => {
+        const empty = {ops: []}
+        const range = new Range(0, 0)
+        expectEqual(range.cropContent(empty), empty)
+    })
+
     it('applyChange', () => {
         const range = new Range(10, 20)
         expectEqual(range.applyChange(new Delta().delete(10)), new Range(0, 10))

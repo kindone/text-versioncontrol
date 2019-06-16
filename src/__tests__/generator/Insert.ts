@@ -67,7 +67,7 @@ export class EmbedArbitrary  extends Arbitrary<Embed> {
     }
 }
 
-export class InsertArbitrary extends Arbitrary<Insert> {
+export class InsertArbitrary extends ArbitraryWithShrink<Insert> {
 
     constructor(readonly minLength = 1, readonly maxLength = Number.MAX_VALUE,
                 readonly withEmbed = false, readonly withAttr = false) {

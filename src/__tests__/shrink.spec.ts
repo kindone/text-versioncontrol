@@ -182,6 +182,7 @@ describe('shrink', () => {
     })
 
     it('insertOpArbitrary', () => {
+        testGenerate(insertArbitrary())
         testShrink(insertArbitrary())
     })
 

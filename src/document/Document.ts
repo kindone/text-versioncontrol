@@ -79,9 +79,9 @@ export class Document {
         return this.history.getChangesFromTo(fromRev, toRev)
     }
 
-    // returns {offset, insert, attributes}
-    public getFullExcerpts(): ExcerptMarkerWithOffset[] {
-        const excerpts:ExcerptMarkerWithOffset[] = []
+    // returns {offset, excerpt}
+    public getFullExcerpts(): Array<{offset: number, excerpt: Excerpt}> {
+        const excerptMarkers:ExcerptMarkerWithOffset[] = []
         const excerptMap = new Map<string, ExcerptMarker>()
         let offset = 0
         const content = this.getContent()
@@ -107,7 +107,7 @@ export class Document {
                             const marker = excerptMap.get(key)!
                             if(marker.attributes.targetUri === excerptedOp.attributes.targetUri &&
                                 marker.attributes.targetRev === excerptedOp.attributes.targetRev)
-                                excerpts.push({offset, ...excerptedOp})
+                                excerptMarkers.push({offset, ...excerptedOp})
                         }
                     }
 
@@ -116,54 +116,56 @@ export class Document {
             }
         }
 
-        return excerpts
+        return excerptMarkers.map(marker => {
+            return {offset: marker.offset, excerpt: ExcerptUtil.decomposeMarker(marker)}
+        })
     }
 
     // returns {offset, insert, attributes}
-    public getPartialExcerpts(): ExcerptMarkerWithOffset[] {
-        const fullExcerpts = new Set<string>() // A ^ B
-        const anyExcerpts = new Map<string, any>() // A U B
-        let offset = 0
-        const content = this.getContent()
-        for(const op of content.ops)
-        {
-            if(!op.insert)
-                throw new Error('content is in invalid state: ' + JSONStringify(op))
+    // public getPartialExcerpts(): ExcerptMarkerWithOffset[] {
+    //     const fullExcerpts = new Set<string>() // A ^ B
+    //     const anyExcerpts = new Map<string, any>() // A U B
+    //     let offset = 0
+    //     const content = this.getContent()
+    //     for(const op of content.ops)
+    //     {
+    //         if(!op.insert)
+    //             throw new Error('content is in invalid state: ' + JSONStringify(op))
 
-            if(typeof op.insert === 'string')
-            {
-                offset += op.insert.length
-            }
-            else {
-                if(ExcerptUtil.isExcerptMarker(op)) {
-                    const excerptedOp:any = op
-                    const targetInfo = {uri:excerptedOp.attributes.targetUri, rev:excerptedOp.attributes.targetRev}
-                    const key = excerptedOp.insert.excerpted + "/" + JSONStringify(targetInfo)
+    //         if(typeof op.insert === 'string')
+    //         {
+    //             offset += op.insert.length
+    //         }
+    //         else {
+    //             if(ExcerptUtil.isExcerptMarker(op)) {
+    //                 const excerptedOp:any = op
+    //                 const targetInfo = {uri:excerptedOp.attributes.targetUri, rev:excerptedOp.attributes.targetRev}
+    //                 const key = excerptedOp.insert.excerpted + "/" + JSONStringify(targetInfo)
 
-                    if(excerptedOp.attributes.markedAt === 'left') {
-                        anyExcerpts.set(key, {offset, ...op})
-                    }
-                    else if(excerptedOp.attributes.markedAt === 'right') {
-                        if(anyExcerpts.has(key)) {
-                            const marker = anyExcerpts.get(key)!
-                            if(marker.attributes.targetUri === excerptedOp.attributes.targetUri &&
-                                marker.attributes.targetRev === excerptedOp.attributes.targetRev)
-                                fullExcerpts.add(key)
-                        }
-                        anyExcerpts.set(key, {offset, ...op})
-                    }
-                }
-                offset ++ // all embeds have length of 1
-            }
-        }
-        const partialExcerpts:ExcerptMarkerWithOffset[] = []
-        for(const key of Array.from(anyExcerpts.keys())) {
-            if(!fullExcerpts.has(key))
-                partialExcerpts.push(anyExcerpts.get(key))
-        }
+    //                 if(excerptedOp.attributes.markedAt === 'left') {
+    //                     anyExcerpts.set(key, {offset, ...op})
+    //                 }
+    //                 else if(excerptedOp.attributes.markedAt === 'right') {
+    //                     if(anyExcerpts.has(key)) {
+    //                         const marker = anyExcerpts.get(key)!
+    //                         if(marker.attributes.targetUri === excerptedOp.attributes.targetUri &&
+    //                             marker.attributes.targetRev === excerptedOp.attributes.targetRev)
+    //                             fullExcerpts.add(key)
+    //                     }
+    //                     anyExcerpts.set(key, {offset, ...op})
+    //                 }
+    //             }
+    //             offset ++ // all embeds have length of 1
+    //         }
+    //     }
+    //     const partialExcerpts:ExcerptMarkerWithOffset[] = []
+    //     for(const key of Array.from(anyExcerpts.keys())) {
+    //         if(!fullExcerpts.has(key))
+    //             partialExcerpts.push(anyExcerpts.get(key))
+    //     }
 
-        return partialExcerpts
-    }
+    //     return partialExcerpts
+    // }
 
     public takeExcerpt(start: number, end: number): ExcerptSource {
         const croppedContent = this.take(start, end)
@@ -361,10 +363,11 @@ export class Document {
         return newTarget
     }
 
-    public syncExcerpt(syncs: ExcerptSync[], target: ExcerptTarget, check=false): ExcerptTarget {
+    public syncExcerpt(syncs: ExcerptSync[], initialTarget: ExcerptTarget, check=false): ExcerptTarget {
 
+        // initialTarget.
         // first, update marker at target to reflect latest change
-        target = this.updateExcerptMarkers(target)
+        const  target = this.updateExcerptMarkers(initialTarget)
 
         let curTargetRange = new Range(target.start, target.end)
         let targetRev = target.rev
@@ -448,6 +451,11 @@ export class Document {
             change.ops.unshift({ retain: shiftAmount })
         }
         return change
+    }
+
+    private simulateMerge(baseRev:number, changes:Change[]):SyncResponse
+    {
+        return this.history.simulateMergeAt(baseRev, changes, '$simulate$')
     }
 
     private simulateAppend(changes:Change[]):SyncResponse

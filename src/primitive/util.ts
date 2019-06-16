@@ -110,11 +110,26 @@ export function lastRetainsRemoved(ops:Op[]): Op[] {
     return newOps
 }
 
+export function emptyOpsRemoved(ops:Op[]): Op[] {
+    const newOps = ops.concat()
+
+    return newOps.filter(op => {
+        if(op.retain)
+            return op.retain > 0
+        if(op.delete)
+            return op.delete > 0
+        if(typeof op.insert === 'string')
+            return op.insert.length > 0
+        else if(op.insert)
+            return true
+    })
+}
+
 export function normalizeOps(ops: Op[]): Op[] {
     if (ops.length === 0)
         return ops
 
-    const newOps: Op[] = [ops[0]]
+    let newOps: Op[] = [ops[0]]
     for (const op of ops.slice(1)) {
         // try normalize last of newOps and first of oldOps
         const normalized = normalizeTwoOps(newOps[newOps.length - 1], op)
@@ -127,6 +142,7 @@ export function normalizeOps(ops: Op[]): Op[] {
             newOps.push(normalized[1])
         }
     }
+    newOps = emptyOpsRemoved(newOps)
     // remove meaningless retain in the back
     return lastRetainsRemoved(newOps)
 }

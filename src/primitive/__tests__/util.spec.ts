@@ -3,7 +3,7 @@ import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { Change } from '../Change'
 import { Range } from '../Range'
-import { contentLength, JSONStringify, normalizeOps, expectEqual, normalizeChanges, lastRetainsRemoved } from '../util'
+import { contentLength, JSONStringify, normalizeOps, expectEqual, normalizeChanges, lastRetainsRemoved, emptyOpsRemoved } from '../util'
 import Op from 'quill-delta/dist/Op';
 import { ExcerptUtil } from '../../excerpt';
 
@@ -168,4 +168,27 @@ describe('Misc', () => {
         console.log(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
         expectEqual(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
     })
+})
+
+describe('contentLength', () => {
+    it('0', () => {
+        expectEqual(contentLength({ops:[]}), 0)
+    })
+})
+
+describe('emptyOpsRemoved', () => {
+    const ops1 = [
+        {insert:''},
+        {delete: 1},
+        {delete: 0},
+        {retain: 1},
+        {retain: 0},
+        {insert: 'a'},
+        {insert: {'x': 'b'}},
+        {retain: 0},
+        {retain: 0}
+    ]
+
+    expectEqual(emptyOpsRemoved(ops1),
+        [{delete:1}, {retain:1}, {insert: 'a'},{insert: {'x': 'b'}}])
 })

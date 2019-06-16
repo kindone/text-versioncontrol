@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug jest test Excerpt.props",
+            "name": "Debug jest test specific",
             "type": "node",
             "request": "launch",
-            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.props.spec.ts"],
+            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Document.spec.ts"],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "port": 9229

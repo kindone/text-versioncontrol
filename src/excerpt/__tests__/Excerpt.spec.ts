@@ -210,77 +210,99 @@ describe('Excerpt', () => {
         console.log(printContent(doc1.getContent()))
         console.log(printContent(doc2.getContent()))
     })
-
-    // it('Document retain on excerpt', () => {
-    //   const doc1 = new Document('doc1', 'My Document 1')
-    //   console.log('phase1.doc1: ', JSONStringify(doc1.getContent()))
-
-    //   const sourceInfo1 = doc1.takeExcerpt(3, 8) // Document
-    //   console.log('sourceInfo:', JSONStringify(sourceInfo1))
-
-    //   const doc1Changes = [
-    //     // new Delta().delete(2).insert('Your'), // My -> Your
-    //     new Delta().retain(3).insert('precious ') // Your precious Document 1
-    //   ]
-
-    //   doc1.append(doc1Changes)
-
-    //   {
-    //     const rangeInit = new Range(sourceInfo1.offset, sourceInfo1.offset+sourceInfo1.retain)
-    //     console.log('phase2.changes:', JSONStringify(doc1.changesSince(sourceInfo1.rev)))
-    //     const rangeTransformed = rangeInit.applyChanges(doc1.changesSince(sourceInfo1.rev))
-    //     console.log('phase2.ranges:', rangeInit, rangeTransformed)
-
-    //     const sourceInfo2 = doc1.takeExcerpt(rangeTransformed.start, rangeTransformed.end - rangeTransformed.start)
-    //     console.log('updated sourceInfo: ', JSONStringify(sourceInfo2))
-    //     console.log('phase2.doc1: ', JSONStringify(doc1.getContent()))
-    //   }
-
-    //   const sourceInfo3 =  doc1.takeExcerpt(3, 9) // 'precious '
-    //   console.log('sourceInfo:', JSONStringify(sourceInfo3))
-
-    //   const doc1Changes2 = [
-    //     new Delta().delete(3).insert('Our '), // +8, Our
-    //     new Delta().retain(13+8).delete(1).insert(' beautiful '),
-    //     new Delta().retain(4).insert('delicious '),
-    //     new Delta().retain(17).insert('tty').delete(5) // pretty
-    //   ]
-
-    //   doc1.append(doc1Changes2)
-
-    //   {
-
-    //     const rangeInit = new Range(sourceInfo3.offset, sourceInfo3.offset+sourceInfo3.retain)
-    //     console.log('phase3.changes:', JSONStringify(doc1.changesSince(sourceInfo3.rev)))
-    //     const rangeTransformed = rangeInit.applyChanges(doc1.changesSince(sourceInfo3.rev))
-    //     console.log('phase3.ranges:', rangeInit, rangeTransformed)
-
-    //     const sourceInfo2 = doc1.takeExcerpt(rangeTransformed.start, rangeTransformed.end - rangeTransformed.start)
-    //     console.log('updated sourceInfo: ', JSONStringify(sourceInfo2))
-    //     console.log('phase3.doc1: ', JSONStringify(doc1.getContent()))
-
-    //     expectEqual(doc1.getContent(), {"ops":[{"insert":"Our delicious pretty Document beautiful 1"}]})
-
-    //   }
-    // })
 })
 
 
-describe('Recursive Excerpts', () => {
-    it('Self', () => {
-        const source = chalk.default.cyan
-        const target = chalk.default.red
-        const inserted = chalk.default.green
-        const changes = [
-            'abcd',
-            source('[') + 'ab' + target('[') + 'abcd' + target(']') + 'cd' + source(']'),
-            source('[') + 'ab' + target('[') + 'ab' + inserted('x') + 'cd' + target(']') + 'cd' + source(']')
-        ]
-        let i = 0
-        for(const change of changes) {
-            console.log('rev ' + (i++) + ': ' + change)
-        }
+describe('Mutual Excerpts', () => {
+    it('Same doc', () => {
+        const doc1 = new Document("doc1", "ab")
+        const source1 = doc1.takeExcerpt(0,2)
+        doc1.pasteExcerpt(2, source1) // (ab)[ab]
+        expectEqual(doc1.getContent(), {"ops":[
+            {"insert":"ab"},
+            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}},
+            {"insert":"ab"},
+            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}}
+        ]})
+        const source2 = doc1.takeExcerpt(3,5)
+        doc1.pasteExcerpt(1, source2) // a[ab]b(ab)
+        expectEqual(doc1.getContent(), {"ops":[
+            {"insert":"a"},
+            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4"}},
+            {"insert":"ab"},
+            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4"}},
+            {"insert":"b"},
+            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}},
+            {"insert":"ab"},
+            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}}
+        ]})
 
+        const excerpt2 = doc1.getFullExcerpts()[1].excerpt
+        const syncs2 = doc1.getSyncSinceExcerpted(excerpt2.source)
+        doc1.syncExcerpt(syncs2, excerpt2.target) // {a(ab)b}{a[ab]b} : sync right excerpt (from left pasted)
+        expectEqual(doc1.getContent(),  {"ops":[
+            {"insert":"a"},
+            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4"}},
+            {"insert":"ab"},
+            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4"}},
+            {"insert":"b"},
+            // synced 'ab' (source marked)
+            {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"5","targetStart":"6","targetEnd":"13"}},
+            {"insert":"a"},
+            //
+            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
+            {"insert":"ab"},
+            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
+            //
+            {"insert":"b"},
+            {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"5","targetStart":"6","targetEnd":"13"}}
+        ]})
+
+        const path = 0
+        // TODO
+
+        // sync left excerpt (from right recently synced left)
+        if(path === 0) {
+            // sync: change source (right) and then sync
+            // sync: or sync first and then changed
+            // should skip sync applied previously
+            //aabba(c)a-b-(d)b
+            doc1.append([{ops: [{retain:8}, {insert:'c'}]}])
+            // expectEqual(doc1.getContent(), '')
+            // if a sync source change has 'source' field:
+                // and source field uri, rev <= excerpt's target field uri, rev
+                    // skip that sync change
+        }
+        else {
+            const excerpt1 = doc1.getFullExcerpts()[0].excerpt
+            const syncs1 = doc1.getSyncSinceExcerpted(excerpt1.source)
+            expectEqual(syncs1, '')
+            doc1.syncExcerpt(syncs1, excerpt1.target) // a{a[ab]b}b{a(ab)b}
+            // if a sync source change has 'source' field:
+                // and source field uri, rev <= excerpt's target field uri, rev
+                    // skip that sync change
+            expectEqual(doc1.getContent(),  {"ops":[
+                {"insert":"a"},
+                {"insert":{"excerpted":"doc1?rev=5&start=7&end=13"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"10","targetStart":"1","targetEnd":"8"}},
+                // added
+                {"insert":"a"},
+                {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
+                {"insert":"ab"},
+                {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
+                {"insert":"b"},
+                // ~added
+                {"insert":{"excerpted":"doc1?rev=5&start=7&end=13"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"10","targetStart":"1","targetEnd":"8"}},
+                {"insert":"b"},
+                //
+                {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"5","targetStart":"6","targetEnd":"13"}},
+                {"insert":"a"},
+                {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
+                {"insert":"ab"},
+                {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
+                {"insert":"b"},
+                {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"5","targetStart":"6","targetEnd":"13"}}
+            ]})
+        }
 
     })
 })

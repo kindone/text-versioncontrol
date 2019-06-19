@@ -159,13 +159,7 @@ describe('Excerpt', () => {
                 console.log('phases4.source: ', JSONStringify(source))
                 console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
             }
-            expectEqual(doc2.getContent(), {
-                "ops":[{"insert":"Actual "},
-                {"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"markedAt":"left","targetUri":"doc2","targetRev":"10","targetStart":"7","targetEnd":"27"}},
-                {"insert":"prettier beautiful "},
-                {"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"markedAt":"right","targetUri":"doc2","targetRev":"10","targetStart":"7","targetEnd":"27"}},
-                {"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]
-            })
+            expectEqual(doc2.getContent(), {"ops":[{"insert":"Actual "},{"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"markedAt":"left","targetUri":"doc2","targetRev":"13","targetStart":"7","targetEnd":"27"}},{"insert":"prettier beautiful "},{"insert":{"excerpted":"doc1?rev=6&start=20&end=39"},"attributes":{"markedAt":"right","targetUri":"doc2","targetRev":"13","targetStart":"7","targetEnd":"27"}},{"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]})
             console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
         }
     })
@@ -239,6 +233,9 @@ describe('Mutual Excerpts', () => {
 
         const excerpt2 = doc1.getFullExcerpts()[1].excerpt
         const syncs2 = doc1.getSyncSinceExcerpted(excerpt2.source)
+        // check source of change
+        expectEqual(syncs2[0].change.source.rev, excerpt2.source.rev)
+
         doc1.syncExcerpt(syncs2, excerpt2.target) // {a(ab)b}{a[ab]b} : sync right excerpt (from left pasted)
         expectEqual(doc1.getContent(),  {"ops":[
             {"insert":"a"},
@@ -276,7 +273,7 @@ describe('Mutual Excerpts', () => {
         else {
             const excerpt1 = doc1.getFullExcerpts()[0].excerpt
             const syncs1 = doc1.getSyncSinceExcerpted(excerpt1.source)
-            expectEqual(syncs1, '')
+            // expectEqual(syncs1, '')
             doc1.syncExcerpt(syncs1, excerpt1.target) // a{a[ab]b}b{a(ab)b}
             // if a sync source change has 'source' field:
                 // and source field uri, rev <= excerpt's target field uri, rev

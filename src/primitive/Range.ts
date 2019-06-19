@@ -31,6 +31,8 @@ export class Range {
         return ranges
     }
 
+
+
     // immutable
     public applyChange(change: Change): Range {
         let cursor = 0

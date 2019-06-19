@@ -19,7 +19,7 @@ describe('Quill Delta basic operations', () => {
         ).toBe(4)
     })
 
-    it('order of insert over delete', () => {
+    it('BUG? order of insert over delete', () => {
         expect(
             new ExDelta()
                 .retain(2)

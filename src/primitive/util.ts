@@ -39,13 +39,27 @@ export function asChange(content: string | Change): Change {
     else return content as Change
 }
 
-export function contentLength(change: Change): number {
+export function contentLength(content: Change): number {
     return _.reduce(
-        change.ops,
+        content.ops,
         (len, op) => {
             if (typeof op.insert === 'string') return len + op.insert.length
             else if (op.insert) return len + 1
             else throw new Error("content should only consists of inserts")
+        },
+        0,
+    )
+}
+
+export function minContentLengthForChange(change: Change): number {
+    return _.reduce(
+        change.ops,
+        (len, op) => {
+            if(op.insert) return len
+            else if(op.retain) return len + op.retain
+            else if(op.delete) return len + op.delete
+            else
+                throw new Error("unsupported type")
         },
         0,
     )
@@ -377,6 +391,59 @@ export function cropContent(content:Change, start:number, end:number):Change
         return flattenChanges(content, new ExDelta([{delete:start}, {retain:length}]))
     else
         return flattenChanges(content, new ExDelta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
+}
 
+export function reverse(content:Change, change:Change):Change {
+    let offset = 0
+    let reversedOps:Op[] = []
+    for(const changeOp of change.ops) {
+        if(changeOp.retain && changeOp.attributes) {
+            const cropped = cropContent(content, offset, offset + changeOp.retain).ops
 
+            for(const contentOp of cropped) {
+                const newAttrs:AttributeMap = {}
+                for(const key in changeOp.attributes) {
+                    if(changeOp.attributes[key] === null) {
+                        if(contentOp.attributes && contentOp.attributes[key]) {
+                            newAttrs[key] = contentOp.attributes[key]
+                        }
+                    }
+                    else if(typeof changeOp.attributes[key] === 'string') {
+                        if(contentOp.attributes && contentOp.attributes[key]) {
+                            newAttrs[key] = contentOp.attributes[key]
+                        }
+                        else {
+                            newAttrs[key] = null
+                        }
+                    }
+                }
+                // fill in newAttrs
+                if(typeof contentOp.insert === 'string') {
+                    reversedOps.push({retain: contentOp.insert.length, attributes: newAttrs})
+                }
+                else if(contentOp.insert) {
+                    reversedOps.push({retain: 1, attributes: newAttrs})
+                }
+            }
+
+            offset += changeOp.retain
+        }
+        else if(changeOp.retain) {
+            reversedOps.push({retain: changeOp.retain})
+            offset += changeOp.retain
+        }
+        else if(typeof changeOp.insert === 'string') {
+            reversedOps.push({delete: changeOp.insert.length})
+            // offset += op.insert.length
+        }
+        else if(changeOp.insert) {
+            reversedOps.push({delete: 1})
+            // offset += 1
+        }
+        else if(changeOp.delete) {
+            reversedOps = reversedOps.concat(cropContent(content, offset, offset + changeOp.delete).ops)
+            offset += changeOp.delete
+        }
+    }
+    return {...change, ops: normalizeOps(reversedOps)}
 }

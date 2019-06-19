@@ -24,12 +24,13 @@ export class ExcerptUtil {
         return new ExDelta(ops)
     }
 
-    public static makeExcerptMarker(markedAt:'left'|'right', sourceUri:string, sourceRev:number, sourceStart:number, sourceEnd:number, targetUri:string, targetRev:number, targetStart:number): ExcerptMarker
+    public static makeExcerptMarker(markedAt:'left'|'right', sourceUri:string, sourceRev:number, sourceStart:number, sourceEnd:number, targetUri:string, targetRev:number, targetStart:number, targetEnd:number = -1): ExcerptMarker
     {
         // const header = { sourceUri, sourceRev, targetUri, targetRev, length}
         const value = { excerpted: sourceUri + "?rev=" + sourceRev + "&start=" + sourceStart + "&end=" + sourceEnd}
 
-        const targetEnd = targetStart + sourceEnd - sourceStart + 1 // marker itself is included
+        if(targetEnd < 0)
+            targetEnd = targetStart + sourceEnd - sourceStart + 1 // marker itself is included
         const attributes = {markedAt, targetUri, targetRev:targetRev.toString(), targetStart: targetStart.toString(), targetEnd: targetEnd.toString()}
 
         const op = {insert: value, attributes}

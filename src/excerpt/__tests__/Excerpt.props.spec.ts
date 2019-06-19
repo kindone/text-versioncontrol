@@ -225,8 +225,8 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
         expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
 
         const index = this.index % excerpts.length
-        const excerptMarker = excerpts[index]
-        const excerpt = ExcerptUtil.decomposeMarker(excerptMarker)
+        const excerpt = excerpts[index].excerpt
+        // const excerpt = ExcerptUtil.decomposeMarker(excerptMarker)
         const sourceDocId = this.findDocId(docSet, excerpt.source.uri)
         expect(sourceDocId != -1)
         const sourceDoc = docSet[sourceDocId]
@@ -235,12 +235,14 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
         if(syncs.length == 0)
             return
 
+        const beforeContent = targetDoc.getContent()
         targetDoc.syncExcerpt(syncs, excerpt.target)
+        const afterContent = targetDoc.getContent()
 
         const newExcerpts = targetDoc.getFullExcerpts()
 
         // check: number of excerpts shoudn't change
-        expectEqual(newExcerpts.length, excerpts.length)
+        expectEqual(newExcerpts.length, excerpts.length, JSONStringify(beforeContent) + " VS " + JSONStringify(afterContent))
 
         // update model
         model.contentLengths[this.id] = contentLength(docSet[this.id].getContent())
@@ -313,7 +315,7 @@ describe('Excerpt properties', () => {
         const commandsArb = fc.commands([
             appendGen.map(append => new AppendToDocCommand(append.id, append.numChanges, append.seed)),
             takeAndPasteGen.map(tnp => new TakeAndPasteExcerptCommand(tnp.take, tnp.paste)),
-            // syncExcerptGen.map(sync => new SyncExcerptCommand(sync.id, sync.index))
+            syncExcerptGen.map(sync => new SyncExcerptCommand(sync.id, sync.index))
         ])
 
         fc.assert(
@@ -322,7 +324,7 @@ describe('Excerpt properties', () => {
               const model = new ExcerptModel(real)
               fc.modelRun(() => ({ model, real }), commands)
             }),
-            { verbose: true, numRuns:100, endOnFailure: true }
+            { verbose: true, numRuns:1000, endOnFailure: true }
         )
     })
 })

@@ -230,7 +230,7 @@ export class Document {
         const safeCroppedÇhanges = croppedChanges.map(croppedChange => ({...croppedChange, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops)}))
 
         let sourceRev = source.rev
-        const safeCroppedÇhangesWithSource = safeCroppedÇhanges.map(change => ({...change, source: {uri, rev: sourceRev++}}))
+        const safeCroppedÇhangesWithSource = safeCroppedÇhanges.map(change => ({...change, source: [{uri, rev: sourceRev++}]}))
         const rangesTransformed = initialRange.mapChanges(changes)
 
         return this.composeSyncs(uri, lastRev, safeCroppedÇhangesWithSource, rangesTransformed)
@@ -244,7 +244,7 @@ export class Document {
         const croppedChanges = initialRange.cropChanges(changes)
         const safeCroppedÇhanges = croppedChanges.map(croppedChange => ({...croppedChange, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops)}))
         let sourceRev = source.rev
-        const safeCroppedÇhangesWithSource = safeCroppedÇhanges.map(change => ({...change, source: {uri, rev: sourceRev++}}))
+        const safeCroppedÇhangesWithSource = safeCroppedÇhanges.map(change => ({...change, source: [{uri, rev: sourceRev++}]}))
         const rangesTransformed = initialRange.mapChanges(changes)
         return this.composeSyncs(uri, rev, safeCroppedÇhangesWithSource, rangesTransformed)
     }
@@ -369,7 +369,7 @@ export class Document {
         const changes = syncs.map(sync => sync.change)
         let shiftedChanges = changes.map(change => this.changeShifted(change, initialTarget.start+1)) // +1 for marker
         // add source field to changes
-        const source = {uri: syncs[0].uri, rev:0}
+        const source = [{uri: syncs[0].uri, rev:0}]
         shiftedChanges = shiftedChanges.map(change => ({...change, source}))
         this.merge(initialTarget.rev, shiftedChanges)
 

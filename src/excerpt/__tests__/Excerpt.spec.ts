@@ -234,7 +234,7 @@ describe('Mutual Excerpts', () => {
         const excerpt2 = doc1.getFullExcerpts()[1].excerpt
         const syncs2 = doc1.getSyncSinceExcerpted(excerpt2.source)
         // check source of change
-        expectEqual(syncs2[0].change.source.rev, excerpt2.source.rev)
+        expectEqual(syncs2[0].change.source[0].rev, excerpt2.source.rev)
 
         doc1.syncExcerpt(syncs2, excerpt2.target) // {a(ab)b}{a[ab]b} : sync right excerpt (from left pasted)
         expectEqual(doc1.getContent(),  {"ops":[

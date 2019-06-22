@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { contentArbitrary } from "../../__tests__/generator/Content";
 import { deltaArbitrary } from "../../__tests__/generator/Delta";
-import { reverseChange, expectEqual, contentLength, minContentLengthForChange, normalizeOps, JSONStringify, filterOutChangesByIndice, isEqual } from "../util";
+import { reverseChange, expectEqual, contentLength, minContentLengthForChange, normalizeOps, JSONStringify, filterOutChangesByIndice, isEqual, filterChanges, transformChanges, flattenChanges, applyChanges } from "../util";
 import { SharedString } from "../SharedString";
 import { Change } from "../Change";
 import { History } from "../../history/History"
@@ -42,32 +42,57 @@ describe('reverse function', () =>{
 })
 
 
-describe('neutralizedChanges', () =>{
-    it('known', () => {
+describe('filterChanges', () =>{
+    it('simple 1', () => {
 
         const content = {ops:[{insert:'1234567'}]}
         const changes:Change[] = [{ops:[{retain:1},{insert:'a'},{retain:1},{delete:1}]},
             {ops:[{delete:2},{insert:'a'}]}
         ]
 
-        const neutralized = filterOutChangesByIndice(content, changes, [0])
-        expectEqual(neutralized.length, 1)
+        const filtered = filterOutChangesByIndice(content, changes, [0])
+        expectEqual(filtered.length, 1)
 
         const undo = reverseChange(content, changes[0])
         let ss = SharedString.fromDelta(content)
         ss.applyChange(changes[0], "A")
         ss = SharedString.fromDelta(ss.toDelta())
         ss.applyChange(undo, "B")
-        const neut = ss.applyChange(changes[1], "A")
+        const filt = ss.applyChange(changes[1], "A")
 
 
         const ss2 = SharedString.fromDelta(content)
-        ss2.applyChange(neutralized[0], "A")
+        ss2.applyChange(filtered[0], "A")
         if(!isEqual(ss.toDelta(), ss2.toDelta()))
             throw new Error('')
 
-        expectEqual(neutralized[0].ops, [{delete:1},{insert:'a'}])
+        expectEqual(filtered[0].ops, [{delete:1},{insert:'a'}])
         expectEqual(ss.toDelta().ops, [{insert:'a234567'}])
+    })
+
+    it('simple 2', () => {
+
+        const content = {ops:[{insert:'1234567'}]}
+        const changes:Change[] = [
+            {ops:[{retain:1},{insert:'a'},{retain:1},{delete:1}]},
+                // 1a24567
+            {ops:[{delete:2},{retain:1},{insert:'a'}]},
+                // 2a4567
+            {ops:[{retain:1},{insert:'b'},{delete:2}]},
+                // 2b567
+        ]
+
+        expectEqual(applyChanges(content, changes.slice(0,1)), {ops:[{insert:'1a24567'}]})
+        expectEqual(applyChanges(content, changes.slice(0,2)), {ops:[{insert:'2a4567'}]})
+        expectEqual(applyChanges(content, changes), {ops:[{insert:'2b567'}]})
+
+        const zero = filterChanges(content, changes, (idx, change) => false)
+        expectEqual(zero.length, 0)
+
+        filterOutChangesByIndice(content, changes, [0,1]) // remain 2
+        // TODO
+
+
     })
 
     it('one', () => {
@@ -79,8 +104,8 @@ describe('neutralizedChanges', () =>{
                 const changeList = contentChangeList.changeList
                 const changes = changeList.deltas
 
-                const neutralized = filterOutChangesByIndice(content, changes, [0])
-                expectEqual(neutralized.length, 1)
+                const filtered = filterOutChangesByIndice(content, changes, [0])
+                expectEqual(filtered.length, 1)
 
                 const undo = reverseChange(content, changes[0])
                 let ss = SharedString.fromDelta(content)
@@ -90,7 +115,7 @@ describe('neutralizedChanges', () =>{
                 ss.applyChange(undo, "B")
 
                 const ss2 = SharedString.fromDelta(content)
-                ss2.applyChange(neutralized[0], "A")
+                ss2.applyChange(filtered[0], "A")
                 if(!isEqual(ss.toDelta(), ss2.toDelta()))
                     throw new Error(JSONStringify(ss) + " / " + JSONStringify(ss2))
 
@@ -127,7 +152,7 @@ describe('neutralizedChanges', () =>{
                     history1.merge({branchName: "B", rev: i+1, deltas:[undoChange]})
                     const result1 = history1.getContent()
 
-                    // neutralized
+                    // filtered
                     const history2 = new History("C", content)
                     history2.append(filterOutChangesByIndice(content, changes, [i]))
                     const result2 = history2.getContent()

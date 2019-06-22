@@ -256,6 +256,10 @@ export function transformChanges(change1: Change, change2: Change, firstWins: bo
     return new ExDelta(normalizeOps(outOps))
 }
 
+export function applyChanges(content:Change, changes:Change[]) {
+    return flattenChanges(content, ...changes)
+}
+
 export function flattenChanges(...changes: Change[]):Change {
     if (changes.length === 0) return new ExDelta()
 

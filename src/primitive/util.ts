@@ -394,7 +394,7 @@ export function cropContent(content:Change, start:number, end:number):Change
         return flattenChanges(content, new ExDelta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
 }
 
-export function reverse(content:Change, change:Change):Change {
+export function reverseChange(content:Change, change:Change):Change {
     let offset = 0
     let reversedOps:Op[] = []
     for(const changeOp of change.ops) {
@@ -449,24 +449,34 @@ export function reverse(content:Change, change:Change):Change {
     return {...change, ops: normalizeOps(reversedOps)}
 }
 
-export function neutralize(content:Change, changes:Change[], idxToUndo:number) {
-    const targetChange = changes[idxToUndo]
-    let ss = SharedString.fromDelta(content)
-    const before = changes.slice(0, idxToUndo) // 0~idx-1
 
-    for(let i = 0; i < idxToUndo; i++) {
-        ss.applyChange(changes[i], "O")
+export function filterChanges(baseContent:Change, changes:Change[], criteria:(idx:number, change:Change) => boolean):Change[] {
+    if(changes.length === 0)
+        return changes
+    if(contentLength(baseContent) < minContentLengthForChange(changes[0]))
+        throw new Error('invalid content - change:' + JSONStringify(baseContent) + " - " + JSONStringify(changes))
+
+    const neutralized:Change[] = []
+
+    let ss = SharedString.fromDelta(baseContent)
+
+    for(let i = 0; i < changes.length; i++) {
+        if(criteria(i, changes[i])) {
+            const altered = ss.applyChange(changes[i], "O")
+            neutralized.push(altered)
+        }
+        else {
+            const targetChange = changes[i]
+            const undoChange = reverseChange(ss.toDelta(), targetChange)
+            // do and undo to neutralize
+            ss.applyChange(targetChange, "O")
+            ss = SharedString.fromDelta(ss.toDelta())
+            ss.applyChange(undoChange, "X")
+        }
     }
+    return neutralized
+}
 
-    const undoChange = reverse(ss.toDelta(), targetChange)
-    ss.applyChange(targetChange, "O")
-    ss = SharedString.fromDelta(ss.toDelta())
-    ss.applyChange(undoChange, "X")
-
-    const after:Change[] = []
-    for(let i = idxToUndo+1; i < changes.length; i++) {
-        const altered = ss.applyChange(changes[i], "O")
-        after.push(altered)
-    }
-    return before.concat(after)
+export function filterOutChangesByIndice(baseContent:Change, changes:Change[], indicesToRemove:number[]):Change[] {
+    return filterChanges(baseContent, changes, (idx, change) => !_.contains(indicesToRemove, idx) )
 }

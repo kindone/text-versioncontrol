@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { contentArbitrary } from "../../__tests__/generator/Content";
 import { deltaArbitrary } from "../../__tests__/generator/Delta";
-import { reverse, expectEqual, contentLength, minContentLengthForChange, normalizeOps, JSONStringify, neutralize, isEqual } from "../util";
+import { reverseChange, expectEqual, contentLength, minContentLengthForChange, normalizeOps, JSONStringify, filterOutChangesByIndice, isEqual } from "../util";
 import { SharedString } from "../SharedString";
 import { Change } from "../Change";
 import { History } from "../../history/History"
@@ -17,7 +17,7 @@ describe('reverse function', () =>{
                 change.ops = normalizeOps(change.ops)
                 if(contentLength(content) < minContentLengthForChange(change))
                     return
-                const undo = reverse(content, change)
+                const undo = reverseChange(content, change)
                 const ss1 = SharedString.fromDelta(content)
                 ss1.applyChange(change, '_')
                 let result = ss1.toDelta()
@@ -50,10 +50,10 @@ describe('neutralizedChanges', () =>{
             {ops:[{delete:2},{insert:'a'}]}
         ]
 
-        const neutralized = neutralize(content, changes, 0)
+        const neutralized = filterOutChangesByIndice(content, changes, [0])
         expectEqual(neutralized.length, 1)
 
-        const undo = reverse(content, changes[0])
+        const undo = reverseChange(content, changes[0])
         let ss = SharedString.fromDelta(content)
         ss.applyChange(changes[0], "A")
         ss = SharedString.fromDelta(ss.toDelta())
@@ -79,10 +79,10 @@ describe('neutralizedChanges', () =>{
                 const changeList = contentChangeList.changeList
                 const changes = changeList.deltas
 
-                const neutralized = neutralize(content, changes, 0)
+                const neutralized = filterOutChangesByIndice(content, changes, [0])
                 expectEqual(neutralized.length, 1)
 
-                const undo = reverse(content, changes[0])
+                const undo = reverseChange(content, changes[0])
                 let ss = SharedString.fromDelta(content)
                 ss.applyChange(changes[0], "A")
                 ss = SharedString.fromDelta(ss.toDelta())
@@ -122,14 +122,14 @@ describe('neutralizedChanges', () =>{
 
                     // do and undo
                     history1.append(changes.slice(0, i)) // 0~i-1 changes
-                    const undoChange = reverse(history1.getContent(), targetChange)
+                    const undoChange = reverseChange(history1.getContent(), targetChange)
                     history1.append(changes.slice(i))
                     history1.merge({branchName: "B", rev: i+1, deltas:[undoChange]})
                     const result1 = history1.getContent()
 
                     // neutralized
                     const history2 = new History("C", content)
-                    history2.append(neutralize(content, changes, i))
+                    history2.append(filterOutChangesByIndice(content, changes, [i]))
                     const result2 = history2.getContent()
 
                     // must be equal

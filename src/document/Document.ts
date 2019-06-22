@@ -20,7 +20,7 @@ import {
     contentLength,
     cropContent,
     isEqual,
-    reverse
+    reverseChange
 } from '../primitive/util'
 
 
@@ -371,7 +371,7 @@ export class Document {
             const change = sync.change
             // shift
             const shiftedChange = this.changeShifted(change, initialTarget.start+1)
-            // add soruce info
+            // add source info
             const source = [{uri: sync.uri, rev: sync.rev}]
             const shiftedChangeWithSource = {...shiftedChange, source}
             return shiftedChangeWithSource
@@ -423,7 +423,7 @@ export class Document {
 
         const content = this.getContentAt(rev-1)
         const change = this.getChange(rev)
-        const undoChange = reverse(content, change[0])
+        const undoChange = reverseChange(content, change[0])
         this.merge(rev-1, [undoChange])
     }
 

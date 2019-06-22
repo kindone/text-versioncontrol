@@ -19,7 +19,8 @@ import {
     normalizeChanges,
     contentLength,
     cropContent,
-    isEqual
+    isEqual,
+    reverse
 } from '../primitive/util'
 
 
@@ -276,7 +277,7 @@ export class Document {
         // getChanges since target.rev
         const changes = this.getChangesFrom(target.rev)
         const range = new Range(target.start, target.end)
-        // FIXME: implement and utilize appyChange close, open
+        // FIXME: implement and utilize applyChange close, open
         const tmpRange = new Range(range.start, range.end+1).applyChanges(changes)
         const newRange = new Range(tmpRange.start, tmpRange.end-1)
         let reviveLeft = false
@@ -366,11 +367,16 @@ export class Document {
             full = this.getFullExcerpts()
 
         // 1. merge sync
-        const changes = syncs.map(sync => sync.change)
-        let shiftedChanges = changes.map(change => this.changeShifted(change, initialTarget.start+1)) // +1 for marker
-        // add source field to changes
-        const source = [{uri: syncs[0].uri, rev:0}]
-        shiftedChanges = shiftedChanges.map(change => ({...change, source}))
+        const shiftedChanges = syncs.map(sync => {
+            const change = sync.change
+            // shift
+            const shiftedChange = this.changeShifted(change, initialTarget.start+1)
+            // add soruce info
+            const source = [{uri: sync.uri, rev: sync.rev}]
+            const shiftedChangeWithSource = {...shiftedChange, source}
+            return shiftedChangeWithSource
+        })
+
         this.merge(initialTarget.rev, shiftedChanges)
 
         // 2. update marker
@@ -401,14 +407,25 @@ export class Document {
                 throw new Error('right marker check failed: l: ' + JSONStringify(leftMarker) + " |r: " + JSONStringify(rightMarker) + " |T: " + JSONStringify(target) + " |C: "  + JSONStringify(this.getContent()) +  " |S: " + JSONStringify(shiftedChanges))
 
             expectEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]), ExcerptUtil.decomposeMarker(rightMarker.ops[0]))
-            if(!isEqual(this.getFullExcerpts().length, full.length))
-                throw new Error('number of excerpts shoudn\'t change')
+            // may change on revived lost marker present
+            // if(!isEqual(this.getFullExcerpts().length, full.length))
+            //     throw new Error('number of excerpts shoudn\'t change')
         }
 
         return new ExcerptTarget(this.name, this.getCurrentRev(), target.start, target.end)
     }
 
     /** private methods */
+
+    private undoAt(rev:number) {
+        if(rev <= 0 || rev > this.getCurrentRev())
+            throw new Error('invalid argument: ' + rev)
+
+        const content = this.getContentAt(rev-1)
+        const change = this.getChange(rev)
+        const undoChange = reverse(content, change[0])
+        this.merge(rev-1, [undoChange])
+    }
 
     private changeShifted(change: Change, offset:number):Change {
         const shiftAmount = offset

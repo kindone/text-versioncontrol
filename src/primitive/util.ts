@@ -6,6 +6,7 @@ import { Change } from './Change'
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
 import { ExDelta } from './ExDelta'
+import { SharedString } from './SharedString';
 
 
 export function JSONStringify(obj: any) {
@@ -446,4 +447,26 @@ export function reverse(content:Change, change:Change):Change {
         }
     }
     return {...change, ops: normalizeOps(reversedOps)}
+}
+
+export function neutralize(content:Change, changes:Change[], idxToUndo:number) {
+    const targetChange = changes[idxToUndo]
+    let ss = SharedString.fromDelta(content)
+    const before = changes.slice(0, idxToUndo) // 0~idx-1
+
+    for(let i = 0; i < idxToUndo; i++) {
+        ss.applyChange(changes[i], "O")
+    }
+
+    const undoChange = reverse(ss.toDelta(), targetChange)
+    ss.applyChange(targetChange, "O")
+    ss = SharedString.fromDelta(ss.toDelta())
+    ss.applyChange(undoChange, "X")
+
+    const after:Change[] = []
+    for(let i = idxToUndo+1; i < changes.length; i++) {
+        const altered = ss.applyChange(changes[i], "O")
+        after.push(altered)
+    }
+    return before.concat(after)
 }

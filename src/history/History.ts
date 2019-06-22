@@ -69,6 +69,7 @@ export class History implements IHistory {
         this.deltas = this.deltas.concat(result.reqDeltas)
         this.deltas = this.deltas.concat(result.resDeltas)
 
+        this.invalidateSavepoints(baseRev)
         if (this.getLatestSavepointRev() + History.MIN_SAVEPOINT_RATE <= this.getCurrentRev()) {
             this.doSavepoint(this.getCurrentRev(), result.content)
             this.checkSavepoints()
@@ -202,6 +203,10 @@ export class History implements IHistory {
             }
             ss.applyChange(this.deltas[rev - this.initialRev], '_')
         }
+    }
+
+    private invalidateSavepoints(baseRev:number) {
+        this.savepoints = this.savepoints.filter(savepoint => savepoint.rev <= baseRev)
     }
 
     private doSavepoint(rev: number, content: Change): void {

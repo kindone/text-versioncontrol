@@ -324,7 +324,7 @@ describe('Excerpt properties', () => {
               const model = new ExcerptModel(real)
               fc.modelRun(() => ({ model, real }), commands)
             }),
-            { verbose: true, numRuns:1000, endOnFailure: true }
+            { verbose: true, numRuns:10000, endOnFailure: true }
         )
     })
 })

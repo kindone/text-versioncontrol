@@ -84,13 +84,24 @@ describe('filterChanges', () =>{
 
         expectEqual(applyChanges(content, changes.slice(0,1)), {ops:[{insert:'1a24567'}]})
         expectEqual(applyChanges(content, changes.slice(0,2)), {ops:[{insert:'2a4567'}]})
-        expectEqual(applyChanges(content, changes), {ops:[{insert:'2b567'}]})
+        expectEqual(applyChanges(content, changes), {ops:[{insert:'2b567'}]}) // insert b delete a4
 
         const zero = filterChanges(content, changes, (idx, change) => false)
         expectEqual(zero.length, 0)
 
-        filterOutChangesByIndice(content, changes, [0,1]) // remain 2
+        expectEqual(changes, filterOutChangesByIndice(content, changes, []))
+        expectEqual(changes.slice(0,2), filterOutChangesByIndice(content, changes, [2]))
+        expectEqual(changes.slice(0,1), filterOutChangesByIndice(content, changes, [1,2]))
+        expectEqual([], filterOutChangesByIndice(content, changes, [0,1,2]))
+        expectEqual(applyChanges(content, filterOutChangesByIndice(content, changes, [])), {ops:[{insert:'2b567'}]} )
+        expectEqual(applyChanges(content, filterOutChangesByIndice(content, changes, [2])), {ops:[{insert:'2a4567'}]} )
+        expectEqual(applyChanges(content, filterOutChangesByIndice(content, changes, [1,2])), {ops:[{insert:'1a24567'}]} )
+
+        // expectEqual(filterOutChangesByIndice(content, changes, [0,1]), '') // remain [2] ; insert b, delete 1 '4'
         // TODO
+        expectEqual(applyChanges(content, filterOutChangesByIndice(content, changes, [0,1])), {ops:[{insert:'12b3567'}]} )
+        expectEqual(applyChanges(content, filterOutChangesByIndice(content, changes, [0,2])), {ops:[{insert:'2a34567'}]} )
+        expectEqual(applyChanges(content, filterOutChangesByIndice(content, changes, [1])), {ops:[{insert:'1a2b567'}]} )
 
 
     })

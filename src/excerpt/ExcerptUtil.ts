@@ -67,20 +67,20 @@ export class ExcerptUtil {
         if(!this.isExcerptMarker(op, includeCopied))
             return false
 
-            if(!op.attributes)
-                return false
+        if(!op.attributes)
+            return false
 
-            return (op.attributes.markedAt === 'left')
+        return (op.attributes.markedAt === 'left')
     }
 
     public static isRightExcerptMarker(op: Op, includeCopied = false):boolean {
         if(!this.isExcerptMarker(op, includeCopied))
             return false
 
-            if(!op.attributes)
-                return false
+        if(!op.attributes)
+            return false
 
-            return (op.attributes.markedAt === 'right')
+        return (op.attributes.markedAt === 'right')
     }
 
     public static isExcerptMarker(op:Op, includeCopied = false):boolean {

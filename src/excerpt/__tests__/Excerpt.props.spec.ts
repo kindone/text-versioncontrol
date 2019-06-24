@@ -37,7 +37,7 @@ class AppendToDocCommand implements fc.Command<ExcerptModel, Document[]> {
     constructor(private id:number, private numChanges:number, private seed:number /*public readonly changeList:ChangeList*/) {}
 
     public check(model: Readonly<ExcerptModel>):boolean {
-        fc.pre(model.contentLengths[this.id] === this.getChangeList().lengths[0])
+        // fc.pre(model.contentLengths[this.id] === this.getChangeList(model.contentLengths[this.id], this.numChanges).lengths[0])
         return true
     }
 
@@ -49,7 +49,8 @@ class AppendToDocCommand implements fc.Command<ExcerptModel, Document[]> {
         expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
 
         const doc = docSet[this.id]
-        doc.append(this.getChangeList().deltas)
+        const changes = this.getChangeList(model.contentLengths[this.id], this.numChanges).deltas
+        doc.append(changes)
         model.contentLengths[this.id] = contentLength(doc.getContent())
 
         // in case excerpts are removed
@@ -59,17 +60,17 @@ class AppendToDocCommand implements fc.Command<ExcerptModel, Document[]> {
     }
 
     public toString() {
-        return `append(${this.id}, ${this.numChanges}, ${this.seed}, ${JSONStringify(this.getChangeList())})`
+        return `append(${this.id}, ${this.numChanges}, ${this.seed})`
     }
 
     public [fc.cloneMethod]() {
         return new AppendToDocCommand(this.id, this.numChanges, this.seed)
     }
 
-    private getChangeList() {
+    private getChangeList(length:number, numChanges:number) {
         if(!this.changeList) {
             const random = new fc.Random(prand.mersenne(this.seed))
-            this.changeList = new ChangeListArbitrary(1,1).generate(random).value
+            this.changeList = new ChangeListArbitrary(length, numChanges).generate(random).value
         }
 
         return this.changeList
@@ -242,7 +243,8 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
         const newExcerpts = targetDoc.getFullExcerpts()
 
         // check: number of excerpts shoudn't change
-        expectEqual(newExcerpts.length, excerpts.length, JSONStringify(beforeContent) + " VS " + JSONStringify(afterContent))
+        if(!isEqual(excerpts.length, newExcerpts.length))
+            throw new Error(JSONStringify(beforeContent) + " VS " + JSONStringify(afterContent) + " SYNCS: " + JSONStringify(syncs))
 
         // update model
         model.contentLengths[this.id] = contentLength(docSet[this.id].getContent())

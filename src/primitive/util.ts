@@ -460,25 +460,32 @@ export function filterChanges(baseContent:Change, changes:Change[], criteria:(id
     if(contentLength(baseContent) < minContentLengthForChange(changes[0]))
         throw new Error('invalid content - change:' + JSONStringify(baseContent) + " - " + JSONStringify(changes))
 
-    const neutralized:Change[] = []
+    const filtered:Change[] = []
+    const altered = changes.concat()
 
-    let ss = SharedString.fromDelta(baseContent)
+    const ss = SharedString.fromDelta(baseContent)
 
     for(let i = 0; i < changes.length; i++) {
-        if(criteria(i, changes[i])) {
-            const altered = ss.applyChange(changes[i], "O")
-            neutralized.push(altered)
+        if(criteria(i, altered[i])) {
+            ss.applyChange(altered[i], "O")
+            filtered.push(altered[i])
         }
         else {
-            const targetChange = changes[i]
+            const targetChange = altered[i]
             const undoChange = reverseChange(ss.toDelta(), targetChange)
             // do and undo to neutralize
-            ss.applyChange(targetChange, "O")
-            ss = SharedString.fromDelta(ss.toDelta())
-            ss.applyChange(undoChange, "X")
+            let ss2 = ss.clone()
+            ss2.applyChange(targetChange, "O")
+            ss2 = SharedString.fromDelta(ss2.toDelta())
+            ss2.applyChange(undoChange, "X")
+
+            // update rest
+            for(let j = i+1; j < changes.length; j++) {
+                altered[j] = ss2.applyChange(altered[j], "O")
+            }
         }
     }
-    return neutralized
+    return filtered
 }
 
 export function filterOutChangesByIndice(baseContent:Change, changes:Change[], indicesToRemove:number[]):Change[] {

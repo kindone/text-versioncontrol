@@ -20,7 +20,9 @@ import {
     contentLength,
     cropContent,
     isEqual,
-    reverseChange
+    reverseChange,
+    filterChanges,
+    minContentLengthForChange
 } from '../primitive/util'
 
 
@@ -192,7 +194,7 @@ export class Document {
         return cropContent(content, start, end)
     }
 
-    public pasteExcerpt(offset: number, source: ExcerptSource, check=false): Excerpt {
+    public pasteExcerpt(offset: number, source: ExcerptSource, check=true): Excerpt {
         const rev = this.getCurrentRev() + 1
         const target = new ExcerptTarget(this.name, rev, offset, offset + contentLength(source.content)+1)
 
@@ -312,7 +314,7 @@ export class Document {
             }
         }
 
-        const marker = this.take(newRange.start, newRange.start+1)
+        const marker = reviveLeft ? this.take(newRange.end, newRange.end+1) : this.take(newRange.start, newRange.start+1)
         const {source, } = ExcerptUtil.decomposeMarker(marker.ops[0])
         if(newSource) {
             expectEqual(source.uri, newSource.uri)
@@ -328,6 +330,7 @@ export class Document {
             {retain: newTarget.start},
             {delete: reviveLeft ? 0 : 1},
             leftExcerptMarker,
+            {retain: reviveLeft? 1 : 0},
             {retain: newTarget.end-newTarget.start-1},
             {delete: reviveRight ? 0 : 1},
             rightExcerptMarker]}
@@ -356,7 +359,7 @@ export class Document {
         return newTarget
     }
 
-    public syncExcerpt(syncs: ExcerptSync[], initialTarget: ExcerptTarget, check=true): ExcerptTarget {
+    public syncExcerpt(syncs: ExcerptSync[], initialTarget: ExcerptTarget, check=true, revive=false): ExcerptTarget {
 
         let full:Array<{
             offset: number;
@@ -372,12 +375,28 @@ export class Document {
             // shift
             const shiftedChange = this.changeShifted(change, initialTarget.start+1)
             // add source info
+
             const source = [{uri: sync.uri, rev: sync.rev}]
-            const shiftedChangeWithSource = {...shiftedChange, source}
+            // merge source to the front
+            const mergedSource = shiftedChange.source ? source.concat(shiftedChange.source) : source
+            const shiftedChangeWithSource = {...shiftedChange, source: mergedSource}
             return shiftedChangeWithSource
         })
 
-        this.merge(initialTarget.rev, shiftedChanges)
+        const baseContent = this.getContentAt(initialTarget.rev)
+        if(shiftedChanges.length > 0 && contentLength(baseContent) < minContentLengthForChange(shiftedChanges[0]))
+            throw new Error('')
+        // filter recursively synced changes
+        const filteredShiftedChanges = filterChanges(baseContent, shiftedChanges, (idx, change) => {
+            // if(change.source)
+            //     for(const src of change.source) {
+            //         if(src.uri === initialTarget.uri && src.rev < initialTarget.rev)
+            //             return false
+            //     }
+            return true
+        })
+
+        this.merge(initialTarget.rev, filteredShiftedChanges)
 
         // 2. update marker
         let target:ExcerptTarget
@@ -390,10 +409,10 @@ export class Document {
                 end: last.range.end,
                 type: 'sync'
             }
-            target = this.updateExcerptMarkers(initialTarget, newSource)
+            target = this.updateExcerptMarkers(initialTarget, newSource, check, revive)
         }
         else {
-            target = this.updateExcerptMarkers(initialTarget)
+            target = this.updateExcerptMarkers(initialTarget, undefined, check, revive)
         }
 
         if(check)
@@ -416,16 +435,6 @@ export class Document {
     }
 
     /** private methods */
-
-    private undoAt(rev:number) {
-        if(rev <= 0 || rev > this.getCurrentRev())
-            throw new Error('invalid argument: ' + rev)
-
-        const content = this.getContentAt(rev-1)
-        const change = this.getChange(rev)
-        const undoChange = reverseChange(content, change[0])
-        this.merge(rev-1, [undoChange])
-    }
 
     private changeShifted(change: Change, offset:number):Change {
         const shiftAmount = offset

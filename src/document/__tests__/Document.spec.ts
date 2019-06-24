@@ -67,4 +67,63 @@ describe('document', () => {
             ,{ verbose: true, numRuns:100, endOnFailure: true }
         );
     })
+
+    it('getFullExcerpts', () => {
+        const content = {"ops":[
+            {"insert":"#\n2:Mw=kz`"},
+            {"insert":
+                {"excerpted":"doc0?rev=5&start=6&end=31"},
+                "attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"9","targetStart":"10","targetEnd":"39"}},
+            {"insert":"=k"},
+            {"insert":
+                {"excerpted":"doc1?rev=0&start=8&end=9"},
+                "attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"2","targetStart":"13","targetEnd":"15"}},
+            {"insert":"c"},
+            {"insert":
+                {"excerpted":"doc0?rev=2&start=6&end=21"},
+                "attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"5","targetStart":"10","targetEnd":"29","copied":"true"}},
+            {"insert":"z`"},
+            {"insert":
+                {"excerpted":"doc0?rev=0&start=6&end=11"},
+                "attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"1","targetStart":"10","targetEnd":"16","copied":"true"}},
+            {"insert":"=k"},
+            {"insert":
+                {"excerpted":"doc1?rev=0&start=8&end=9"},
+                "attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"2","targetStart":"13","targetEnd":"15","copied":"true"}},
+            {"insert":"c"},
+            {"insert":
+                {"excerpted":"doc0?rev=0&start=6&end=11"},
+                "attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"1","targetStart":"10","targetEnd":"16","copied":"true"}},
+            {"insert":"=k"},
+            {"insert":
+                {"excerpted":"doc1?rev=0&start=8&end=9"},
+                "attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"2","targetStart":"13","targetEnd":"15","copied":"true"}},
+            {"insert":"c"},
+            {"insert":
+                {"excerpted":"doc1?rev=0&start=8&end=9"},
+                "attributes":{"markedAt":"right","targetUri":"doc0","targetRev":"2","targetStart":"13","targetEnd":"15","copied":"true"}},
+            {"insert":"z`>"},
+            {"insert":
+                {"excerpted":"doc0?rev=0&start=6&end=11"},
+                "attributes":{"markedAt":"right","targetUri":"doc0","targetRev":"1","targetStart":"10","targetEnd":"16","copied":"true"}},
+            {"insert":
+                {"excerpted":"doc1?rev=0&start=8&end=9"},
+                "attributes":{"markedAt":"right","targetUri":"doc0","targetRev":"2","targetStart":"13","targetEnd":"15","copied":"true"}},
+            {"insert":
+                {"excerpted":"doc0?rev=2&start=6&end=21"},
+                "attributes":{"markedAt":"right","targetUri":"doc0","targetRev":"5","targetStart":"10","targetEnd":"29","copied":"true"}},
+            {"insert":"`>"},
+            {"insert":
+                {"excerpted":"doc0?rev=0&start=6&end=11"},
+                "attributes":{"markedAt":"right","targetUri":"doc0","targetRev":"1","targetStart":"10","targetEnd":"16","copied":"true"}},
+            {"insert":">"},
+            {"insert":
+                {"excerpted":"doc0?rev=5&start=6&end=31"},
+                "attributes":{"markedAt":"right","targetUri":"doc0","targetRev":"9","targetStart":"10","targetEnd":"39"}},
+            {"insert":">>"}]
+        }
+
+        const doc = new Document("doc0", content)
+        expectEqual(doc.getFullExcerpts().length, 1)
+    })
 })

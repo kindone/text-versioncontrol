@@ -8,7 +8,7 @@
             "name": "Debug jest test specific",
             "type": "node",
             "request": "launch",
-            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "util.props.spec.ts"],
+            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.spec.ts"],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "port": 9229

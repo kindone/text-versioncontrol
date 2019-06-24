@@ -4,7 +4,7 @@ import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
 import {printChange, printContent, printChangedContent, printChanges} from '../../primitive/printer'
-import { contentLength, JSONStringify, normalizeOps, expectEqual } from '../../primitive/util'
+import { contentLength, JSONStringify, normalizeOps, expectEqual, isEqual } from '../../primitive/util'
 import { ExDelta } from '../../primitive/ExDelta';
 import { Source } from '../../primitive/Source';
 
@@ -164,6 +164,47 @@ describe('Excerpt', () => {
         }
     })
 
+    it('revive deleted left marker', () => {
+        const doc1 = new Document('doc1', 'aaaa')
+        const doc2 = new Document('doc2', 'bbbb')
+        const excerptSource = doc1.takeExcerpt(1, 3)
+        const excerpt = doc2.pasteExcerpt(1, excerptSource)
+        const deleteChange = {ops:[{retain:excerpt.target.start-1},{delete:3}]}
+
+        expectEqual(doc2.getFullExcerpts().length, 1)
+        expectEqual(doc2.getPartialExcerpts().length, 0)
+        doc2.append([deleteChange])
+        expectEqual(doc2.getFullExcerpts().length, 0)
+        expectEqual(doc2.getPartialExcerpts().length, 1)
+
+        const syncs =  doc1.getSyncSinceExcerpted(excerptSource) // nothing but...
+        doc2.syncExcerpt(syncs, excerpt.target, false, true)
+
+        expectEqual(doc2.getFullExcerpts().length, 1) // repaired
+        expectEqual(doc2.getPartialExcerpts().length, 0)
+    })
+
+    it('revive deleted right marker', () => {
+        const doc1 = new Document('doc1', 'aaaa')
+        const doc2 = new Document('doc2', 'bbbb')
+        const excerptSource = doc1.takeExcerpt(1, 3)
+        const excerpt = doc2.pasteExcerpt(1, excerptSource)
+        const deleteChange = {ops:[{retain:excerpt.target.end-1},{delete:3}]}
+
+        expectEqual(doc2.getFullExcerpts().length, 1)
+        expectEqual(doc2.getPartialExcerpts().length, 0)
+        doc2.append([deleteChange])
+        expectEqual(doc2.getFullExcerpts().length, 0)
+        expectEqual(doc2.getPartialExcerpts().length, 1)
+
+        const syncs =  doc1.getSyncSinceExcerpted(excerptSource) // nothing but...
+        doc2.syncExcerpt(syncs, excerpt.target, false, true)
+
+        expectEqual(doc2.getFullExcerpts().length, 1) // repaired
+        expectEqual(doc2.getPartialExcerpts().length, 0)
+    })
+
+
     it('TODO: Overlapping excerpt', () => {
         const doc1 = new Document('doc1', 'aaaa')
         const doc2 = new Document('doc2', 'bbbb')
@@ -244,7 +285,7 @@ describe('Mutual Excerpts', () => {
             {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4"}},
             {"insert":"b"},
             // synced 'ab' (source marked)
-            {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"5","targetStart":"6","targetEnd":"13"}},
+            {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"4","targetStart":"6","targetEnd":"13"}},
             {"insert":"a"},
             //
             {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
@@ -252,7 +293,7 @@ describe('Mutual Excerpts', () => {
             {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4","copied":"true"}},
             //
             {"insert":"b"},
-            {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"5","targetStart":"6","targetEnd":"13"}}
+            {"insert":{"excerpted":"doc1?rev=2&start=0&end=6"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"4","targetStart":"6","targetEnd":"13"}}
         ]})
 
         const path = 0

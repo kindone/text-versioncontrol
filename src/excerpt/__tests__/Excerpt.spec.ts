@@ -4,9 +4,11 @@ import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
 import {printChange, printContent, printChangedContent, printChanges} from '../../primitive/printer'
-import { contentLength, JSONStringify, normalizeOps, expectEqual, isEqual } from '../../primitive/util'
+import { contentLength, JSONStringify, normalizeOps, expectEqual, isEqual, applyChanges, minContentLengthForChange } from '../../primitive/util'
 import { ExDelta } from '../../primitive/ExDelta';
 import { Source } from '../../primitive/Source';
+import { Change } from '../../primitive/Change';
+import { ExcerptUtil } from '../ExcerptUtil';
 
 describe('Excerpt', () => {
 
@@ -201,7 +203,7 @@ describe('Excerpt', () => {
         doc2.syncExcerpt(syncs, excerpt.target, false, true)
 
         expectEqual(doc2.getFullExcerpts().length, 1) // repaired
-        expectEqual(doc2.getPartialExcerpts().length, 0)
+        expectEqual(doc2.getPartialExcerpts().length    , 0)
     })
 
 
@@ -342,5 +344,44 @@ describe('Mutual Excerpts', () => {
             ]})
         }
 
+    })
+})
+
+
+
+describe('Regression', () => {
+    it('case 1', () => {
+        const before = {"ops":[{"insert":"Zx+\u0015\u0006bu\u000ek\u001ee"},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26"}},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14"}},{"insert":"&"},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14"}},{"insert":"\u001ee"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":"&"},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":"\u001eeS"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":"S"},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26"}},{"insert":"S\u0019~S"}]}
+        const after = {"ops":[{"insert":"Zx+\u0015\u0006bu\u000ek\u001ee"},{"insert":{"excerpted":"doc1?rev=5&start=9&end=28"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"9","targetStart":"11","targetEnd":"34"}},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14"}},{"insert":"&"},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26","copied":"true"}},{"insert":"\u001ee"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":"&"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":"&"},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":"\u001eeS"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26","copied":"true"}},{"insert":"eS"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":"S"},{"insert":{"excerpted":"doc1?rev=5&start=9&end=28"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"9","targetStart":"11","targetEnd":"34"}},{"insert":"S\u0019~S"}]}
+
+        const changes = [{"ops":[{"retain":20},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":"\u001eeS"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}}],"source":[{"uri":"doc1","rev":3},{"uri":"doc1","rev":2}]},{"ops":[{"retain":21},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":"&"},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}}],"source":[{"uri":"doc1","rev":4},{"uri":"doc1","rev":3}]},{"ops":[{"retain":14},{"delete":1},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26","copied":"true"}},{"retain":14},{"delete":1},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26","copied":"true"}}],"source":[{"uri":"doc1","rev":5},{"uri":"doc1","rev":4}]},{"ops":[{"retain":11},{"delete":1},{"insert":{"excerpted":"doc1?rev=5&start=9&end=28"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"9","targetStart":"11","targetEnd":"34"}},{"retain":22},{"delete":1},{"insert":{"excerpted":"doc1?rev=5&start=9&end=28"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"9","targetStart":"11","targetEnd":"34"}}]}]
+
+        let intermediate:Change = before
+        for(const change of changes) {
+            const length1 = contentLength(intermediate)
+            const length2 = minContentLengthForChange(change)
+            if(length1 < length2)
+                throw new Error('cannot change content')
+            intermediate = applyChanges(before, [change])
+            console.log('full:', ExcerptUtil.getFullExcerpts(intermediate))
+            console.log('partial:', ExcerptUtil.getPartialExcerpts(intermediate))
+        }
+    })
+
+    it('case 2', () => {
+        const before = {"ops":[{"insert":"\u0013"},{"insert":{"excerpted":"doc0?rev=3&start=0&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"6","targetStart":"1","targetEnd":"10"}},{"insert":"f"},{"insert":{"excerpted":"doc0?rev=1&start=0&end=1"},"attributes":{"markedAt":"left","targetUri":"doc0","targetRev":"3","targetStart":"1","targetEnd":"3","copied":"true"}},{"insert":"f"},{"insert":{"excerpted":"doc0?rev=1&start=0&end=1"},"attributes":{"markedAt":"right","targetUri":"doc0","targetRev":"3","targetStart":"1","targetEnd":"3","copied":"true"}},{"insert":{"excerpted":"doc1?rev=0&start=0&end=1"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"3","targetEnd":"5"}},{"insert":"\u0013"},{"insert":{"excerpted":"doc1?rev=0&start=0&end=1"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"3","targetEnd":"5"}},{"insert":"&"},{"insert":{"excerpted":"doc0?rev=3&start=0&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"6","targetStart":"1","targetEnd":"10"}},{"insert":"Q"}]}
+        const after = {"ops":[{"insert":"\u0013"},{"insert":{"excerpted":"doc0?rev=15&start=1&end=1"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"19","targetStart":"1","targetEnd":"5"}},{"insert":"\u0013"},{"insert":{"excerpted":"doc1?rev=0&start=0&end=1"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"3","targetEnd":"5"}},{"insert":"&"},{"insert":{"excerpted":"doc0?rev=15&start=1&end=1"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"19","targetStart":"1","targetEnd":"5"}},{"insert":"Q"}]}
+        const changes = [{"ops":[],"source":[{"uri":"doc0","rev":4},{"uri":"doc0","rev":3}]},{"ops":[],"source":[{"uri":"doc0","rev":5},{"uri":"doc0","rev":4}]},{"ops":[],"source":[{"uri":"doc0","rev":6},{"uri":"doc0","rev":5}]},{"ops":[{"retain":2},{"delete":3}],"source":[{"uri":"doc0","rev":7},{"uri":"doc0","rev":6}]},{"ops":[],"source":[{"uri":"doc0","rev":8},{"uri":"doc0","rev":7}]},{"ops":[],"source":[{"uri":"doc0","rev":9},{"uri":"doc0","rev":8}]},{"ops":[],"source":[{"uri":"doc0","rev":10},{"uri":"doc0","rev":9}]},{"ops":[{"retain":2},{"delete":2}],"source":[{"uri":"doc0","rev":11},{"uri":"doc0","rev":10}]},{"ops":[],"source":[{"uri":"doc0","rev":12},{"uri":"doc0","rev":11}]},{"ops":[],"source":[{"uri":"doc0","rev":13},{"uri":"doc0","rev":12}]},{"ops":[],"source":[{"uri":"doc0","rev":14},{"uri":"doc0","rev":13}]},{"ops":[],"source":[{"uri":"doc0","rev":15},{"uri":"doc0","rev":14}]},{"ops":[{"retain":1},{"delete":1},{"insert":{"excerpted":"doc0?rev=15&start=1&end=1"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"19","targetStart":"1","targetEnd":"5"}},{"retain":3},{"delete":1},{"insert":{"excerpted":"doc0?rev=15&start=1&end=1"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"19","targetStart":"1","targetEnd":"5"}}]}]
+        let intermediate:Change = before
+        for(const change of changes) {
+            const length1 = contentLength(intermediate)
+            const length2 = minContentLengthForChange(change)
+            if(length1 < length2)
+                throw new Error('cannot change content')
+            intermediate = applyChanges(before, [change])
+            console.log('full:', ExcerptUtil.getFullExcerpts(intermediate))
+            console.log('partial:', ExcerptUtil.getPartialExcerpts(intermediate))
+        }
+        expectEqual(intermediate, after)
     })
 })

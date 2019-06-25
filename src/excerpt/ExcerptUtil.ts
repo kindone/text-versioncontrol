@@ -8,6 +8,10 @@ import { ExcerptMarker } from './ExcerptMarker';
 import { ExcerptSource } from './ExcerptSource';
 import { ExcerptTarget } from './ExcerptTarget';
 
+export interface ExcerptMarkerWithOffset extends ExcerptMarker {
+    offset: number
+}
+
 
 export class ExcerptUtil {
 
@@ -148,5 +152,92 @@ export class ExcerptUtil {
         const sourceStart = Number.parseInt(sourceStartStr, 10)
         const sourceEnd = Number.parseInt(sourceEndStr, 10)
         return {sourceUri, sourceRev, sourceStart, sourceEnd}
+    }
+
+
+
+
+    public static getFullExcerpts(content:Change):Array<{offset: number, excerpt: Excerpt}> {
+        const excerptMarkers:ExcerptMarkerWithOffset[] = []
+        const excerptMap = new Map<string, ExcerptMarker>()
+        let offset = 0
+        for(const op of content.ops)
+        {
+            if(!op.insert)
+                throw new Error('content is in invalid state: ' + JSONStringify(op))
+
+            if(typeof op.insert === 'string')
+            {
+                offset += op.insert.length
+            }
+            else {
+                if(ExcerptUtil.isExcerptMarker(op)) {
+                    const excerptedOp:ExcerptMarker = op as ExcerptMarker
+                    const targetInfo = {uri:excerptedOp.attributes.targetUri, rev:excerptedOp.attributes.targetRev}
+                    const key = excerptedOp.insert.excerpted + "/" + JSONStringify(targetInfo)
+                    if(excerptedOp.attributes.markedAt === 'left') {
+                        excerptMap.set(key, excerptedOp)
+                    }
+                    else if(excerptedOp.attributes.markedAt === 'right') {
+                        if(excerptMap.has(key)) {
+                            const marker = excerptMap.get(key)!
+                            if(marker.attributes.targetUri === excerptedOp.attributes.targetUri &&
+                                marker.attributes.targetRev === excerptedOp.attributes.targetRev)
+                                excerptMarkers.push({offset, ...excerptedOp})
+                        }
+                    }
+
+                }
+                offset ++ // all embeds have length of 1
+            }
+        }
+
+        return excerptMarkers.map(marker => {
+            return {offset: marker.offset, excerpt: ExcerptUtil.decomposeMarker(marker)}
+        })
+    }
+
+    public static getPartialExcerpts(content:Change) {
+        const fullExcerpts = new Set<string>() // A ^ B
+        const anyExcerpts = new Map<string, any>() // A U B
+        let offset = 0
+        for(const op of content.ops)
+        {
+            if(!op.insert)
+                throw new Error('content is in invalid state: ' + JSONStringify(op))
+
+            if(typeof op.insert === 'string')
+            {
+                offset += op.insert.length
+            }
+            else {
+                if(ExcerptUtil.isExcerptMarker(op)) {
+                    const excerptedOp:any = op
+                    const targetInfo = {uri:excerptedOp.attributes.targetUri, rev:excerptedOp.attributes.targetRev}
+                    const key = excerptedOp.insert.excerpted + "/" + JSONStringify(targetInfo)
+
+                    if(excerptedOp.attributes.markedAt === 'left') {
+                        anyExcerpts.set(key, {offset, ...op})
+                    }
+                    else if(excerptedOp.attributes.markedAt === 'right') {
+                        if(anyExcerpts.has(key)) {
+                            const marker = anyExcerpts.get(key)!
+                            if(marker.attributes.targetUri === excerptedOp.attributes.targetUri &&
+                                marker.attributes.targetRev === excerptedOp.attributes.targetRev)
+                                fullExcerpts.add(key)
+                        }
+                        anyExcerpts.set(key, {offset, ...op})
+                    }
+                }
+                offset ++ // all embeds have length of 1
+            }
+        }
+        const partialExcerpts:ExcerptMarkerWithOffset[] = []
+        for(const key of Array.from(anyExcerpts.keys())) {
+            if(!fullExcerpts.has(key))
+                partialExcerpts.push(anyExcerpts.get(key))
+        }
+
+        return partialExcerpts
     }
 }

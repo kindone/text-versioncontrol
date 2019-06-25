@@ -236,6 +236,7 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
         if(syncs.length == 0)
             return
 
+        const beforeTargetRev = targetDoc.getCurrentRev()
         const beforeContent = targetDoc.getContent()
         targetDoc.syncExcerpt(syncs, excerpt.target)
         const afterContent = targetDoc.getContent()
@@ -244,7 +245,7 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
 
         // check: number of excerpts shoudn't change
         if(!isEqual(excerpts.length, newExcerpts.length))
-            throw new Error(JSONStringify(beforeContent) + " VS " + JSONStringify(afterContent) + " SYNCS: " + JSONStringify(syncs))
+            throw new Error(JSONStringify(beforeContent) + " VS " + JSONStringify(afterContent) + " SYNCS: " + JSONStringify(syncs) + " TARGET: " + JSONStringify(targetDoc.getChangesFrom(beforeTargetRev)))
 
         // update model
         model.contentLengths[this.id] = contentLength(docSet[this.id].getContent())

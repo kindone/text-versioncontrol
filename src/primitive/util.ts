@@ -9,6 +9,7 @@ import { ExDelta } from './ExDelta'
 import { SharedString } from './SharedString';
 
 
+
 export function JSONStringify(obj: any) {
     return JSON.stringify(obj, (key: string, value: any) => {
         if (typeof value === 'object' && value instanceof Set) {
@@ -57,10 +58,10 @@ export function minContentLengthForChange(change: Change): number {
         change.ops,
         (len, op) => {
             if(op.insert) return len
-            else if(op.retain) return len + op.retain
-            else if(op.delete) return len + op.delete
+            else if(typeof op.retain === 'number') return len + op.retain
+            else if(typeof op.delete === 'number') return len + op.delete
             else
-                throw new Error("unsupported type")
+                throw new Error("unsupported type:" + JSONStringify(op))
         },
         0,
     )
@@ -491,3 +492,4 @@ export function filterChanges(baseContent:Change, changes:Change[], criteria:(id
 export function filterOutChangesByIndice(baseContent:Change, changes:Change[], indicesToRemove:number[]):Change[] {
     return filterChanges(baseContent, changes, (idx, change) => !_.contains(indicesToRemove, idx) )
 }
+

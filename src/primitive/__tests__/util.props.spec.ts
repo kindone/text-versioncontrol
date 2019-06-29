@@ -10,7 +10,7 @@ import { ExDelta } from "../ExDelta";
 
 describe('reverse function', () =>{
     it('basic', () => {
-        const contentArb = contentArbitrary(true)
+        const contentArb = contentArbitrary(-1, true)
         const changeArb = deltaArbitrary(-1, true)
         fc.assert(
             fc.property(contentArb, changeArb, (content, change) => {
@@ -107,7 +107,7 @@ describe('filterChanges', () =>{
     })
 
     it('one', () => {
-        const contentChangeArb = contentChangeListArbitrary(2)
+        const contentChangeArb = contentChangeListArbitrary(-1, 2)
 
         fc.assert(
             fc.property(contentChangeArb, (contentChangeList) => {
@@ -145,7 +145,7 @@ describe('filterChanges', () =>{
         // const result1 = history0.getContent()
 
 
-        const contentChangeArb = contentChangeListArbitrary(1)
+        const contentChangeArb = contentChangeListArbitrary(-1, 1)
 
         fc.assert(
             fc.property(contentChangeArb, (contentChangeList) => {

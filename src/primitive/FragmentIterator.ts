@@ -81,7 +81,7 @@ export class FragmentIterator {
         return fragments
     }
 
-    private mapCurrent<T = undefined>(
+    private mapCurrent(
         fragmentGen: (fragment: Fragment, begin: number, end?: number) => Fragment,
         amount: number,
     ): Fragment[] {
@@ -130,16 +130,6 @@ export class FragmentIterator {
     }
 
     private nextForInsert(): Fragment[] {
-        const fragments: Fragment[] = []
-        // if it's not visible, should advancefor tiebreak
-        while (this.hasNext() && this.current().shouldAdvanceForTiebreak(this.branch)) {
-            fragments.push(this.current().slice(this.offsetAtFragment))
-            this.nextFragment()
-        }
-        return fragments
-    }
-
-    private nextForInsertWithLookahead(): Fragment[] {
         const fragments: Fragment[] = []
         // if it's not visible, should advancefor tiebreak
         while (this.hasNext() && this.current().shouldAdvanceForTiebreak(this.branch)) {

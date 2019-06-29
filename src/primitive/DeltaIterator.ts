@@ -121,10 +121,9 @@ export class DeltaIterator {
         return ops
     }
 
-    private mapCurrent<T = undefined>(
+    private mapCurrent(
         opGen: (amount: number, attrFragment?: AttributeFragment) => Op,
-        amount: number,
-        arg?: T,
+        amount: number
     ): OpsWithDiff {
         let ops: Op[] = []
 

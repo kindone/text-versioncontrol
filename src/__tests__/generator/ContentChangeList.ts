@@ -18,7 +18,7 @@ export interface ContentChangeList {
 
 export class ContentChangeListArbitrary extends ArbitraryWithShrink<ContentChangeList> {
 
-    constructor(readonly numChanges:number = -1, readonly withAttr = false) {
+    constructor(readonly baseLength = -1, readonly numChanges:number = -1, readonly withAttr = false) {
         super()
     }
 
@@ -28,7 +28,7 @@ export class ContentChangeListArbitrary extends ArbitraryWithShrink<ContentChang
     }
 
     private gen(mrng:Random):ContentChangeList {
-       const content = contentArbitrary(this.withAttr).generate(mrng).value
+       const content = contentArbitrary(this.baseLength, true/*withEmbed*/, this.withAttr).generate(mrng).value
        const initialLength = contentLength(content)
        const changeList = changeListArbitrary(initialLength, this.numChanges).generate(mrng).value
        return {content, changeList}
@@ -39,5 +39,5 @@ export class ContentChangeListArbitrary extends ArbitraryWithShrink<ContentChang
     }
 }
 
-export const contentChangeListArbitrary = (numChanges:number = -1) => new ContentChangeListArbitrary(numChanges)
+export const contentChangeListArbitrary = (baseLength = -1, numChanges:number = -1) => new ContentChangeListArbitrary(baseLength, numChanges)
 

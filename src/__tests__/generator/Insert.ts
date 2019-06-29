@@ -34,7 +34,7 @@ export class SimpleInsertArbitrary extends ArbitraryWithShrink<SimpleInsert> {
         return this.stringArb.generate(mrng).map(str => { return { insert: str} })
     }
 
-    // FIXME: replace generate with this
+    // FIXME: replace generate with this wehn shrink is ready
     public generate2(mrng:Random):Shrinkable<SimpleInsert> {
         const insert = this.stringArb.generate(mrng).map(str => { return { insert: str} }).value
         return this.wrapper(insert)

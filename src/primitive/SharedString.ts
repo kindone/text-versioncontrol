@@ -11,15 +11,17 @@ export class SharedString {
         return new SharedString([new Fragment(str)])
     }
 
-    public static fromDelta(delta: Change) {
+    public static fromDelta(content: Change) {
         const fs = _.reduce(
-            delta.ops,
+            content.ops,
             (fragments: Fragment[], op) => {
                 if (typeof op.insert === 'string') {
                     fragments.push(Fragment.initial(op.insert, op.attributes))
                 } else if (op.insert) {
                     fragments.push(Fragment.initialEmbedded(op.insert, op.attributes))
                 }
+                else
+                    throw new Error('invalid content, should contain only inserts')
                 return fragments
             },
             [],

@@ -8,8 +8,33 @@ import { ArbitraryWithShrink } from './util';
 import { insertArbitrary, InsertArbitrary, Insert } from './Insert';
 import Op from 'quill-delta/dist/Op';
 import { Change } from '../../primitive/Change';
+import { genArraySplit } from './ArraySplit';
+import { genNat } from './primitives';
 
 
 
-export const contentArbitrary = (withAttr = false):fc.Arbitrary<Change> => fc.array(new InsertArbitrary(1, 20, false, false),10).map(ops => ({ops}))
+export class ContentArbitrary extends ArbitraryWithShrink<Change>
+{
+    constructor(readonly baseLength: number = -1, readonly withEmbed = false, readonly withAttr = false) {
+        super()
+    }
 
+    public generate(mrng:Random):Shrinkable<Change> {
+        const baseLength = this.baseLength >= 0 ? this.baseLength : genNat(mrng, 20)
+        if(baseLength > 0) {
+            const splits = genArraySplit(mrng, baseLength)
+            const inserts = splits.map(split => new InsertArbitrary(split.length, split.length, this.withEmbed, this.withAttr).generate(mrng).value)
+            return this.wrapper({ops:inserts})
+        }
+        else {
+            return this.wrapper({ops:[]})
+        }
+    }
+
+    public *shrinkGen(value:Change):IterableIterator<Shrinkable<Change>> {
+        // TODO
+    }
+}
+
+// export const contentArbitrary = (withAttr = false):fc.Arbitrary<Change> => fc.array(new InsertArbitrary(1, 20, true, withAttr),10).map(ops => ({ops}))
+export const contentArbitrary = (baseLength = -1, withEmbed = false, withAttr = false):fc.Arbitrary<Change> => new ContentArbitrary(baseLength, withEmbed, withAttr)

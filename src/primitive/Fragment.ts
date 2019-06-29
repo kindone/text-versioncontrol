@@ -91,9 +91,9 @@ export class Fragment {
         return this.mod.isDeletedBy(branch)
     }
 
-    public isInsertedBy(branch: string) {
-        return this.mod.isInsertedBy(branch)
-    }
+    // public isInsertedBy(branch: string) {
+    //     return this.mod.isInsertedBy(branch)
+    // }
 
     public isInsertedByOther(branch: string) {
         return this.mod.isInsertedByOther(branch)

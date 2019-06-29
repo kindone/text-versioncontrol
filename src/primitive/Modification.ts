@@ -25,20 +25,23 @@ export class Modification {
         return this.deletedBy.has(branch)
     }
 
-    public isInsertedBy(branch: string) {
-        return this.insertedBy && this.insertedBy === branch
-    }
+    // public isInsertedBy(branch: string) {
+    //     return this.insertedBy && this.insertedBy === branch
+    // }
 
     public isInsertedByOther(branch: string) {
         return this.insertedBy !== undefined && this.insertedBy !== branch
     }
 
-    public isInsertedThenDeletedBy(branch: string) {
-        return this.isInsertedBy(branch) && this.isDeletedBy(branch)
-    }
+    // public isInsertedThenDeletedBy(branch: string) {
+    //     return this.isInsertedBy(branch) && this.isDeletedBy(branch)
+    // }
 
     public isVisibleTo(branch: string) {
-        return !this.isDeletedBy(branch) && !this.isInsertedByOther(branch)
+        if(branch === '*')
+            return !this.isDeleted()
+        else
+            return !this.isDeletedBy(branch) && !this.isInsertedByOther(branch)
     }
 
     public isVisible() {
@@ -47,8 +50,10 @@ export class Modification {
 
     public shouldAdvanceForTiebreak(branch: string) {
         // use tiebreaking string comparison on inserted branch
-        // not an initial insert
-        return this.insertedBy !== undefined && this.insertedBy < branch // || (this.insertedBy === undefined && this.isDeletedBy(branch))
+        if(branch === '*')
+            return false
+        else
+            return this.insertedBy !== undefined && this.insertedBy < branch && this.insertedBy  !== '*'
     }
 
     public isInserted() {

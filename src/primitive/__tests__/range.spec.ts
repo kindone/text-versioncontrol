@@ -1,6 +1,9 @@
-import { expectEqual, normalizeChanges } from "../util";
+import { expectEqual, normalizeChanges, contentLength, minContentLengthForChange, JSONStringify } from "../util";
 import { Range } from "../Range";
 import Delta = require("quill-delta");
+import * as fc from "fast-check";
+import { deltaArbitrary } from "../../__tests__/generator/Delta";
+import * as _ from 'underscore'
 
 describe('Range', () => {
     it('crop0-1', () => {
@@ -132,6 +135,9 @@ describe('Range', () => {
         expectEqual(range.cropChangeOpen(new Delta().retain(10).insert({ x: 1 })), new Delta().insert({ x: 1 }))
         expectEqual(range.cropChange(new Delta().retain(11).insert('1')), new Delta().retain(1).insert('1'))
         expectEqual(range.cropChange(new Delta().retain(11).insert({ x: 1 })), new Delta().retain(1).insert({ x: 1 }))
+        expectEqual(range.cropChange(new Delta().retain(19).insert('12345')), new Delta().retain(9).insert('12345'))
+        expectEqual(range.cropChange(new Delta().retain(20).insert('12345')), new Delta()) // nothing, only range changes
+        expectEqual(range.cropChangeOpen(new Delta().retain(20).insert('12345')), new Delta().retain(10).insert('12345'))
         expectEqual(
             range.cropChange(new Delta().retain(11).insert('1234567890')),
             new Delta().retain(1).insert('1234567890'),
@@ -408,5 +414,58 @@ describe('Range', () => {
             new Delta().delete(1),
             new Delta().retain(1).insert('456'),
         ])
+    })
+})
+
+describe('property tests', () => {
+    it('cropChanges and applyChanges',() => {
+        const deltaArb = deltaArbitrary(10)
+        const fromArb = fc.integer(0, 20)
+        const lengthArb = fc.integer(0, 20)
+        let minDiff = 1000
+
+        fc.assert(
+            fc.property(deltaArb, fromArb, lengthArb, (delta, from, len) => {
+                // const length = minContentLengthForChange(delta)
+                const range = new Range(from, from + len)
+                const rangeLength = range.end - range.start
+                const newRange = range.applyChanges([delta])
+                const newRangeLength = newRange.end - newRange.start
+                const newDelta = range.cropChange(delta)
+                const newDeltaLength1 = _.reduce(newDelta.ops, (len, op) => {
+                    if(typeof op.insert === 'string')
+                        return len
+                    else if(op.insert)
+                        return len
+                    else if(op.retain)
+                        return len + op.retain
+                    else if(op.delete)
+                        return len + op.delete
+                    else
+                        throw new Error('unexpected op')
+                },0)
+
+                const newDeltaLength2 = _.reduce(newDelta.ops, (len, op) => {
+                    if(typeof op.insert === 'string')
+                        return len + op.insert.length
+                    else if(op.insert)
+                        return len + 1
+                    else if(op.retain)
+                        return len + op.retain
+                    else if(op.delete)
+                        return len + op.delete
+                    else
+                        throw new Error('unexpected op')
+                },0)
+
+                if(rangeLength < newDeltaLength1)
+                    throw new Error(rangeLength.toString() + " < " + newDeltaLength1.toString())
+                if(rangeLength - newDeltaLength1 < minDiff )
+                    minDiff = rangeLength - newDeltaLength1
+                // if(newRangeLength < newDeltaLength2)
+                //     throw new Error(newRangeLength.toString() + " < " + newDeltaLength2.toString())
+            }),
+            { verbose: true, numRuns:100 }
+        )
     })
 })

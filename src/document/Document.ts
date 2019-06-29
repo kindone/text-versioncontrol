@@ -360,7 +360,7 @@ export class Document {
 
     private changeShifted(change: Change, offset:number):Change {
         const shiftAmount = offset
-        change = new ExDelta(change.ops, change.source)
+        change = new ExDelta(change.ops.concat(), change.source)
         // adjust offset:
         // utilize first retain if it exists
         if (change.ops.length > 0 && change.ops[0].retain) {

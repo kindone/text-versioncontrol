@@ -362,7 +362,7 @@ describe('Regression', () => {
             const length2 = minContentLengthForChange(change)
             if(length1 < length2)
                 throw new Error('cannot change content')
-            intermediate = applyChanges(before, [change])
+            intermediate = applyChanges(intermediate, [change])
             console.log('full:', ExcerptUtil.getFullExcerpts(intermediate))
             console.log('partial:', ExcerptUtil.getPartialExcerpts(intermediate))
         }

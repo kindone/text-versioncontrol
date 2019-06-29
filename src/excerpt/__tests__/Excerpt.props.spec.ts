@@ -236,6 +236,11 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
         if(syncs.length == 0)
             return
 
+        const beforeSourceRev = excerpt.source.rev
+        const beforeSourceContent = sourceDoc.getContentAt(beforeSourceRev)
+        const sourceChanges = sourceDoc.getChangesFrom(beforeSourceRev)
+        const afterSourceContent = sourceDoc.getContent()
+
         const beforeTargetRev = targetDoc.getCurrentRev()
         const beforeContent = targetDoc.getContent()
         targetDoc.syncExcerpt(syncs, excerpt.target)

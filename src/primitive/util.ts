@@ -169,7 +169,7 @@ export function normalizeChanges(changes: Change[]): Change[] {
         changes,
         (newChanges: Change[], change) => {
             if (!hasNoEffect(change)) {
-                const newChange = change.source ? new ExDelta(normalizeOps(change.ops), change.source) : new ExDelta(normalizeOps(change.ops))
+                const newChange = change.syncs ? new ExDelta(normalizeOps(change.ops), change.syncs) : new ExDelta(normalizeOps(change.ops))
                 newChanges.push(newChange)
                 return newChanges
             } else return newChanges

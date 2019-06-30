@@ -2,5 +2,5 @@ import Op from 'quill-delta/dist/Op'
 
 export interface Change {
     ops: Op[]
-    source?: Array<{uri:string, rev:number}>
+    syncs?: Array<{sourceUri:string, sourceRev:number, targetUri:string, targetRev:number}>
 }

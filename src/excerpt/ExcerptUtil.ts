@@ -151,6 +151,7 @@ export class ExcerptUtil {
         const sourceRev = Number.parseInt(sourceRevStr, 10)
         const sourceStart = Number.parseInt(sourceStartStr, 10)
         const sourceEnd = Number.parseInt(sourceEndStr, 10)
+
         return {sourceUri, sourceRev, sourceStart, sourceEnd}
     }
 

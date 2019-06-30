@@ -200,8 +200,8 @@ export class Range {
             if (cursor >= end) break
         }
 
-        if(change.source)
-            return new ExDelta(normalizeOps(ops), change.source)
+        if(change.syncs)
+            return new ExDelta(normalizeOps(ops), change.syncs)
         else
             return new ExDelta(normalizeOps(ops))
     }
@@ -274,8 +274,8 @@ export class Range {
             if (cursor > end) break
         }
 
-        if(change.source)
-            return new ExDelta(normalizeOps(ops), change.source)
+        if(change.syncs)
+            return new ExDelta(normalizeOps(ops), change.syncs)
         else
             return new ExDelta(normalizeOps(ops))
     }

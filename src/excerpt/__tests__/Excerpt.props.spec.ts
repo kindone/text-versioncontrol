@@ -5,6 +5,7 @@ import { contentLength, JSONStringify, expectEqual, isEqual } from '../../primit
 import * as prand from 'pure-rand'
 import { ChangeListArbitrary, ChangeList } from '../../__tests__/generator/ChangeList';
 import { ExcerptUtil } from '../ExcerptUtil';
+import { DocumentSet } from '../../document/DocumentSet';
 
 
 
@@ -205,6 +206,18 @@ class UpdateMarkerCommand implements fc.Command<ExcerptModel, Document[]> {
     }
 }
 
+class MyDocumentSet implements DocumentSet {
+    constructor(readonly documents:Document[]) {}
+
+    getDocument(uri:string):Document {
+        for(const document of this.documents) {
+            if(uri === document.getName())
+                return document
+        }
+        throw new Error('invalid uri')
+    }
+}
+
 class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
     constructor(private id:number, private index:number) {}
 
@@ -243,7 +256,7 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
 
         const beforeTargetRev = targetDoc.getCurrentRev()
         const beforeContent = targetDoc.getContent()
-        targetDoc.syncExcerpt(syncs, excerpt.target)
+        targetDoc.syncExcerpt(excerpt, new MyDocumentSet(docSet))
         const afterContent = targetDoc.getContent()
 
         const newExcerpts = targetDoc.getFullExcerpts()

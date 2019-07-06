@@ -54,8 +54,7 @@ class AppendCommand implements fc.Command<DocumentModel, Document> {
         expectEqual(doc.getContent(), tempDoc.getContent())
         // update model
         model.contentLength = contentLength(doc.getContent())
-        // print
-        // console.log(JSONStringify(this.changeList))
+
     }
     public toString() {
         return `append(${JSONStringify(this.changeList)})`

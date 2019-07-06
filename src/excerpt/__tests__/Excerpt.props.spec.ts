@@ -297,12 +297,6 @@ describe('Excerpt properties', () => {
         const doc2Arb = DocumentInitialGen('doc1')
         const docSetArb = fc.tuple(doc1Arb, doc2Arb)
 
-        // // generator for change list
-        // const changeListGen = fc.record({
-        //     initialLength:fc.integer(0, 20),
-        //     numChanges: fc.integer(0,10)}).chain(
-        //         rec => new ChangeListArbitrary(rec.initialLength, rec.numChanges))
-
         const appendGen = fc.record({
             id:fc.integer(0,1),
             numChanges: fc.integer(0,10),

@@ -29,7 +29,7 @@ function testShrink<T>(arb:Arbitrary<T>) {
 
             for(let j = 0; j < 100; j++)
             {
-                console.log(`value(${j}):`, JSONStringify(shrinkableT.value))
+                // console.log(`value(${j}):`, JSONStringify(shrinkableT.value))
                 const streamShrinkableT = shrinkableT.shrink()
                 let next = streamShrinkableT.next()
 
@@ -49,7 +49,7 @@ function testShrink<T>(arb:Arbitrary<T>) {
                 }
 
                 for(let i = 0; !next.done && i < 10; i++) {
-                    console.log(`shrink candidate(${j}:${i}): `, JSONStringify(next.value.value)) // JSONStringify(next.value)
+                    // console.log(`shrink candidate(${j}:${i}): `, JSONStringify(next.value.value)) // JSONStringify(next.value)
                     next = streamShrinkableT.next()
                 }
 
@@ -72,7 +72,7 @@ function testGenerate<T>(arb:Arbitrary<T>)
     for(let j = 0; j < 100; j++)
     {
         const generated = arb.generate(mrng).value
-        console.log('generate:', JSONStringify(generated))
+        // console.log('generate:', JSONStringify(generated))
     }
 }
 

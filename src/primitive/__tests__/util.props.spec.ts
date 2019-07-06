@@ -134,16 +134,6 @@ describe('filterChanges', () =>{
         )
     })
     it('basic', () => {
-
-        // const history0 = new History("0", "Hello world")
-        // const changes = []
-        // history0.append(changes.slice(0, i)) // 0~i-1 changes
-        // const undoChange = reverse(history1.getContent(), targetChange)
-        // history0.append(changes.slice(i))
-        // history0.merge({branchName: "B", rev: i, deltas:[undoChange]})
-        // const result1 = history0.getContent()
-
-
         const contentChangeArb = contentChangeListArbitrary(-1, 1)
 
         fc.assert(

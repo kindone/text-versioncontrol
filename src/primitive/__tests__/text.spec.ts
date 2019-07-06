@@ -13,49 +13,33 @@ describe('hand-made scenarios', () => {
         expect(str.toText()).toBe('hello world')
 
         const op = str.applyChange(new Delta().retain(6).delete(5), 'me')
-        // console.log("altered:", op)
         expect(str.toText()).toBe('hello ')
 
         str.applyChange(new Delta().retain(6).insert('world'), 'you')
         expect(str.toText()).toBe('hello world')
-        // console.log(str.toHtml())
-        // console.log(str.toString())
     })
 
     it('scenario 2', () => {
         const str = SharedString.fromString('world')
-        // console.log(JSONStringify(str))
         expect(str.toText()).toBe('world')
         str.applyChange(new Delta().retain(5).insert('world'), 'you')
-        // console.log(JSONStringify(str))
         expect(str.toText()).toBe('worldworld')
         str.applyChange(new Delta().insert('hello '), 'me')
-        // console.log(JSONStringify(str))
         expect(str.toText()).toBe('hello worldworld')
         str.applyChange(new Delta().retain(6).delete(5), 'me')
-        // console.log(JSONStringify(str))
         expect(str.toText()).toBe('hello world')
-        // console.log(str.toHtml())
-        // console.log(str.toString())
     })
 
     it('scenario 3', () => {
         const str = SharedString.fromString('world')
-        // console.log(JSONStringify(str))
         expect(str.applyChange(new Delta().retain(5).insert('world'), 'you')).toEqual(
             new Delta().retain(5).insert('world'),
         )
-        // console.log(JSONStringify(str))
         expect(str.toText()).toBe('worldworld')
         expect(str.applyChange(new Delta().insert('hello '), 'me')).toEqual(new Delta().insert('hello '))
-        // console.log(JSONStringify(str))
         expect(str.toText()).toBe('hello worldworld')
         expect(str.applyChange(new Delta().delete(11), 'me')).toEqual(new Delta().delete(11))
-        // console.log(JSONStringify(str))
         expect(str.toText()).toBe('world')
-        // console.log(str.toText())
-        // console.log(str.toHtml())
-        // console.log(str.toString())
     })
 
     it('scenario 4 delete', () => {
@@ -163,8 +147,6 @@ function testCombination(
     for (const mergedDelta of mergedDeltas) {
         ssServer.applyChange(mergedDelta, 'merged')
     }
-
-    // expect(ssInitial.equals(ssClient1)).toBe(false)
 
     if (!_.isEqual(JSON.parse(JSONStringify(ssClient1.toDelta())), JSON.parse(JSONStringify(ssClient2.toDelta())))) {
         console.log(JSONStringify(ssInitial))

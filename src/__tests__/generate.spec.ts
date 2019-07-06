@@ -92,7 +92,7 @@ describe('basic fastcheck', () => {
         const arb = basicOpArbitrary()
 
         fc.assert(fc.property(arb, (op) => {
-            console.log(JSONStringify(op))
+            // console.log(JSONStringify(op))
             i++
 
             return i < 300
@@ -115,7 +115,7 @@ describe('basic fastcheck', () => {
         let i = 0
 
         fc.assert(fc.property(opsArbitrary(), (ops) => {
-            console.log(JSONStringify(ops))//, contentLengthIncreased(new Delta(ops)))
+            // console.log(JSONStringify(ops))//, contentLengthIncreased(new Delta(ops)))
             i++
             // fc.assert(deltaLength(new Delta(ops)) ===
             return i < 300

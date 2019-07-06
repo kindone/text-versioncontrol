@@ -73,7 +73,7 @@ describe('Excerpt', () => {
         )
     })
 
-    /*each([[false],[true]]).*/it('Document sync', (/*method*/) => {
+    it('Document sync', () => {
         const doc1 = new Document('doc1', 'My Document 1')
         const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
@@ -103,36 +103,18 @@ describe('Excerpt', () => {
         doc1.append(doc1Changes)
         doc2.append(doc2Changes)
 
-        console.log('phases1.doc1: ', printContent(doc1.getContent()))
-        console.log('phases1.doc2: ', printContent(doc2.getContent()))
-
         const source1 = doc1.takeExcerpt(5, 14) // 'precious '
-        console.log('sourceInfo:', JSONStringify(source1))
 
         const excerpt1 = doc2.pasteExcerpt(5, source1) // Some precious introduction here: ...'
         const target1 = excerpt1.target
-        console.log('targetInfo:', JSONStringify(target1))
-
-        console.log('phases2.doc2: ', printContent(doc2.getContent()))
 
         const doc1Content = doc1.getContent()
         const doc2Content = doc2.getContent()
         doc1.append(doc1ChangesAfterExcerpt)
         doc2.append(doc2ChangesAfterExcerpt)
 
-        console.log('phases2.doc1 changes: ', printChangedContent(doc1Content, doc1ChangesAfterExcerpt))
-        console.log('phases2.doc2 changes: ', printChangedContent(doc2Content, doc2ChangesAfterExcerpt))
-
-        console.log('phases3.doc1: ', doc1.getCurrentRev(), printContent(doc1.getContent()))
-        console.log('phases3.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
-
-
-        console.log('phases4.target: ', JSONStringify(target1))
-        console.log('phases4.source: ', JSONStringify(source1))
-
-
         const syncs = doc1.getSyncSinceExcerpted(source1)
-        console.log('phases4.sync: ', JSONStringify(syncs))
+
         doc2.syncExcerpt(excerpt1, { getDocument: (uri:String) => uri === 'doc1' ? doc1 : doc2})
         expectEqual(doc2.getContent(),
             {"ops":[
@@ -142,8 +124,6 @@ describe('Excerpt', () => {
                 {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"right","targetUri":"doc2","targetRev":"1","targetStart":"5","targetEnd":"15"}},
                 {"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]
             })
-        console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
-        console.log('phases4.doc2: ', doc2.getCurrentRev(), printContent(doc2.getContent()))
 
         // do again and get same result
         doc2.syncExcerpt(excerpt1, { getDocument: (uri:String) => uri === 'doc1' ? doc1 : doc2})
@@ -210,11 +190,6 @@ describe('Excerpt', () => {
         const source2 = doc2.takeExcerpt(1, 3)
         const excerpt2 = doc1.pasteExcerpt(3, source2)
 
-        console.log(JSONStringify(source1))
-        console.log(JSONStringify(source2))
-
-        console.log(printContent(doc1.getContent()))
-        console.log(printContent(doc2.getContent()))
 
         const doc1Changes = [
             new Delta([{ delete: 1 }, { insert: 'A' }]),
@@ -226,19 +201,8 @@ describe('Excerpt', () => {
         doc1.append(doc1Changes)
         doc2.append(doc2Changes)
 
-        console.log(printContent(doc1.getContent()))
-        console.log(printContent(doc2.getContent()))
-
-        // const target = doc2.updateExcerptMarkers(excerpt1.target)
-
-        console.log(printContent(doc1.getContent()))
-        console.log(printContent(doc2.getContent()))
-
         const s1 = doc1.getSyncSinceExcerpted(source1)
         doc2.syncExcerpt(excerpt1, { getDocument: (uri:String) => uri === 'doc1' ? doc1 : doc2})
-
-        console.log(printContent(doc1.getContent()))
-        console.log(printContent(doc2.getContent()))
     })
 })
 
@@ -267,9 +231,6 @@ describe('Mutual Excerpts', () => {
         const excerpt1 = doc1.getFullExcerpts()[0].excerpt
         const excerpt2 = doc1.getFullExcerpts()[1].excerpt
 
-        console.log('sync for excerpt1:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt1.source)))
-        console.log('sync for excerpt2:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt2.source)))
-
         // nothing happens, as no new change present
         const rev1 = doc1.getCurrentRev()
         doc1.syncExcerpt(excerpt1, docSet)
@@ -297,9 +258,6 @@ describe('Mutual Excerpts', () => {
 
         const excerpt2_to_1 = doc1.getFullExcerpts()[0].excerpt
         const excerpt1_to_2 = doc2.getFullExcerpts()[0].excerpt
-
-        console.log('sync for excerpt1:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt2_to_1.source)))
-        console.log('sync for excerpt2:', JSONStringify(doc2.getSyncSinceExcerpted(excerpt1_to_2.source)))
 
         doc1.syncExcerpt(excerpt2_to_1, docSet)
         expectEqual(textOnly(doc1.getContent()), "aabb") // nothing happened
@@ -334,14 +292,8 @@ describe('Mutual Excerpts', () => {
         const excerpt2_to_1 = doc1.getFullExcerpts()[0].excerpt
         const excerpt1_to_2 = doc2.getFullExcerpts()[0].excerpt
 
-        console.log('sync for excerpt2_to_1:', JSONStringify(doc2.getSyncSinceExcerpted(excerpt2_to_1.source)))
-        console.log('sync for excerpt1_to_2:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt1_to_2.source)))
-
         doc1.syncExcerpt(excerpt2_to_1, docSet)
         expectEqual(textOnly(doc1.getContent()), "aaPQbb") // added P by sync from doc 2(ab -> aQb  -> aPQb)
-
-        console.log('sync for excerpt2_to_1:', JSONStringify(doc2.getSyncSinceExcerpted(excerpt2_to_1.source)))
-        console.log('sync for excerpt1_to_2:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt1_to_2.source)))
 
         doc2.syncExcerpt(excerpt1_to_2, docSet) // should bring (ab -> aabb -> aaQbb -> aaPQbb) on top of Xa[P]bY
         expectEqual(textOnly(doc2.getContent()), "XaPQbY")
@@ -370,8 +322,6 @@ describe('Regression', () => {
             if(length1 < length2)
                 throw new Error('cannot change content')
             intermediate = applyChanges(intermediate, [change])
-            console.log('full:', ExcerptUtil.getFullExcerpts(intermediate))
-            console.log('partial:', ExcerptUtil.getPartialExcerpts(intermediate))
         }
     })
 

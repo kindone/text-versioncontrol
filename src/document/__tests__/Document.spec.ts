@@ -48,7 +48,7 @@ describe('document', () => {
         // return
         fc.assert(
             fc.property(contentArbitrary(), fc.integer(0, 10), fc.integer(0, 10), (content, num1, num2) => {
-                console.log(content)
+                // console.log(content)
                 const len = contentLength(content)
                 const n1 = len > 0 ? num1 % len : 0
                 const n2 = len > 0 ? num2 % len : 0
@@ -60,7 +60,7 @@ describe('document', () => {
                 const take = doc.take(start, end)
 
                 const crop = new Range(start, end).cropContent(doc.getContent())
-                console.log(take, crop)
+                // console.log(take, crop)
             })
             ,{ verbose: true, numRuns:100, endOnFailure: true }
         );

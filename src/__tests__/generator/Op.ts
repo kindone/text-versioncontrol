@@ -3,7 +3,6 @@ import { Arbitrary, Random, Shrinkable} from 'fast-check'
 
 import Op from 'quill-delta/dist/Op'
 
-
 import { retainArbitrary,  deleteArbitrary } from './RetainDelete';
 import { insertArbitrary } from './Insert';
 

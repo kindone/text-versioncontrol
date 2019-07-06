@@ -1,19 +1,19 @@
 import Op from 'quill-delta/dist/Op'
-import { Change } from './Change'
 import { ExDelta } from './ExDelta'
+import { IDelta } from './IDelta'
 import { SharedString } from './SharedString'
-import { normalizeOps, normalizeChanges, contentLength } from './util'
+import { normalizeOps, contentLength } from './util'
 
 export interface RangedTransforms {
     range: Range
-    deltas: Change[]
+    deltas: IDelta[]
 }
 
 export class Range {
     constructor(public readonly start: number, public readonly end: number) {}
 
     // immutable
-    public applyChanges(changes: Change[], open = false): Range {
+    public applyChanges(changes: IDelta[], open = false): Range {
         let range: Range = this
         for (const change of changes) {
             range = open ? range.applyChangeOpen(change) : range.applyChange(change)
@@ -21,7 +21,7 @@ export class Range {
         return range
     }
 
-    public mapChanges(changes:Change[], open = false): Range[] {
+    public mapChanges(changes:IDelta[], open = false): Range[] {
         let range: Range = this
         const ranges:Range[] = []
         for (const change of changes) {
@@ -34,7 +34,7 @@ export class Range {
 
 
     // immutable
-    public applyChange(change: Change): Range {
+    public applyChange(change: IDelta): Range {
         let cursor = 0
         let start = this.start
         let end = this.end
@@ -71,7 +71,7 @@ export class Range {
     }
 
     // immutable
-    public applyChangeOpen(change: Change): Range {
+    public applyChangeOpen(change: IDelta): Range {
         let cursor = 0
         let start = this.start
         let end = this.end
@@ -107,7 +107,7 @@ export class Range {
         return new Range(start, end)
     }
 
-    public cropContent(content: Change): Change {
+    public cropContent(content: IDelta): IDelta {
         const ss = SharedString.fromDelta(content)
         const length = contentLength(content)
         const cropper = new ExDelta([
@@ -119,11 +119,11 @@ export class Range {
         return ss.toDelta()
     }
 
-    public cropChanges(changes: Change[], open: boolean = false): Change[] {
+    public cropChanges(changes: IDelta[], open: boolean = false): IDelta[] {
         let range: Range = this
-        const newChanges: Change[] = []
+        const newChanges: IDelta[] = []
         for (const change of changes) {
-            const newChange = open ? range.cropChangeOpen(change) : range.cropChange(change)
+            const newChange = open ? range.cropDeltaOpen(change) : range.cropDelta(change)
             range = range.applyChange(change)
             newChanges.push(newChange)
         }
@@ -131,13 +131,13 @@ export class Range {
         return newChanges
     }
 
-    public cropChange(change: Change, debug = false): Change {
+    public cropDelta(delta: IDelta, debug = false): IDelta {
         let cursor = 0
         let start = this.start
         let end = this.end
         const ops: Op[] = []
 
-        for (const op of change.ops) {
+        for (const op of delta.ops) {
             if (op.retain) {
                 const left = Math.max(cursor, start)
                 const right = cursor + op.retain
@@ -200,19 +200,19 @@ export class Range {
             if (cursor >= end) break
         }
 
-        if(change.contexts)
-            return new ExDelta(normalizeOps(ops), change.contexts)
+        if(delta.contexts)
+            return new ExDelta(normalizeOps(ops), delta.contexts)
         else
             return new ExDelta(normalizeOps(ops))
     }
 
-    public cropChangeOpen(change: Change, debug = false): Change {
+    public cropDeltaOpen(delta: IDelta, debug = false): IDelta {
         let cursor = 0
         let start = this.start
         let end = this.end
         const ops: Op[] = []
 
-        for (const op of change.ops) {
+        for (const op of delta.ops) {
             if (op.retain) {
                 const left = Math.max(cursor, start)
                 const right = cursor + op.retain
@@ -274,8 +274,8 @@ export class Range {
             if (cursor > end) break
         }
 
-        if(change.contexts)
-            return new ExDelta(normalizeOps(ops), change.contexts)
+        if(delta.contexts)
+            return new ExDelta(normalizeOps(ops), delta.contexts)
         else
             return new ExDelta(normalizeOps(ops))
     }

@@ -1,7 +1,7 @@
 import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
-import { Change } from '../primitive/Change'
 import { ExDelta } from '../primitive/ExDelta'
+import { IDelta } from '../primitive/IDelta'
 import { JSONStringify } from '../primitive/util';
 import { Excerpt } from './Excerpt';
 import { ExcerptMarker } from './ExcerptMarker';
@@ -15,7 +15,7 @@ export interface ExcerptMarkerWithOffset extends ExcerptMarker {
 
 export class ExcerptUtil {
 
-    public static take(start: number, end: number, length: number): Change {
+    public static take(start: number, end: number, length: number): IDelta {
         // ....start....end...length
         const ops: Op[] = []
         const retain = end - start
@@ -45,7 +45,7 @@ export class ExcerptUtil {
     }
 
     // target ranges: marker itself is included
-    public static getPasteWithMarkers(source:ExcerptSource, targetUri:string, targetRev:number, targetStart:number):Change {
+    public static getPasteWithMarkers(source:ExcerptSource, targetUri:string, targetRev:number, targetStart:number):IDelta {
         const leftMarkerOp:Op = this.makeExcerptMarker('left', source.uri, source.rev, source.start, source.end, targetUri, targetRev,  targetStart)
         const rightMarkerOp:Op = this.makeExcerptMarker('right', source.uri, source.rev, source.start, source.end, targetUri, targetRev,  targetStart)
 
@@ -56,7 +56,7 @@ export class ExcerptUtil {
 
         const ops:Op[] = [leftMarkerOp].concat(source.content.ops).concat([rightMarkerOp])
 
-        return new Delta(ops)
+        return new ExDelta(ops)
     }
 
     public static isExcerptURI(uri:string) {
@@ -158,7 +158,7 @@ export class ExcerptUtil {
 
 
 
-    public static getFullExcerpts(content:Change):Array<{offset: number, excerpt: Excerpt}> {
+    public static getFullExcerpts(content:IDelta):Array<{offset: number, excerpt: Excerpt}> {
         const excerptMarkers:ExcerptMarkerWithOffset[] = []
         const excerptMap = new Map<string, ExcerptMarker>()
         let offset = 0
@@ -198,7 +198,7 @@ export class ExcerptUtil {
         })
     }
 
-    public static getPartialExcerpts(content:Change) {
+    public static getPartialExcerpts(content:IDelta) {
         const fullExcerpts = new Set<string>() // A ^ B
         const anyExcerpts = new Map<string, any>() // A U B
         let offset = 0

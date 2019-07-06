@@ -2,10 +2,10 @@ import Delta = require('quill-delta')
 import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Change } from './Change'
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
 import { ExDelta } from './ExDelta'
+import { IDelta } from './IDelta'
 import { SharedString } from './SharedString';
 
 
@@ -35,13 +35,13 @@ export function expectEqual(obj1: any, obj2: any, msg: string | strfunc = 'Not e
     }
 }
 
-export function asChange(content: string | Change): Change {
+export function asExDelta(content: string | IDelta): IDelta {
     if (content === '') return new ExDelta([])
     else if (typeof content === 'string') return new ExDelta([{ insert: content }])
-    else return content as Change
+    else return content as IDelta
 }
 
-export function contentLength(content: Change): number {
+export function contentLength(content: IDelta): number {
     return _.reduce(
         content.ops,
         (len, op) => {
@@ -53,7 +53,7 @@ export function contentLength(content: Change): number {
     )
 }
 
-export function minContentLengthForChange(change: Change): number {
+export function minContentLengthForChange(change: IDelta): number {
     return _.reduce(
         change.ops,
         (len, op) => {
@@ -67,7 +67,7 @@ export function minContentLengthForChange(change: Change): number {
     )
 }
 
-export function contentLengthIncreased(initialLength:number, change:Change):number {
+export function contentLengthIncreased(initialLength:number, change:IDelta):number {
     return _.reduce(
         change.ops,
         (len, op) => {
@@ -78,17 +78,6 @@ export function contentLengthIncreased(initialLength:number, change:Change):numb
         },
         initialLength,
     )
-}
-
-
-// unused
-function transformPosition(position: number, changes: Change[]): number {
-    for (const change of changes) {
-        const d = new ExDelta(change.ops)
-        position = d.transformPosition(position)
-    }
-
-    return position
 }
 
 export function normalizeTwoOps(op1: Op, op2: Op): Op[] {
@@ -164,39 +153,22 @@ export function normalizeOps(ops: Op[]): Op[] {
 }
 
 // remove all retain-only deltas in array
-export function normalizeChanges(changes: Change[]): Change[] {
+export function normalizeDeltas(deltas: IDelta[]): IDelta[] {
     return _.reduce(
-        changes,
-        (newChanges: Change[], change) => {
-            if (!hasNoEffect(change)) {
-                const newChange = change.contexts ? new ExDelta(normalizeOps(change.ops), change.contexts) : new ExDelta(normalizeOps(change.ops))
-                newChanges.push(newChange)
-                return newChanges
-            } else return newChanges
+        deltas,
+        (newDeltas: IDelta[], delta) => {
+            if (!hasNoEffect(delta)) {
+                const newDelta = delta.contexts ? new ExDelta(normalizeOps(delta.ops), delta.contexts) : new ExDelta(normalizeOps(delta.ops))
+                newDeltas.push(newDelta)
+                return newDeltas
+            } else return newDeltas
         },
         [],
     )
 }
 
-// export function normalizeDeltasWithRevision(deltas: Change[], startRev: number): Array<{ delta: Change; rev: number }> {
-//     let rev = startRev
-//     return _.reduce(
-//         deltas,
-//         (newChanges: Array<{ delta: Change; rev: number }>, change) => {
-//             if (!hasNoEffect(change)) {
-//                 newChanges.push({ delta: new ExDelta(normalizeOps(change.ops)), rev })
-//             }
-
-//             rev++
-
-//             return newChanges
-//         },
-//         [],
-//     )
-// }
-
-export function hasNoEffect(change: Change):boolean {
-    for (const op of change.ops) {
+export function hasNoEffect(delta: IDelta):boolean {
+    for (const op of delta.ops) {
         if (op.insert || op.delete) {
             return false
         }
@@ -216,11 +188,11 @@ export function hasNoEffect(change: Change):boolean {
 //     return flattened
 // }
 
-export function transformChanges(change1: Change, change2: Change, firstWins: boolean):Change {
-    const iter = new DeltaTransformer(change1.ops, firstWins)
+export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boolean):IDelta {
+    const iter = new DeltaTransformer(delta1.ops, firstWins)
     let outOps: Op[] = []
     // console.log('delta2:', delta2.ops)
-    for (const op of change2.ops) {
+    for (const op of delta2.ops) {
         if (!iter.hasNext()) {
             outOps.push(op)
             // console.log('rest out:', outOps)
@@ -257,19 +229,19 @@ export function transformChanges(change1: Change, change2: Change, firstWins: bo
     return new ExDelta(normalizeOps(outOps))
 }
 
-export function applyChanges(content:Change, changes:Change[]) {
-    return flattenChanges(content, ...changes)
+export function applyChanges(content:IDelta, changes:IDelta[]) {
+    return flattenDeltas(content, ...changes)
 }
 
-export function flattenChanges(...changes: Change[]):Change {
-    if (changes.length === 0) return new ExDelta()
+export function flattenDeltas(...deltas: IDelta[]):IDelta {
+    if (deltas.length === 0) return new ExDelta()
 
-    let flattened: Change = changes[0]
+    let flattened: IDelta = deltas[0]
 
-    for (const change2 of changes.slice(1)) {
+    for (const delta2 of deltas.slice(1)) {
         const iter = new DeltaComposer(flattened.ops)
         let outOps: Op[] = []
-        for (const op of change2.ops) {
+        for (const op of delta2.ops) {
             if (!iter.hasNext()) outOps.push(op)
             else if (op.retain && op.attributes) {
                 // attribute
@@ -320,8 +292,8 @@ export function opLength(op: Op):number {
 //     return new ExtendedDelta(new Delta(prev.ops).transform(new Delta(target.ops)).ops, sync, excerpt)
 // }
 
-export function flattenTransformedChange(change1: Change, change2: Change, firstWins = false): Change {
-    return flattenChanges(change1, transformChanges(change1, change2, firstWins))
+export function flattenTransformedDelta(delta1: IDelta, delta2: IDelta, firstWins = false): IDelta {
+    return flattenDeltas(delta1, transformDeltas(delta1, delta2, firstWins))
 }
 
 export function sliceOp(op: Op, start: number, end?: number): Op {
@@ -385,7 +357,7 @@ export function mergeAttributes(attr1?: AttributeMap, attr2?: AttributeMap): Att
     return result
 }
 
-export function cropContent(content:Change, start:number, end:number):Change
+export function cropContent(content:IDelta, start:number, end:number):IDelta
 {
     const fullLength = contentLength(content)
     const length = end - start
@@ -394,12 +366,12 @@ export function cropContent(content:Change, start:number, end:number):Change
         throw new Error("invalid argument: " + JSONStringify(content) + ", start: " + start +", end: "+ end)
 
     if(fullLength ===  end)
-        return flattenChanges(content, new ExDelta([{delete:start}, {retain:length}]))
+        return flattenDeltas(content, new ExDelta([{delete:start}, {retain:length}]))
     else
-        return flattenChanges(content, new ExDelta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
+        return flattenDeltas(content, new ExDelta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
 }
 
-export function reverseChange(content:Change, change:Change):Change {
+export function reverseChange(content:IDelta, change:IDelta):IDelta {
     let offset = 0
     let reversedOps:Op[] = []
     for(const changeOp of change.ops) {
@@ -455,13 +427,13 @@ export function reverseChange(content:Change, change:Change):Change {
 }
 
 
-export function filterChanges(baseContent:Change, changes:Change[], criteria:(idx:number, change:Change) => boolean):Change[] {
+export function filterChanges(baseContent:IDelta, changes:IDelta[], criteria:(idx:number, change:IDelta) => boolean):IDelta[] {
     if(changes.length === 0)
         return changes
     if(contentLength(baseContent) < minContentLengthForChange(changes[0]))
         throw new Error('invalid content - change:' + JSONStringify(baseContent) + " - " + JSONStringify(changes))
 
-    const filtered:Change[] = []
+    const filtered:IDelta[] = []
     const altered = changes.concat()
 
     const ss = SharedString.fromDelta(baseContent)
@@ -489,7 +461,7 @@ export function filterChanges(baseContent:Change, changes:Change[], criteria:(id
     return filtered
 }
 
-export function filterOutChangesByIndice(baseContent:Change, changes:Change[], indicesToRemove:number[]):Change[] {
+export function filterOutChangesByIndice(baseContent:IDelta, changes:IDelta[], indicesToRemove:number[]):IDelta[] {
     return filterChanges(baseContent, changes, (idx, change) => !_.contains(indicesToRemove, idx) )
 }
 

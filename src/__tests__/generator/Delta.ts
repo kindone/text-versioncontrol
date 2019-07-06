@@ -1,8 +1,7 @@
-import { Arbitrary, Random, Shrinkable } from 'fast-check';
-import { OpKeyGen, FixedLengthOpGen, emptyOpsArbitrary } from './op';
+import { Random, Shrinkable } from 'fast-check';
+import {  emptyOpsArbitrary } from './op';
 
 import Delta = require('quill-delta');
-import Op from 'quill-delta/dist/Op';
 import * as _ from 'underscore'
 import { opsArbitrary, OpsArbitrary } from './Ops';
 import { ArbitraryWithShrink } from './util';

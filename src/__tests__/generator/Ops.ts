@@ -1,8 +1,7 @@
-import fc, { Arbitrary, Random, Shrinkable } from "fast-check";
+import fc, { Random, Shrinkable } from "fast-check";
 import Op from "quill-delta/dist/Op";
 import {  genNat, genUniqueSequenceSorted, genSmallBiasedDistribution } from "./primitives";
-import { retainArbitrary } from "./RetainDelete";
-import { AttributeMapArbitrary, attributeMapArbitrary } from "./Attribute";
+import { attributeMapArbitrary } from "./Attribute";
 import { insertArbitrary } from "./Insert";
 import { genArraySplit } from "./ArraySplit";
 import { ArbitraryWithShrink } from "./util";

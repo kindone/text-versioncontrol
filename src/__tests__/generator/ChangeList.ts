@@ -1,10 +1,9 @@
-import fc, { Arbitrary, Random, Shrinkable, assert } from "fast-check";
+import { Random, Shrinkable } from "fast-check";
 import Delta = require("quill-delta");
-import { emptyDeltaGen, deltaArbitrary, DeltaArbitrary } from "./Delta";
+import { deltaArbitrary } from "./Delta";
 
 import * as _ from 'underscore'
-import { Change } from "../../primitive/Change";
-import { contentLength, contentLengthIncreased, JSONStringify } from "../../primitive/util";
+import { contentLengthIncreased, JSONStringify } from "../../primitive/util";
 import { ArbitraryWithShrink } from "./util";
 import { genSmallBiasedDistribution } from "./primitives";
 

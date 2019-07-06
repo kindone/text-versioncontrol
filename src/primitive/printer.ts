@@ -1,5 +1,5 @@
 import * as chalk from 'chalk'
-import { Change } from "./Change"
+import { IDelta } from "./IDelta"
 import { SharedString } from './SharedString';
 import { JSONStringify } from './util';
 
@@ -25,7 +25,7 @@ const delContent = (text:string) => {
 }
 const meta = chalk.default.magentaBright
 
-export function printContent(delta:Change):string {
+export function printContent(delta:IDelta):string {
     let str = ''
     for(const op of delta.ops)
     {
@@ -48,7 +48,7 @@ export function printContent(delta:Change):string {
     return str
 }
 
-export function printChange(delta:Change):string {
+export function printDelta(delta:IDelta):string {
     let str = ''
     for(const op of delta.ops)
     {
@@ -71,17 +71,17 @@ export function printChange(delta:Change):string {
     return str
 }
 
-export function printChanges(changes:Change[]) {
+export function printDeltas(deltas:IDelta[]) {
     let str = meta('[ ')
-    for(const change of changes) {
-        str += printChange(change)
+    for(const change of deltas) {
+        str += printDelta(change)
         str += meta(', ')
     }
     str += meta(' ]')
     return str
 }
 
-export function printChangedContent(content:Change, changes:Change[]):string {
+export function printChangedContent(content:IDelta, changes:IDelta[]):string {
     let ss = SharedString.fromDelta(content)
     let str = meta('[ ')
     for(const change of changes)

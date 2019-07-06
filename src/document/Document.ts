@@ -1,29 +1,22 @@
-import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Excerpt, ExcerptSource, BatchExcerptSync, ExcerptTarget, ExcerptUtil, ExcerptSync } from '../excerpt'
-import { ExcerptMarker } from '../excerpt/ExcerptMarker';
+import { Excerpt, ExcerptSource, ExcerptTarget, ExcerptUtil, ExcerptSync } from '../excerpt'
 import { ExcerptMarkerWithOffset, } from '../excerpt/ExcerptUtil';
 import { History, IHistory } from '../history/History'
 import { SyncResponse } from '../history/SyncResponse'
-import { Change } from '../primitive/Change'
-import { ChangeContext } from '../primitive/ChangeContext';
+import { DeltaContext } from '../primitive/DeltaContext';
 import { ExDelta } from '../primitive/ExDelta'
-import { printChange } from '../primitive/printer';
+import { IDelta } from '../primitive/IDelta'
 import { Range } from '../primitive/Range'
 import { SharedString } from '../primitive/SharedString';
 import { Source } from '../primitive/Source'
 import {
-    asChange,
+    asExDelta,
     JSONStringify,
-    flattenTransformedChange,
-    flattenChanges,
     expectEqual,
-    normalizeChanges,
     contentLength,
     cropContent,
     isEqual,
-    reverseChange,
     filterChanges,
     minContentLengthForChange,
 } from '../primitive/util'
@@ -34,12 +27,11 @@ import { DocumentSet } from './DocumentSet';
 
 
 
-
 export class Document {
     private history: IHistory
 
-    constructor(public readonly name: string, content: string | Change) {
-        this.history = new History(name, asChange(content))
+    constructor(public readonly name: string, content: string | IDelta) {
+        this.history = new History(name, asExDelta(content))
     }
 
     public getName():string {
@@ -57,35 +49,35 @@ export class Document {
         return this.history.getCurrentRev()
     }
 
-    public getContent(): Change {
+    public getContent(): IDelta {
         return this.history.getContent()
     }
 
-    public getContentAt(rev: number): Change {
+    public getContentAt(rev: number): IDelta {
         return this.history.getContentAt(rev)
     }
 
-    public append(deltas: Change[]): number {
-        return this.history.append(deltas)
+    public append(changes: IDelta[]): number {
+        return this.history.append(changes)
     }
 
-    public merge(baseRev: number, deltas: Change[]):SyncResponse {
-        return this.history.merge({ rev: baseRev, branchName: '$simulate$', deltas })
+    public merge(baseRev: number, changes: IDelta[]):SyncResponse {
+        return this.history.merge({ rev: baseRev, branchName: '$simulate$', changes })
     }
 
-    public getChange(rev: number): Change[] {
+    public getChange(rev: number): IDelta[] {
         return this.history.getChange(rev)
     }
 
-    public getChangesFrom(fromRev: number): Change[] {
+    public getChangesFrom(fromRev: number): IDelta[] {
         return this.history.getChangesFrom(fromRev)
     }
 
-    public getChangeAt(rev: number): Change[] {
+    public getChangeAt(rev: number): IDelta[] {
         return this.history.getChangesFromTo(rev, rev)
     }
 
-    public getChangesFromTo(fromRev: number, toRev: number): Change[] {
+    public getChangesFromTo(fromRev: number, toRev: number): IDelta[] {
         return this.history.getChangesFromTo(fromRev, toRev)
     }
 
@@ -113,12 +105,12 @@ export class Document {
         return new ExcerptSource(this.name, rev, start, end, safeCroppedContent)
     }
 
-    public take(start:number, end:number):Change {
+    public take(start:number, end:number):IDelta {
         const content = this.history.getContent()
         return cropContent(content, start, end)
     }
 
-    public takeAt(rev:number, start:number, end:number):Change {
+    public takeAt(rev:number, start:number, end:number):IDelta {
         const content = this.history.getContentAt(rev)
         return cropContent(content, start, end)
     }
@@ -132,7 +124,7 @@ export class Document {
 
         const ops: Op[] = [{ retain: offset }]
 
-        const contexts:ChangeContext[] = [{type: 'paste', sourceUri: source.uri, sourceRev: source.rev, targetUri: this.name, targetRev: rev}]
+        const contexts:DeltaContext[] = [{type: 'paste', sourceUri: source.uri, sourceRev: source.rev, targetUri: this.name, targetRev: rev}]
         const change = new ExDelta(ops.concat(pasted.ops), contexts)
         this.history.append([change])
 
@@ -193,12 +185,10 @@ export class Document {
         if(syncs.length === 0)
             return excerpt.target
 
-        const maxSourceRev = syncs[syncs.length-1].rev
-
         // prepend context info and shift change
         let sourceChanges = syncs.map(sync => {
             const change = sync.change
-            const newContext:ChangeContext = {type: 'sync', sourceUri: source.uri, sourceRev: sync.rev, targetUri: target.uri, targetRev: target.rev}
+            const newContext:DeltaContext = {type: 'sync', sourceUri: source.uri, sourceRev: sync.rev, targetUri: target.uri, targetRev: target.rev}
             const newContexts = change.contexts ? [newContext].concat(change.contexts) : [newContext]
             return {...change, contexts: newContexts}
         }).map(change => this.changeShifted(change, target.start+1))
@@ -252,7 +242,7 @@ export class Document {
         }
 
         // apply rest and generate new sync records
-        const newLocalChanges:Change[] =  []
+        const newLocalChanges:IDelta[] =  []
         for(;idx < sourceChanges.length; idx++) {
             const newChange = ss.applyChange(sourceChanges[idx], sourceBranchName)
             newLocalChanges.push(newChange)
@@ -262,126 +252,15 @@ export class Document {
         this.append(newLocalChanges)
     }
 
-
-    // update markers up-to-date at target
-    public updateExcerptMarkers(target:ExcerptTarget, newSource?:Source, check = true, revive=false):ExcerptTarget {
-        let full:Array<{
-            offset: number;
-            excerpt: Excerpt;
-        }> = []
-        // check if the target correctly holds the markers at old revision (must)
-        if(check)
-        {
-            full = this.getFullExcerpts()
-            const leftMarker = this.takeAt(target.rev, target.start, target.start+1)
-            const rightMarker = this.takeAt(target.rev, target.end, target.end+1)
-            if(leftMarker.ops.length !== 1 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0]))
-                throw new Error('left marker check failed:' + JSONStringify(leftMarker))
-            if(rightMarker.ops.length !== 1  || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0]))
-                throw new Error('right marker check failed:' + JSONStringify(rightMarker) + ", " + JSONStringify(this.getContentAt(target.rev)))
-
-            expectEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, target)
-            expectEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, target)
-        }
-
-        if(target.rev === this.getCurrentRev())
-            return target
-
-        // getChanges since target.rev
-        const changes = this.getChangesFrom(target.rev)
-        const range = new Range(target.start, target.end)
-        // FIXME: implement and utilize applyChange close, open
-        const tmpRange = new Range(range.start, range.end+1).applyChanges(changes)
-        const newRange = new Range(tmpRange.start, tmpRange.end-1)
-        let reviveLeft = false
-        let reviveRight = false
-        // check if the target holds the markers at new revision. if not, throw
-        // this assumes the target is not synced previously. only altered by user interaction, etc.
-        // this assumption comes from the target should always come from current revision directly
-        if(check || revive)
-        {
-            const leftMarker = this.take(newRange.start, newRange.start+1)
-            const rightMarker = this.take(newRange.end, newRange.end+1)
-            if(leftMarker.ops.length !== 1
-                 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0])
-                 || !isEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, target)) {
-                if(revive)
-                    reviveLeft = true
-                else if(check)
-                    throw new Error('left marker check failed:' + JSONStringify(leftMarker))
-            }
-
-            if(rightMarker.ops.length !== 1
-                 || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0])
-                 || !isEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, target)) {
-                if(revive)
-                    reviveRight = true
-                else if(check)
-                    throw new Error('right marker check failed:' + JSONStringify(rightMarker))
-            }
-
-            if(reviveLeft && reviveRight) {
-                throw new Error('marker not found')
-            }
-        }
-
-        const marker = reviveLeft ? this.take(newRange.end, newRange.end+1) : this.take(newRange.start, newRange.start+1)
-        const {source, } = ExcerptUtil.decomposeMarker(marker.ops[0])
-        if(newSource) {
-            expectEqual(source.uri, newSource.uri)
-        }
-        else
-            newSource = source
-
-        // apply changes
-        const newTarget = new ExcerptTarget(target.uri, this.getCurrentRev() + 1, newRange.start, newRange.end)
-        const leftExcerptMarker = ExcerptUtil.makeExcerptMarker('left', newSource.uri, newSource.rev, newSource.start, newSource.end, target.uri, newTarget.rev, newTarget.start, newTarget.end)
-        const rightExcerptMarker = ExcerptUtil.makeExcerptMarker('right', newSource.uri, newSource.rev, newSource.start, newSource.end, target.uri, newTarget.rev, newTarget.start, newTarget.end)
-        const excerptMarkerReplaceChange = {ops:[
-            {retain: newTarget.start},
-            {delete: reviveLeft ? 0 : 1},
-            leftExcerptMarker,
-            {retain: reviveLeft? 1 : 0},
-            {retain: newTarget.end-newTarget.start-1},
-            {delete: reviveRight ? 0 : 1},
-            rightExcerptMarker]}
-
-        if(contentLength(this.getContent()) < minContentLengthForChange(excerptMarkerReplaceChange))
-            throw new Error('bad change')
-        this.append([excerptMarkerReplaceChange])
-
-        // check again
-        if(check)
-        {
-            const leftMarker = this.take(newRange.start, newRange.start+1)
-            const rightMarker = this.take(newRange.end, newRange.end+1)
-            if(leftMarker.ops.length !== 1 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0]))
-                throw new Error('left marker check failed:' + JSONStringify(leftMarker))
-            if(rightMarker.ops.length !== 1  || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0]))
-                throw new Error('right marker check failed:' + JSONStringify(rightMarker))
-
-            if(!isEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]).target, newTarget))
-                throw new Error('left marker check failed')
-            if(!isEqual(ExcerptUtil.decomposeMarker(rightMarker.ops[0]).target, newTarget))
-                throw new Error('right marker check failed')
-
-            if(!isEqual(this.getFullExcerpts().length, full.length))
-                throw new Error('number of excerpts shoudn\'t change')
-        }
-
-        return newTarget
-    }
-
-
     /** private methods */
 
-    private changeShifted(change: Change, offset:number):Change {
+    private changeShifted(change: IDelta, offset:number):IDelta {
         const shiftAmount = offset
         const shiftedChange = new ExDelta(change.ops.concat(), change.contexts)
         // adjust offset:
         // utilize first retain if it exists
         if (shiftedChange.ops.length > 0 && shiftedChange.ops[0].retain) {
-            shiftedChange.ops[0] = {...shiftedChange.ops[0], retain: shiftedChange.ops![0].retain + shiftAmount }
+            shiftedChange.ops[0] = {...shiftedChange.ops[0], retain: shiftedChange.ops[0].retain + shiftAmount }
         // otherwise just append new retain
         } else {
             shiftedChange.ops.unshift({ retain: shiftAmount })
@@ -389,7 +268,7 @@ export class Document {
         return shiftedChange
     }
 
-    private composeSyncs(uri:string, firstRev:number, changes:Change[], ranges:Range[]) {
+    private composeSyncs(uri:string, firstRev:number, changes:IDelta[], ranges:Range[]) {
         if(changes.length !== ranges.length)
             throw new Error("Unexpected error in composeSyncs: " + JSONStringify(changes) + ", " + JSONStringify(ranges))
 

@@ -1,13 +1,9 @@
 import * as fc from 'fast-check'
 import * as _ from 'underscore'
 
-import { ChangeListArbitrary } from './generator/ChangeList';
-import { basicOpArbitrary, complexOpArbitrary} from './generator/op';
-import { IntegerPositiveGen } from './generator/primitives';
-import { JSONStringify, contentLength } from '../primitive/util';
-import { retainArbitrary, simpleRetainArbitrary } from './generator/RetainDelete';
+import { basicOpArbitrary} from './generator/op';
+import { JSONStringify } from '../primitive/util';
 import { opsArbitrary } from './generator/Ops';
-import Delta = require('quill-delta');
 import { Random } from 'fast-check';
 import prand from 'pure-rand';
 

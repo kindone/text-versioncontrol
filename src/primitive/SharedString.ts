@@ -1,9 +1,9 @@
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Change } from './Change'
 import { DeltaIterator } from './DeltaIterator'
 import { Fragment, JSONStyle } from './Fragment'
 import { FragmentIterator } from './FragmentIterator'
+import { IDelta } from './IDelta'
 import { normalizeOps } from './util'
 
 export class SharedString {
@@ -11,7 +11,7 @@ export class SharedString {
         return new SharedString([new Fragment(str)])
     }
 
-    public static fromDelta(content: Change) {
+    public static fromDelta(content: IDelta) {
         const fs = _.reduce(
             content.ops,
             (fragments: Fragment[], op) => {
@@ -36,7 +36,7 @@ export class SharedString {
         this.fragments = fragments
     }
 
-    public applyChange(delta: Change, branch: string, debug = false): Change {
+    public applyChange(change: IDelta, branch: string, debug = false): IDelta {
         const fragmentIter = new FragmentIterator(branch, this.fragments)
         const deltaIter = new DeltaIterator(branch, this.fragments)
 
@@ -44,7 +44,7 @@ export class SharedString {
         let newOps: Op[] = []
         let diff = 0 // always <= 0
 
-        for (const op of delta.ops) {
+        for (const op of change.ops) {
             // update attributes
             if (op.retain && op.attributes) {
                 const fragments = fragmentIter.attribute(op.retain, op.attributes)
@@ -107,8 +107,8 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        if(delta.contexts)
-            return {ops: normalizeOps(newOps), contexts: delta.contexts}
+        if(change.contexts)
+            return {ops: normalizeOps(newOps), contexts: change.contexts}
         else
             return {ops: normalizeOps(newOps)}
     }
@@ -137,7 +137,7 @@ export class SharedString {
         )
     }
 
-    public toFlattenedDelta(): Change {
+    public toFlattenedDelta(): IDelta {
         const ops = _.map(
             this.fragments,
             fragment => {
@@ -148,7 +148,7 @@ export class SharedString {
         return {ops}
     }
 
-    public toDelta(): Change {
+    public toDelta(): IDelta {
         const ops = _.reduce(
             this.fragments,
             (result: Op[], fragment) => {

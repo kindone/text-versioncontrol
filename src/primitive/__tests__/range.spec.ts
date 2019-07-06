@@ -1,4 +1,4 @@
-import { expectEqual, normalizeChanges, contentLength, minContentLengthForChange, JSONStringify } from "../util";
+import { expectEqual, normalizeDeltas } from "../util";
 import { Range } from "../Range";
 import Delta = require("quill-delta");
 import * as fc from "fast-check";
@@ -106,48 +106,48 @@ describe('Range', () => {
         )
     })
 
-    it('cropChange', () => {
+    it('cropDelta', () => {
         const range = new Range(10, 20)
-        expectEqual(range.cropChange(new Delta().retain(10)), new Delta()) // no-op
-        expectEqual(range.cropChange(new Delta().retain(20)), new Delta()) // no-op
+        expectEqual(range.cropDelta(new Delta().retain(10)), new Delta()) // no-op
+        expectEqual(range.cropDelta(new Delta().retain(20)), new Delta()) // no-op
 
-        expectEqual(range.cropChange(new Delta().delete(10)), new Delta()) // nothing, only range changes
-        expectEqual(range.cropChange(new Delta().delete(11)), new Delta().delete(1))
-        expectEqual(range.cropChange(new Delta().delete(11)), new Delta().delete(1))
-        expectEqual(range.cropChange(new Delta().delete(20)), new Delta().delete(10))
-        expectEqual(range.cropChange(new Delta().delete(21)), new Delta().delete(10)) // overflow
-        expectEqual(range.cropChangeOpen(new Delta().delete(21)), new Delta().delete(10))
+        expectEqual(range.cropDelta(new Delta().delete(10)), new Delta()) // nothing, only range changes
+        expectEqual(range.cropDelta(new Delta().delete(11)), new Delta().delete(1))
+        expectEqual(range.cropDelta(new Delta().delete(11)), new Delta().delete(1))
+        expectEqual(range.cropDelta(new Delta().delete(20)), new Delta().delete(10))
+        expectEqual(range.cropDelta(new Delta().delete(21)), new Delta().delete(10)) // overflow
+        expectEqual(range.cropDeltaOpen(new Delta().delete(21)), new Delta().delete(10))
 
-        expectEqual(range.cropChange(new Delta().retain(10).delete(1)), new Delta().delete(1))
-        expectEqual(range.cropChange(new Delta().retain(10).delete(10)), new Delta().delete(10))
-        expectEqual(range.cropChange(new Delta().retain(10).delete(11)), new Delta().delete(10)) // overflow
-        expectEqual(range.cropChangeOpen(new Delta().retain(10).delete(1)), new Delta().delete(1))
-        expectEqual(range.cropChangeOpen(new Delta().retain(10).delete(10)), new Delta().delete(10))
-        expectEqual(range.cropChangeOpen(new Delta().retain(10).delete(11)), new Delta().delete(10)) // overflow
+        expectEqual(range.cropDelta(new Delta().retain(10).delete(1)), new Delta().delete(1))
+        expectEqual(range.cropDelta(new Delta().retain(10).delete(10)), new Delta().delete(10))
+        expectEqual(range.cropDelta(new Delta().retain(10).delete(11)), new Delta().delete(10)) // overflow
+        expectEqual(range.cropDeltaOpen(new Delta().retain(10).delete(1)), new Delta().delete(1))
+        expectEqual(range.cropDeltaOpen(new Delta().retain(10).delete(10)), new Delta().delete(10))
+        expectEqual(range.cropDeltaOpen(new Delta().retain(10).delete(11)), new Delta().delete(10)) // overflow
 
-        expectEqual(range.cropChange(new Delta().insert('1234567890')), new Delta()) // nothing, only range changes
-        expectEqual(range.cropChange(new Delta().retain(10).insert('1')), new Delta()) // nothing, only range changes
-        expectEqual(range.cropChangeOpen(new Delta().retain(9).insert('1')), new Delta()) // nothing, only range changes
-        expectEqual(range.cropChangeOpen(new Delta().retain(9).delete(1)), new Delta()) // nothing, only range changes
-        expectEqual(range.cropChangeOpen(new Delta().retain(9).delete(2)), new Delta().delete(1)) // nothing, only range changes
-        expectEqual(range.cropChangeOpen(new Delta().retain(10).insert('1')), new Delta().insert('1'))
-        expectEqual(range.cropChange(new Delta().retain(10).insert({ x: 1 })), new Delta()) // nothing, only range changes
-        expectEqual(range.cropChangeOpen(new Delta().retain(10).insert({ x: 1 })), new Delta().insert({ x: 1 }))
-        expectEqual(range.cropChange(new Delta().retain(11).insert('1')), new Delta().retain(1).insert('1'))
-        expectEqual(range.cropChange(new Delta().retain(11).insert({ x: 1 })), new Delta().retain(1).insert({ x: 1 }))
-        expectEqual(range.cropChange(new Delta().retain(19).insert('12345')), new Delta().retain(9).insert('12345'))
-        expectEqual(range.cropChange(new Delta().retain(20).insert('12345')), new Delta()) // nothing, only range changes
-        expectEqual(range.cropChangeOpen(new Delta().retain(20).insert('12345')), new Delta().retain(10).insert('12345'))
+        expectEqual(range.cropDelta(new Delta().insert('1234567890')), new Delta()) // nothing, only range changes
+        expectEqual(range.cropDelta(new Delta().retain(10).insert('1')), new Delta()) // nothing, only range changes
+        expectEqual(range.cropDeltaOpen(new Delta().retain(9).insert('1')), new Delta()) // nothing, only range changes
+        expectEqual(range.cropDeltaOpen(new Delta().retain(9).delete(1)), new Delta()) // nothing, only range changes
+        expectEqual(range.cropDeltaOpen(new Delta().retain(9).delete(2)), new Delta().delete(1)) // nothing, only range changes
+        expectEqual(range.cropDeltaOpen(new Delta().retain(10).insert('1')), new Delta().insert('1'))
+        expectEqual(range.cropDelta(new Delta().retain(10).insert({ x: 1 })), new Delta()) // nothing, only range changes
+        expectEqual(range.cropDeltaOpen(new Delta().retain(10).insert({ x: 1 })), new Delta().insert({ x: 1 }))
+        expectEqual(range.cropDelta(new Delta().retain(11).insert('1')), new Delta().retain(1).insert('1'))
+        expectEqual(range.cropDelta(new Delta().retain(11).insert({ x: 1 })), new Delta().retain(1).insert({ x: 1 }))
+        expectEqual(range.cropDelta(new Delta().retain(19).insert('12345')), new Delta().retain(9).insert('12345'))
+        expectEqual(range.cropDelta(new Delta().retain(20).insert('12345')), new Delta()) // nothing, only range changes
+        expectEqual(range.cropDeltaOpen(new Delta().retain(20).insert('12345')), new Delta().retain(10).insert('12345'))
         expectEqual(
-            range.cropChange(new Delta().retain(11).insert('1234567890')),
+            range.cropDelta(new Delta().retain(11).insert('1234567890')),
             new Delta().retain(1).insert('1234567890'),
         )
         expectEqual(
-            range.cropChangeOpen(new Delta([{ retain: 10 }, { delete: 1 }, { insert: '123' }])),
+            range.cropDeltaOpen(new Delta([{ retain: 10 }, { delete: 1 }, { insert: '123' }])),
             new Delta([{ delete: 1 }, { insert: '123' }]),
         )
         expectEqual(
-            range.cropChange(
+            range.cropDelta(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -160,7 +160,7 @@ describe('Range', () => {
                 .insert('123'),
         )
         expectEqual(
-            range.cropChange(
+            range.cropDelta(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -173,7 +173,7 @@ describe('Range', () => {
                 .insert('1234567890'),
         )
         expectEqual(
-            range.cropChange(
+            range.cropDelta(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -188,7 +188,7 @@ describe('Range', () => {
                 .delete(8),
         )
         expectEqual(
-            range.cropChange(
+            range.cropDelta(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -203,7 +203,7 @@ describe('Range', () => {
                 .delete(8),
         )
         expectEqual(
-            range.cropChange(
+            range.cropDelta(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -218,7 +218,7 @@ describe('Range', () => {
                 .insert('1234567890'),
         )
         expectEqual(
-            range.cropChange(
+            range.cropDelta(
                 new Delta()
                     .retain(1)
                     .insert('123')
@@ -236,7 +236,7 @@ describe('Range', () => {
                 .insert('1234567890'),
         )
         expectEqual(
-            range.cropChange(
+            range.cropDelta(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -256,7 +256,7 @@ describe('Range', () => {
         )
 
         expectEqual(
-            range.cropChangeOpen(
+            range.cropDelta(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -269,7 +269,7 @@ describe('Range', () => {
                 .insert('123'),
         )
         expectEqual(
-            range.cropChangeOpen(
+            range.cropDeltaOpen(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -282,7 +282,7 @@ describe('Range', () => {
                 .insert('1234567890'),
         )
         expectEqual(
-            range.cropChangeOpen(
+            range.cropDeltaOpen(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -297,7 +297,7 @@ describe('Range', () => {
                 .delete(8),
         )
         expectEqual(
-            range.cropChangeOpen(
+            range.cropDeltaOpen(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -312,7 +312,7 @@ describe('Range', () => {
                 .delete(8),
         )
         expectEqual(
-            range.cropChangeOpen(
+            range.cropDeltaOpen(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -327,7 +327,7 @@ describe('Range', () => {
                 .insert('1234567890'),
         )
         expectEqual(
-            range.cropChangeOpen(
+            range.cropDeltaOpen(
                 new Delta()
                     .retain(1)
                     .insert('123')
@@ -345,7 +345,7 @@ describe('Range', () => {
                 .insert('1234567890'),
         )
         expectEqual(
-            range.cropChangeOpen(
+            range.cropDeltaOpen(
                 new Delta()
                     .retain(10)
                     .delete(1)
@@ -365,7 +365,7 @@ describe('Range', () => {
         )
     })
 
-    it('cropChange regression', () => {
+    it('cropDelta regression', () => {
         const range = new Range(1, 3)
 
         const changes = [
@@ -374,7 +374,7 @@ describe('Range', () => {
             ]}
         ]
 
-        expectEqual(range.cropChange(changes[0]),
+        expectEqual(range.cropDelta(changes[0]),
             {ops: []}
         )
     })
@@ -398,18 +398,18 @@ describe('Range', () => {
 
         const changes = [new Delta().retain(10), new Delta().retain(20)]
 
-        expectEqual(normalizeChanges(range.cropChanges(changes)), []) // normalized
-        expectEqual(normalizeChanges(range.cropChanges(changes)), []) // normalized
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), []) // normalized
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), []) // normalized
 
         changes.push(new Delta().retain(11).insert('123'))
-        expectEqual(normalizeChanges(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // normalized
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // normalized
         changes.push(new Delta().delete(2))
-        expectEqual(normalizeChanges(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // left bounded: only range changes
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // left bounded: only range changes
         changes.push(new Delta().retain(8).delete(1))
-        expectEqual(normalizeChanges(range.cropChanges(changes)), [new Delta().retain(1).insert('123'), new Delta().delete(1)])
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123'), new Delta().delete(1)])
 
         changes.push(new Delta().retain(9).insert('456'))
-        expectEqual(normalizeChanges(range.cropChanges(changes)), [
+        expectEqual(normalizeDeltas(range.cropChanges(changes)), [
             new Delta().retain(1).insert('123'),
             new Delta().delete(1),
             new Delta().retain(1).insert('456'),
@@ -431,7 +431,7 @@ describe('property tests', () => {
                 const rangeLength = range.end - range.start
                 const newRange = range.applyChanges([delta])
                 const newRangeLength = newRange.end - newRange.start
-                const newDelta = range.cropChange(delta)
+                const newDelta = range.cropDelta(delta)
                 const newDeltaLength1 = _.reduce(newDelta.ops, (len, op) => {
                     if(typeof op.insert === 'string')
                         return len

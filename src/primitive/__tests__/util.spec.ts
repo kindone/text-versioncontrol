@@ -1,9 +1,6 @@
-import jsc = require('jsverify')
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { Change } from '../Change'
-import { Range } from '../Range'
-import { contentLength, JSONStringify, normalizeOps, expectEqual, normalizeChanges, lastRetainsRemoved, emptyOpsRemoved } from '../util'
+import { contentLength, normalizeOps, expectEqual, lastRetainsRemoved, emptyOpsRemoved } from '../util'
 import Op from 'quill-delta/dist/Op';
 import { ExcerptUtil } from '../../excerpt';
 

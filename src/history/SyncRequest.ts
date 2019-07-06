@@ -1,12 +1,12 @@
-import { Change } from '../primitive/Change'
+import { IDelta } from '../primitive/IDelta'
 
 export interface SyncRequest {
     branchName: string
     rev: number
-    deltas: Change[]
+    changes: IDelta[]
 }
 
 export interface AppendRequest {
     branchName: string
-    deltas: Change[]
+    deltas: IDelta[]
 }

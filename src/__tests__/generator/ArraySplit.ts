@@ -1,4 +1,4 @@
-import fc, { Random, Arbitrary, Shrinkable } from "fast-check";
+import { Random, Shrinkable } from "fast-check";
 import { genSmallBiasedDistribution, genUniqueSequenceSorted } from "./primitives";
 import { JSONStringify } from "../../primitive/util";
 import { ArbitraryWithShrink } from "./util";

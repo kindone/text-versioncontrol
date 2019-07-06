@@ -3,9 +3,9 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { Range } from '../primitive/Range'
 import { SharedString } from '../primitive/SharedString'
-import { expectEqual, JSONStringify, flattenChanges } from '../primitive/util'
-import { randomUserDeltas, randomString, randomInt } from './random'
-import { Change } from '../primitive/Change';
+import { expectEqual, JSONStringify, flattenDeltas } from '../primitive/util'
+import { randomString, randomInt } from './random'
+import { IDelta } from '../primitive/IDelta';
 
 describe('text spec regression', () => {
     it('case 1', () => {
@@ -263,7 +263,7 @@ describe('text spec regression', () => {
     it('case 6', () => {
         const initial = 'ye'
         const client1 = SharedString.fromString(initial)
-        const deltas: Change[] = []
+        const deltas: IDelta[] = []
         deltas.push(client1.applyChange(new Delta().delete(1).delete(1), 'user2'))
         deltas.push(client1.applyChange(new Delta().insert({ x: 'lv' }), 'user2'))
         deltas.push(client1.applyChange(new Delta().retain(1).delete(1), 'user1'))
@@ -290,7 +290,7 @@ describe('text spec regression', () => {
     it('case 7', () => {
         const initial = '9zxh9'
         const client1 = SharedString.fromString(initial)
-        const deltas: Change[] = []
+        const deltas: IDelta[] = []
         deltas.push(
             client1.applyChange(
                 new Delta()
@@ -541,7 +541,7 @@ describe('text spec regression2', () => {
                 { ops: [{ retain: 16 }, { insert: 'ete' }, { delete: 6 }] },
             ]
 
-            const flattened = [flattenChanges(...deltas)]
+            const flattened = [flattenDeltas(...deltas)]
 
             for (const delta of deltas) {
                 ss1.applyChange(delta, 'a')

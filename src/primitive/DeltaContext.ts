@@ -1,4 +1,4 @@
-export interface ChangeContext {
+export interface DeltaContext {
     type: 'paste' | 'sync'
     sourceUri:string
     sourceRev:number

@@ -1,8 +1,8 @@
 import { JSONStringify } from '../primitive/util'
-import { randomUserDeltas } from './random'
+import { randomChanges } from './random'
 
 describe('randoms', () => {
     it('hand-made scenario 1', () => {
-        console.log(JSONStringify(randomUserDeltas(5, 2)))
+        console.log(JSONStringify(randomChanges(5, 2)))
     })
 })

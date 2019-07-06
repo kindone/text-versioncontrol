@@ -1,5 +1,5 @@
-import { Change } from '../primitive/Change'
+import { IDelta } from '../primitive/IDelta'
 
 export class Savepoint {
-    constructor(public rev: number, public content: Change) {}
+    constructor(public rev: number, public content: IDelta) {}
 }

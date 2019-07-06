@@ -1,19 +1,19 @@
 import Delta = require('quill-delta')
 import { History, IHistory } from '../history/History'
 import { SyncResponse } from '../history/SyncResponse'
-import { Change } from '../primitive/Change'
+import { IDelta } from '../primitive/IDelta'
 
 export class DocClient {
     private history: IHistory
     private synchedRev: number = 0
     private synchedClientRev: number = 0
-    private pending: Change[] = []
+    private pending: IDelta[] = []
 
     constructor(history: IHistory = new History('client')) {
         this.history = history
     }
 
-    public apply(deltas: Change[]) {
+    public apply(deltas: IDelta[]) {
         this.history.append(deltas)
         this.pending = this.pending.concat(deltas)
     }
@@ -22,7 +22,7 @@ export class DocClient {
         this.history.merge({
             rev: this.synchedClientRev,
             branchName: 'server',
-            deltas: response.resDeltas,
+            changes: response.resChanges,
         })
         this.synchedRev = response.rev
         this.synchedClientRev = this.history.getCurrentRev()
@@ -33,7 +33,7 @@ export class DocClient {
         return {
             rev: this.synchedRev,
             branchName: this.history.name,
-            deltas: this.pending,
+            changes: this.pending,
         }
     }
 

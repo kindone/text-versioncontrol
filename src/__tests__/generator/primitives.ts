@@ -1,5 +1,5 @@
 import * as fc from 'fast-check'
-import { Arbitrary, Random, Shrinkable } from 'fast-check'
+import { Random } from 'fast-check'
 import * as _ from "underscore"
 
 

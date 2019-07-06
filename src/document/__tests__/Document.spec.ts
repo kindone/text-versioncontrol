@@ -1,10 +1,8 @@
 import { Document } from "../Document";
 import { expectEqual, contentLength } from "../../primitive/util";
 import * as fc from 'fast-check'
-import { deltaArbitrary } from "../../__tests__/generator/Delta";
 import { contentArbitrary } from "../../__tests__/generator/Content";
 import { Range } from "../../primitive/Range";
-import { InsertArbitrary, insertArbitrary } from "../../__tests__/generator/Insert";
 
 describe('document', () => {
 

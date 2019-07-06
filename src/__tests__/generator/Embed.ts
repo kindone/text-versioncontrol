@@ -1,5 +1,5 @@
-import fc, { Random, Arbitrary, asciiString, Shrinkable, string } from "fast-check";
-import { genNat, genAsciiString } from "./primitives";
+import { Random, Arbitrary, Shrinkable, string } from "fast-check";
+import { genNat } from "./primitives";
 import { ArbitraryWithShrink } from "./util"
 import * as _ from 'underscore'
 

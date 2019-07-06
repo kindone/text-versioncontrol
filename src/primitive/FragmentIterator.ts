@@ -1,4 +1,3 @@
-import Op from 'quill-delta/dist/Op'
 import { Fragment } from './Fragment'
 
 // result fragments and transformed ops

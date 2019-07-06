@@ -1,12 +1,11 @@
 import fc from "fast-check";
 import { contentArbitrary } from "../../__tests__/generator/Content";
 import { deltaArbitrary } from "../../__tests__/generator/Delta";
-import { reverseChange, expectEqual, contentLength, minContentLengthForChange, normalizeOps, JSONStringify, filterOutChangesByIndice, isEqual, filterChanges, transformChanges, flattenChanges, applyChanges } from "../util";
+import { reverseChange, expectEqual, contentLength, minContentLengthForChange, normalizeOps, JSONStringify, filterOutChangesByIndice, isEqual, filterChanges, applyChanges } from "../util";
 import { SharedString } from "../SharedString";
-import { Change } from "../Change";
+import { IDelta } from "../IDelta";
 import { History } from "../../history/History"
 import { contentChangeListArbitrary } from "../../__tests__/generator/ContentChangeList";
-import { ExDelta } from "../ExDelta";
 
 describe('reverse function', () =>{
     it('basic', () => {
@@ -46,7 +45,7 @@ describe('filterChanges', () =>{
     it('simple 1', () => {
 
         const content = {ops:[{insert:'1234567'}]}
-        const changes:Change[] = [{ops:[{retain:1},{insert:'a'},{retain:1},{delete:1}]},
+        const changes:IDelta[] = [{ops:[{retain:1},{insert:'a'},{retain:1},{delete:1}]},
             {ops:[{delete:2},{insert:'a'}]}
         ]
 
@@ -73,7 +72,7 @@ describe('filterChanges', () =>{
     it('simple 2', () => {
 
         const content = {ops:[{insert:'1234567'}]}
-        const changes:Change[] = [
+        const changes:IDelta[] = [
             {ops:[{retain:1},{insert:'a'},{retain:1},{delete:1}]},
                 // 1a24567
             {ops:[{delete:2},{retain:1},{insert:'a'}]},
@@ -160,7 +159,7 @@ describe('filterChanges', () =>{
                     history1.append(changes.slice(0, i)) // 0~i-1 changes
                     const undoChange = reverseChange(history1.getContent(), targetChange)
                     history1.append(changes.slice(i))
-                    history1.merge({branchName: "B", rev: i+1, deltas:[undoChange]})
+                    history1.merge({branchName: "B", rev: i+1, changes:[undoChange]})
                     const result1 = history1.getContent()
 
                     // filtered

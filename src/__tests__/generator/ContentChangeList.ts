@@ -1,18 +1,15 @@
-import fc, { Arbitrary, Random, Shrinkable, assert } from "fast-check";
-import Delta = require("quill-delta");
-import { emptyDeltaGen, deltaArbitrary, DeltaArbitrary } from "./Delta";
+import { Random, Shrinkable } from "fast-check";
 
 import * as _ from 'underscore'
-import { Change } from "../../primitive/Change";
-import { contentLength, contentLengthIncreased, JSONStringify } from "../../primitive/util";
+import { IDelta } from "../../primitive/IDelta";
+import { contentLength } from "../../primitive/util";
 import { ArbitraryWithShrink } from "./util";
-import { genSmallBiasedDistribution } from "./primitives";
 import { ChangeList, changeListArbitrary } from "./ChangeList";
 import { contentArbitrary } from "./Content";
 
 
 export interface ContentChangeList {
-    content:Change,
+    content:IDelta,
     changeList:ChangeList
 }
 

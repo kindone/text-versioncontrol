@@ -1,5 +1,5 @@
 import Op from 'quill-delta/dist/Op'
-import { sliceOp, opLength, JSONStringify } from './util'
+import { sliceOp, opLength } from './util'
 
 export class DeltaTransformer {
     private idx = 0

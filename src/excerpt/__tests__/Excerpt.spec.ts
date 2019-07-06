@@ -1,13 +1,11 @@
-import * as chalk from 'chalk'
-import each from 'jest-each'
+
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
-import {printChange, printContent, printChangedContent, printChanges} from '../../primitive/printer'
-import { contentLength, JSONStringify, normalizeOps, expectEqual, isEqual, applyChanges, minContentLengthForChange } from '../../primitive/util'
+import { printContent, printChangedContent} from '../../primitive/printer'
+import { contentLength, JSONStringify, expectEqual, applyChanges, minContentLengthForChange } from '../../primitive/util'
 import { ExDelta } from '../../primitive/ExDelta';
-import { Source } from '../../primitive/Source';
-import { Change } from '../../primitive/Change';
+import { IDelta } from '../../primitive/IDelta';
 import { ExcerptUtil } from '../ExcerptUtil';
 import Op from 'quill-delta/dist/Op';
 
@@ -244,7 +242,7 @@ describe('Excerpt', () => {
     })
 })
 
-const textOnly = (change:Change):string => {
+const textOnly = (change:IDelta):string => {
     return _.reduce(change.ops, (str:string, op:Op) => {
         if(typeof op.insert === 'string')
             return str += op.insert
@@ -365,7 +363,7 @@ describe('Regression', () => {
 
         const changes = [{"ops":[{"retain":20},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}},{"insert":"\u001eeS"},{"insert":{"excerpted":"doc1?rev=0&start=9&end=12"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"11","targetEnd":"15","copied":"true"}}],"source":[{"uri":"doc1","rev":3},{"uri":"doc1","rev":2}]},{"ops":[{"retain":21},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}},{"insert":"&"},{"insert":{"excerpted":"doc0?rev=0&start=3&end=4"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"12","targetEnd":"14","copied":"true"}}],"source":[{"uri":"doc1","rev":4},{"uri":"doc1","rev":3}]},{"ops":[{"retain":14},{"delete":1},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26","copied":"true"}},{"retain":14},{"delete":1},{"insert":{"excerpted":"doc1?rev=2&start=9&end=20"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"5","targetStart":"11","targetEnd":"26","copied":"true"}}],"source":[{"uri":"doc1","rev":5},{"uri":"doc1","rev":4}]},{"ops":[{"retain":11},{"delete":1},{"insert":{"excerpted":"doc1?rev=5&start=9&end=28"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"9","targetStart":"11","targetEnd":"34"}},{"retain":22},{"delete":1},{"insert":{"excerpted":"doc1?rev=5&start=9&end=28"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"9","targetStart":"11","targetEnd":"34"}}]}]
 
-        let intermediate:Change = before
+        let intermediate:IDelta = before
         for(const change of changes) {
             const length1 = contentLength(intermediate)
             const length2 = minContentLengthForChange(change)

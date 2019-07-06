@@ -1,9 +1,9 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { SharedString } from '../SharedString'
-import { expectEqual, JSONStringify, flattenChanges } from '../util'
-import { randomInt, randomSharedString, randomUserDeltas } from '../../__tests__/random'
-import { Change } from '../Change';
+import { expectEqual, JSONStringify, flattenDeltas } from '../util'
+import { randomInt, randomSharedString, randomChanges } from '../../__tests__/random'
+import { IDelta } from '../IDelta';
 
 describe('hand-made scenarios', () => {
     it('scenario 1', () => {
@@ -61,7 +61,7 @@ describe('hand-made scenarios', () => {
     it('scenario 4 delete', () => {
         const str = SharedString.fromString('abcde')
         expect(str.toText()).toBe('abcde')
-        const deltas: Change[] = []
+        const deltas: IDelta[] = []
         // NOTE:
         // new Delta().retain(2).delete(1).insert("f"))) is saved as {"ops":[{"retain":2},{"insert":"f"},{"delete":1}]}
         let delta = str.applyChange(
@@ -96,12 +96,12 @@ describe('hand-made scenarios', () => {
     })
 })
 
-function combineRandom(deltasForUsers: Change[][]) {
+function combineRandom(deltasForUsers: IDelta[][]) {
     const cpDeltasForUsers = _.map(deltasForUsers, deltas => {
         return deltas.slice(0)
     })
 
-    const combined: Array<{ delta: Change; branch: string }> = []
+    const combined: Array<{ delta: IDelta; branch: string }> = []
 
     while (
         _.reduce(
@@ -127,9 +127,9 @@ function combineRandom(deltasForUsers: Change[][]) {
 
 function testCombination(
     ssInitial: SharedString,
-    user1Deltas: Change[],
-    user2Deltas: Change[],
-    user3Deltas: Change[] = [],
+    user1Deltas: IDelta[],
+    user2Deltas: IDelta[],
+    user3Deltas: IDelta[] = [],
 ) {
     const ssClient1 = ssInitial.clone()
     const ssClient2 = ssInitial.clone()
@@ -143,12 +143,12 @@ function testCombination(
     const combined1 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
     const combined2 = combineRandom([user1Deltas, user2Deltas, user3Deltas])
     const flattened = combineRandom([
-        [flattenChanges(...user1Deltas)],
-        [flattenChanges(...user2Deltas)],
-        [flattenChanges(...user3Deltas)],
+        [flattenDeltas(...user1Deltas)],
+        [flattenDeltas(...user2Deltas)],
+        [flattenDeltas(...user3Deltas)],
     ])
 
-    const mergedDeltas: Change[] = []
+    const mergedDeltas: IDelta[] = []
     for (const comb of combined1) {
         mergedDeltas.push(ssClient1.applyChange(comb.delta, comb.branch))
     }
@@ -201,7 +201,7 @@ describe('commutativity', () => {
     it('scenario 0', () => {
         for (let j = 0; j < 50; j++) {
             const ss = randomSharedString()
-            const user1Deltas = randomUserDeltas(ss.toText().length, 2)
+            const user1Deltas = randomChanges(ss.toText().length, 2)
             const user2Deltas = []
 
             for (let i = 0; i < 60; i++) {
@@ -212,8 +212,8 @@ describe('commutativity', () => {
     it('scenario 1', () => {
         for (let j = 0; j < 50; j++) {
             const ss = randomSharedString()
-            const user1Deltas = randomUserDeltas(ss.toText().length, 2, false)
-            const user2Deltas = randomUserDeltas(ss.toText().length, 1, false)
+            const user1Deltas = randomChanges(ss.toText().length, 2, false)
+            const user2Deltas = randomChanges(ss.toText().length, 1, false)
 
             for (let i = 0; i < 60; i++) {
                 testCombination(ss, user1Deltas, user2Deltas)
@@ -224,9 +224,9 @@ describe('commutativity', () => {
     it('scenario 2', () => {
         for (let j = 0; j < 50; j++) {
             const ss = randomSharedString()
-            const user1Deltas = randomUserDeltas(ss.toText().length, 4)
-            const user2Deltas = randomUserDeltas(ss.toText().length, 4)
-            const user3Deltas = randomUserDeltas(ss.toText().length, 5)
+            const user1Deltas = randomChanges(ss.toText().length, 4)
+            const user2Deltas = randomChanges(ss.toText().length, 4)
+            const user3Deltas = randomChanges(ss.toText().length, 5)
 
             for (let i = 0; i < 60; i++) {
                 testCombination(ss, user1Deltas, user2Deltas, user3Deltas)
@@ -240,12 +240,12 @@ describe('flatten', () => {
         for (let j = 0; j < 50; j++) {
             const ss = randomSharedString()
             const ss2 = ss.clone()
-            const deltas = randomUserDeltas(ss.toText().length, 10)
+            const deltas = randomChanges(ss.toText().length, 10)
             for (const delta of deltas) {
                 ss.applyChange(delta, 'branch')
             }
 
-            ss2.applyChange(flattenChanges(...deltas), 'branch')
+            ss2.applyChange(flattenDeltas(...deltas), 'branch')
 
             expectEqual(ss.toDelta(), ss2.toDelta())
         }

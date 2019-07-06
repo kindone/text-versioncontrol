@@ -7,7 +7,7 @@ import { JSONStringify, expectEqual } from '../primitive/util';
 import { retainArbitrary, deleteArbitrary } from './generator/RetainDelete';
 import { opsArbitrary } from './generator/Ops';
 import Delta = require('quill-delta');
-import { Random, Arbitrary, Shrinkable } from 'fast-check';
+import { Random, Arbitrary } from 'fast-check';
 import prand from 'pure-rand';
 import { insertArbitrary } from './generator/Insert';
 import { splitArbitrary, genArraySplit } from './generator/ArraySplit';

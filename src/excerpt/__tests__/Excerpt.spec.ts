@@ -67,11 +67,11 @@ describe('Excerpt', () => {
         )
 
         const excerpt = doc2.pasteExcerpt(5, source1)
-        expectEqual(JSONStringify(excerpt.target), JSONStringify({ uri: "doc2", rev: 2, start: 5, end: 10 }))
+        expectEqual(JSONStringify(excerpt.target), JSONStringify({ uri: "doc2", rev: 1, start: 5, end: 10 }))
 
         expectEqual(
             JSONStringify(doc2.getContent().ops),
-            JSONStringify([{"insert":"Some "},{"insert":{"excerpted":"doc1?rev=2&start=0&end=4"},"attributes":{"markedAt":"left", "targetUri":"doc2","targetRev":"2","targetStart":"5", "targetEnd":"10"}},{"insert":"Your"}, {"insert":{"excerpted":"doc1?rev=2&start=0&end=4"},"attributes":{"markedAt":"right", "targetUri":"doc2","targetRev":"2","targetStart":"5", "targetEnd":"10"}}, {"insert": "introduction here: Here comes the trouble. HAHAHAHA"}])
+            JSONStringify([{"insert":"Some "},{"insert":{"excerpted":"doc1?rev=2&start=0&end=4"},"attributes":{"markedAt":"left", "targetUri":"doc2","targetRev":"1","targetStart":"5", "targetEnd":"10"}},{"insert":"Your"}, {"insert":{"excerpted":"doc1?rev=2&start=0&end=4"},"attributes":{"markedAt":"right", "targetUri":"doc2","targetRev":"1","targetStart":"5", "targetEnd":"10"}}, {"insert": "introduction here: Here comes the trouble. HAHAHAHA"}])
         )
     })
 
@@ -139,9 +139,9 @@ describe('Excerpt', () => {
         expectEqual(doc2.getContent(),
             {"ops":[
                 {"insert":"Actual "},
-                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"left","targetUri":"doc2","targetRev":"2","targetStart":"5","targetEnd":"15"}},
+                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"left","targetUri":"doc2","targetRev":"1","targetStart":"5","targetEnd":"15"}},
                 {"insert":"prettier beautiful "},
-                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"right","targetUri":"doc2","targetRev":"2","targetStart":"5","targetEnd":"15"}},
+                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"right","targetUri":"doc2","targetRev":"1","targetStart":"5","targetEnd":"15"}},
                 {"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]
             })
         console.log('Sync changes: ', JSONStringify(doc2.getChangesFrom(target1.rev)))
@@ -152,9 +152,9 @@ describe('Excerpt', () => {
         expectEqual(doc2.getContent(),
             {"ops":[
                 {"insert":"Actual "},
-                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"left","targetUri":"doc2","targetRev":"2","targetStart":"5","targetEnd":"15"}},
+                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"left","targetUri":"doc2","targetRev":"1","targetStart":"5","targetEnd":"15"}},
                 {"insert":"prettier beautiful "},
-                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"right","targetUri":"doc2","targetRev":"2","targetStart":"5","targetEnd":"15"}},
+                {"insert":{"excerpted":"doc1?rev=2&start=5&end=14"},"attributes":{"markedAt":"right","targetUri":"doc2","targetRev":"1","targetStart":"5","targetEnd":"15"}},
                 {"insert":"introduction here: Here comes the trouble. HAHAHAHA"}]
             })
 
@@ -231,7 +231,7 @@ describe('Excerpt', () => {
         console.log(printContent(doc1.getContent()))
         console.log(printContent(doc2.getContent()))
 
-        const target = doc2.updateExcerptMarkers(excerpt1.target)
+        // const target = doc2.updateExcerptMarkers(excerpt1.target)
 
         console.log(printContent(doc1.getContent()))
         console.log(printContent(doc2.getContent()))
@@ -256,30 +256,15 @@ const textOnly = (change:Change):string => {
 describe('Mutual Excerpts', () => {
     it('on same doc', () => {
         const doc1 = new Document("doc1", "ab")
+        const docSet = { getDocument: (uri:String) => doc1}
+
         const source1 = doc1.takeExcerpt(0,2)
         doc1.pasteExcerpt(2, source1) // (ab)[ab]
         expectEqual(textOnly(doc1.getContent()), "abab")
-        expectEqual(doc1.getContent(), {"ops":[
-            {"insert":"ab"},
-            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}},
-            {"insert":"ab"},
-            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}}
-        ]})
-
 
         const source2 = doc1.takeExcerpt(3,5)
         doc1.pasteExcerpt(1, source2) // a[ab]b(ab)
         expectEqual(textOnly(doc1.getContent()), "aabbab")
-        expectEqual(doc1.getContent(), {"ops":[
-            {"insert":"a"},
-            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4"}},
-            {"insert":"ab"},
-            {"insert":{"excerpted":"doc1?rev=1&start=3&end=5"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"2","targetStart":"1","targetEnd":"4"}},
-            {"insert":"b"},
-            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"left","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}},
-            {"insert":"ab"},
-            {"insert":{"excerpted":"doc1?rev=0&start=0&end=2"},"attributes":{"markedAt":"right","targetUri":"doc1","targetRev":"1","targetStart":"2","targetEnd":"5"}}
-        ]})
 
         const excerpt1 = doc1.getFullExcerpts()[0].excerpt
         const excerpt2 = doc1.getFullExcerpts()[1].excerpt
@@ -287,16 +272,87 @@ describe('Mutual Excerpts', () => {
         console.log('sync for excerpt1:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt1.source)))
         console.log('sync for excerpt2:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt2.source)))
 
-        doc1.syncExcerpt(excerpt1, { getDocument: (uri:String) => doc1})
+        // nothing happens, as no new change present
+        const rev1 = doc1.getCurrentRev()
+        doc1.syncExcerpt(excerpt1, docSet)
         expectEqual(textOnly(doc1.getContent()), "aabbab")
 
-        doc1.syncExcerpt(excerpt2,  { getDocument: (uri:String) => doc1})
-        expectEqual(textOnly(doc1.getContent()), "aabbaabb")
+        // converges
+        const rev2 = doc1.getCurrentRev()
+        doc1.syncExcerpt(excerpt2,  docSet)
+        expectEqual(textOnly(doc1.getContent()), "aabbab")
+    })
 
-        // FIXME: should stay the same
-        // doc1.syncExcerpt(excerpt1, { getDocument: (uri:String) => doc1})
-        // expectEqual(textOnly(doc1.getContent()), "aabbaabb")
+    it('on two docs', () => {
+        const doc1 = new Document("doc1", "ab")
+        const doc2 = new Document("doc2", "")
+        const docSet = { getDocument: (uri:String) => uri === 'doc1' ? doc1 : doc2}
 
+        const source1 = doc1.takeExcerpt(0,2)
+        doc2.pasteExcerpt(0, source1)
+        expectEqual(textOnly(doc1.getContent()), "ab")
+        expectEqual(textOnly(doc2.getContent()), "ab")
+
+        const source2 = doc2.takeExcerpt(1,3)
+        doc1.pasteExcerpt(1, source2)
+        expectEqual(textOnly(doc1.getContent()), "aabb")
+
+        const excerpt2_to_1 = doc1.getFullExcerpts()[0].excerpt
+        const excerpt1_to_2 = doc2.getFullExcerpts()[0].excerpt
+
+        console.log('sync for excerpt1:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt2_to_1.source)))
+        console.log('sync for excerpt2:', JSONStringify(doc2.getSyncSinceExcerpted(excerpt1_to_2.source)))
+
+        doc1.syncExcerpt(excerpt2_to_1, docSet)
+        expectEqual(textOnly(doc1.getContent()), "aabb") // nothing happened
+
+        doc2.syncExcerpt(excerpt1_to_2,  docSet)
+        expectEqual(textOnly(doc1.getContent()), "aabb") // synced
+
+        doc1.syncExcerpt(excerpt2_to_1, docSet)
+        expectEqual(textOnly(doc1.getContent()), "aabb") // nothing happened
+    })
+
+    it('on two docs 2', () => {
+        const doc1 = new Document("doc1", "ab")
+        const doc2 = new Document("doc2", "XY")
+        const docSet = { getDocument: (uri:String) => uri === 'doc1' ? doc1 : doc2}
+
+        const source1 = doc1.takeExcerpt(0,2)
+        doc2.pasteExcerpt(1, source1)
+        expectEqual(textOnly(doc1.getContent()), "ab")
+        expectEqual(textOnly(doc2.getContent()), "XabY")
+
+        const source2 = doc2.takeExcerpt(2,4)
+        doc1.pasteExcerpt(1, source2)
+        expectEqual(textOnly(doc1.getContent()), "aabb") // pasted ab
+        expectEqual(textOnly(doc2.getContent()), "XabY")
+
+        doc1.append([{ops:[{retain:3}, {insert:'Q'}]}])
+        expectEqual(textOnly(doc1.getContent()), "aaQbb") // added Q (ab -> aQb)
+        doc2.append([{ops:[{retain:3}, {insert:'P'}]}])
+        expectEqual(textOnly(doc2.getContent()), "XaPbY") // added P
+
+        const excerpt2_to_1 = doc1.getFullExcerpts()[0].excerpt
+        const excerpt1_to_2 = doc2.getFullExcerpts()[0].excerpt
+
+        console.log('sync for excerpt2_to_1:', JSONStringify(doc2.getSyncSinceExcerpted(excerpt2_to_1.source)))
+        console.log('sync for excerpt1_to_2:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt1_to_2.source)))
+
+        doc1.syncExcerpt(excerpt2_to_1, docSet)
+        expectEqual(textOnly(doc1.getContent()), "aaPQbb") // added P by sync from doc 2(ab -> aQb  -> aPQb)
+
+        console.log('sync for excerpt2_to_1:', JSONStringify(doc2.getSyncSinceExcerpted(excerpt2_to_1.source)))
+        console.log('sync for excerpt1_to_2:', JSONStringify(doc1.getSyncSinceExcerpted(excerpt1_to_2.source)))
+
+        doc2.syncExcerpt(excerpt1_to_2, docSet) // should bring (ab -> aabb -> aaQbb -> aaPQbb) on top of Xa[P]bY
+        expectEqual(textOnly(doc2.getContent()), "XaPQbY")
+        // should build up from XabY -> Xa[P]bY
+        // and merge ab -> a[ab]b -> aa[Q]bb -> aa[P]Qbb
+
+        // converges
+        doc1.syncExcerpt(excerpt2_to_1, docSet)
+        expectEqual(textOnly(doc1.getContent()), "aaPQbb")
     })
 })
 

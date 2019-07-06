@@ -1,6 +1,7 @@
 import Op from 'quill-delta/dist/Op'
+import {ChangeContext} from './ChangeContext'
 
 export interface Change {
     ops: Op[]
-    syncs?: Array<{sourceUri:string, sourceRev:number, targetUri:string, targetRev:number}>
+    contexts?: ChangeContext[]
 }

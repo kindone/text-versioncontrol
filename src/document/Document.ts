@@ -7,6 +7,7 @@ import { ExcerptMarkerWithOffset, } from '../excerpt/ExcerptUtil';
 import { History, IHistory } from '../history/History'
 import { SyncResponse } from '../history/SyncResponse'
 import { Change } from '../primitive/Change'
+import { ChangeContext } from '../primitive/ChangeContext';
 import { ExDelta } from '../primitive/ExDelta'
 import { printChange } from '../primitive/printer';
 import { Range } from '../primitive/Range'
@@ -27,6 +28,7 @@ import {
     minContentLengthForChange,
 } from '../primitive/util'
 import { DocumentSet } from './DocumentSet';
+
 
 
 
@@ -122,16 +124,17 @@ export class Document {
     }
 
     public pasteExcerpt(offset: number, source: ExcerptSource, check=true): Excerpt {
-        const rev = this.getCurrentRev() + 1
+        const rev = this.getCurrentRev()
         const target = new ExcerptTarget(this.name, rev, offset, offset + contentLength(source.content)+1)
 
         const pasted = ExcerptUtil.getPasteWithMarkers(source, this.name, rev, offset)
         expectEqual(source.content, cropContent(pasted, 1, contentLength(pasted) - 1))
 
         const ops: Op[] = [{ retain: offset }]
-        const change = new ExDelta(ops.concat(pasted.ops))
+
+        const contexts:ChangeContext[] = [{type: 'paste', sourceUri: source.uri, sourceRev: source.rev, targetUri: this.name, targetRev: rev}]
+        const change = new ExDelta(ops.concat(pasted.ops), contexts)
         this.history.append([change])
-        // expectEqual([change], this.history.getChange(this.history.getCurrentRev()-1))
 
         // check
         if(check)
@@ -159,7 +162,7 @@ export class Document {
         const croppedChanges = initialRange.cropChanges(changes)
 
         const safeCroppedÇhanges = croppedChanges.map(croppedChange => {
-            return {...croppedChanges, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops)}
+            return {...croppedChange, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops)}
         })
         const rangesTransformed = initialRange.mapChanges(changes)
         return this.composeSyncs(uri, excerptSource.rev, safeCroppedÇhanges, rangesTransformed)
@@ -178,6 +181,87 @@ export class Document {
         const rangesTransformed = initialRange.mapChanges(changes)
         return this.composeSyncs(uri, excerptSource.rev, safeCroppedÇhanges, rangesTransformed)
     }
+
+    public syncExcerpt(excerpt:Excerpt, documentSet: DocumentSet, check=true, revive=false)/*: ExcerptTarget*/ {
+        const source = excerpt.source
+        const target = excerpt.target
+        if(target.uri !== this.name)
+            throw new Error('invalid argument: ' + JSONStringify(excerpt))
+        const sourceDoc = documentSet.getDocument(source.uri)
+        const syncs = sourceDoc.getSyncSinceExcerpted(source)
+
+        if(syncs.length === 0)
+            return excerpt.target
+
+        const maxSourceRev = syncs[syncs.length-1].rev
+
+        // prepend context info and shift change
+        let sourceChanges = syncs.map(sync => {
+            const change = sync.change
+            const newContext:ChangeContext = {type: 'sync', sourceUri: source.uri, sourceRev: sync.rev, targetUri: target.uri, targetRev: target.rev}
+            const newContexts = change.contexts ? [newContext].concat(change.contexts) : [newContext]
+            return {...change, contexts: newContexts}
+        }).map(change => this.changeShifted(change, target.start+1))
+
+        const tiebreaker = (source.uri === target.uri ? (source.rev > target.rev) : (source.uri > target.uri))
+        const sourceBranchName = tiebreaker ? "S" : "s"
+
+        const beforeContent = this.getContentAt(target.rev)
+        const pasteChange = this.getChangeAt(target.rev)[0]
+        const baseContent = this.getContentAt(target.rev+1)
+        if(syncs.length > 0 && contentLength(baseContent) < minContentLengthForChange(sourceChanges[0]))
+            throw new Error('invalid sync change')
+
+        const ss = SharedString.fromDelta(beforeContent)
+        ss.applyChange(pasteChange, sourceBranchName)
+
+        const localChanges = this.getChangesFrom(target.rev+1)
+
+        // filter already applied changes
+        sourceChanges = filterChanges(baseContent, sourceChanges, (i, change) => {
+            if(change.contexts)
+            for(const context of change.contexts.slice(1)) {
+                // if the change originated here and old
+                if(context.sourceUri === target.uri && context.sourceRev <= target.rev+1)
+                    return false
+            }
+            return true
+        })
+
+        // go through already applied syncs
+        let idx = 0
+        for(const localChange of localChanges) {
+            // synchronization change previously synced
+            if(localChange.contexts &&
+               localChange.contexts[0].targetUri === target.uri &&
+               localChange.contexts[0].targetRev === target.rev)
+            {
+                // bring original change at source and apply
+                if(idx >= sourceChanges.length)
+                    throw new Error('index out of bound')
+
+                const originalChange = sourceChanges[idx++]
+                if(!isEqual(originalChange.contexts![0].sourceRev, localChange.contexts[0].sourceRev))
+                    throw new Error('revisions mismatch')
+
+                ss.applyChange(originalChange, sourceBranchName)
+            }
+            else {
+                ss.applyChange(localChange, "_")
+            }
+        }
+
+        // apply rest and generate new sync records
+        const newLocalChanges:Change[] =  []
+        for(;idx < sourceChanges.length; idx++) {
+            const newChange = ss.applyChange(sourceChanges[idx], sourceBranchName)
+            newLocalChanges.push(newChange)
+        }
+
+        // add new sync records
+        this.append(newLocalChanges)
+    }
+
 
     // update markers up-to-date at target
     public updateExcerptMarkers(target:ExcerptTarget, newSource?:Source, check = true, revive=false):ExcerptTarget {
@@ -288,125 +372,21 @@ export class Document {
         return newTarget
     }
 
-    public syncExcerpt(excerpt:Excerpt, documentSet: DocumentSet, check=true, revive=false)/*: ExcerptTarget*/ {
-        const excerptSource = excerpt.source
-        const excerptTarget = excerpt.target
-        const sourceDoc = documentSet.getDocument(excerptSource.uri)
-        const syncs = sourceDoc.getSyncSinceExcerpted(excerptSource)
-
-        if(syncs.length === 0)
-            return excerpt.target
-
-        let fullExcerpts:Array<{
-            offset: number;
-            excerpt: Excerpt;
-        }> = []
-
-        if(check)
-            fullExcerpts = this.getFullExcerpts()
-
-        // 1. merge sync
-        const sourceChanges = syncs.map(sync => {
-            const change = sync.change
-            // shift
-            const shiftedChange = this.changeShifted(change, excerptTarget.start+1)
-            // prepend sync
-            const newSync = {sourceUri: sync.uri, sourceRev:sync.rev, targetUri:excerptTarget.uri, targetRev:excerptTarget.rev}
-            const newSyncs = change.syncs ? [newSync].concat(change.syncs) : [newSync]
-            const shiftedChangeWithSyncs = {...shiftedChange, syncs: newSyncs}
-            return shiftedChangeWithSyncs
-        })
-
-        const baseContent = this.getContentAt(excerptTarget.rev)
-        if(syncs.length > 0 && contentLength(baseContent) < minContentLengthForChange(sourceChanges[0]))
-            throw new Error('invalid sync change')
-
-        const ss = SharedString.fromDelta(baseContent)
-        const targetChanges = this.getChangesFrom(excerptTarget.rev)
-
-        let idx = 0
-        for(const targetChange of targetChanges) {
-
-            if(targetChange.syncs &&
-               targetChange.syncs[0].sourceUri === excerptSource.uri &&
-               targetChange.syncs[0].targetUri === excerptTarget.uri &&
-               targetChange.syncs[0].targetRev === excerptTarget.rev)
-            {
-                // bring original change and apply
-                if(idx >= sourceChanges.length)
-                    throw new Error('index out of bound')
-
-                const originalChange = sourceChanges[idx++]
-                if(!isEqual(originalChange.syncs![0].sourceRev, targetChange.syncs[0].sourceRev))
-                    throw new Error('revisions mismatch')
-                ss.applyChange(originalChange, "S")
-            }
-            else {
-                ss.applyChange(targetChange, "*")
-            }
-        }
-
-        // apply rest and generate new sync records
-        const newChanges:Change[] = []
-        for(;idx < sourceChanges.length; idx++) {
-            const newChange = ss.applyChange(sourceChanges[idx], "S")
-            newChanges.push(newChange)
-        }
-
-        // add new sync records
-        this.append(newChanges)
-
-        // 2. update marker
-        // let target:ExcerptTarget
-        // if(syncs.length > 0) {
-        //     const last = syncs[syncs.length-1]
-        //     const newSource:Source = {
-        //         uri: last.uri,
-        //         rev: last.rev,
-        //         start: last.range.start,
-        //         end: last.range.end,
-        //         type: 'sync'
-        //     }
-        //     target = this.updateExcerptMarkers(excerptTarget, newSource, check, revive)
-        // }
-        // else {
-        //     target = this.updateExcerptMarkers(excerptTarget, undefined, check, revive)
-        // }
-
-
-        // if(check)
-        // {
-        //     const leftMarker = this.take(target.start, target.start+1)
-        //     const rightMarker = this.take(target.end, target.end+1)
-
-        //     if(leftMarker.ops.length !== 1 || !ExcerptUtil.isLeftExcerptMarker(leftMarker.ops[0]))
-        //         throw new Error('left marker check failed: l: ' + JSONStringify(leftMarker) + " |r: " + JSONStringify(rightMarker) + " |T: " + JSONStringify(target) + " |C: " + JSONStringify(this.getContent()) + " |S: " + JSONStringify(shiftedChanges))
-        //     if(rightMarker.ops.length !== 1  || !ExcerptUtil.isRightExcerptMarker(rightMarker.ops[0]))
-        //         throw new Error('right marker check failed: l: ' + JSONStringify(leftMarker) + " |r: " + JSONStringify(rightMarker) + " |T: " + JSONStringify(target) + " |C: "  + JSONStringify(this.getContent()) +  " |S: " + JSONStringify(shiftedChanges))
-
-        //     expectEqual(ExcerptUtil.decomposeMarker(leftMarker.ops[0]), ExcerptUtil.decomposeMarker(rightMarker.ops[0]))
-        //     // may change on revived lost marker present
-        //     // if(!isEqual(this.getFullExcerpts().length, full.length))
-        //     //     throw new Error('number of excerpts shoudn\'t change')
-        // }
-
-        // return new ExcerptTarget(this.name, this.getCurrentRev(), target.start, target.end)
-    }
 
     /** private methods */
 
     private changeShifted(change: Change, offset:number):Change {
         const shiftAmount = offset
-        change = new ExDelta(change.ops.concat(), change.syncs)
+        const shiftedChange = new ExDelta(change.ops.concat(), change.contexts)
         // adjust offset:
         // utilize first retain if it exists
-        if (change.ops.length > 0 && change.ops[0].retain) {
-            change.ops[0].retain! += shiftAmount
+        if (shiftedChange.ops.length > 0 && shiftedChange.ops[0].retain) {
+            shiftedChange.ops[0] = {...shiftedChange.ops[0], retain: shiftedChange.ops![0].retain + shiftAmount }
         // otherwise just append new retain
         } else {
-            change.ops.unshift({ retain: shiftAmount })
+            shiftedChange.ops.unshift({ retain: shiftAmount })
         }
-        return change
+        return shiftedChange
     }
 
     private composeSyncs(uri:string, firstRev:number, changes:Change[], ranges:Range[]) {

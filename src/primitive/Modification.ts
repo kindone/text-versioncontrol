@@ -38,7 +38,7 @@ export class Modification {
     // }
 
     public isVisibleTo(branch: string) {
-        if(branch === '*')
+        if(branch === '*' || branch === '_')
             return !this.isDeleted()
         else
             return !this.isDeletedBy(branch) && !this.isInsertedByOther(branch)
@@ -50,7 +50,7 @@ export class Modification {
 
     public shouldAdvanceForTiebreak(branch: string) {
         // use tiebreaking string comparison on inserted branch
-        if(branch === '*')
+        if(branch === '*' || branch === '_')
             return false
         else
             return this.insertedBy !== undefined && this.insertedBy < branch && this.insertedBy  !== '*'

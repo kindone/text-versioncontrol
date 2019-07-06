@@ -107,8 +107,8 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        if(delta.syncs)
-            return {ops: normalizeOps(newOps), syncs: delta.syncs}
+        if(delta.contexts)
+            return {ops: normalizeOps(newOps), contexts: delta.contexts}
         else
             return {ops: normalizeOps(newOps)}
     }

@@ -21,7 +21,7 @@ export class DocClient {
     public sync(response: SyncResponse) {
         this.history.merge({
             rev: this.synchedClientRev,
-            branchName: 'server',
+            branch: 'server',
             changes: response.resChanges,
         })
         this.synchedRev = response.rev
@@ -32,7 +32,7 @@ export class DocClient {
     public getSyncRequest() {
         return {
             rev: this.synchedRev,
-            branchName: this.history.name,
+            branch: this.history.name,
             changes: this.pending,
         }
     }

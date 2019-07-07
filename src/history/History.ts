@@ -53,14 +53,14 @@ export class History implements IHistory {
     }
 
     public merge(mergeRequest: SyncRequest): MergeResult {
-        return this.mergeAt(mergeRequest.rev, mergeRequest.changes, mergeRequest.branchName)
+        return this.mergeAt(mergeRequest.rev, mergeRequest.changes, mergeRequest.branch)
     }
 
     // prioritize remote
     public rebase(rebaseRequest: SyncRequest): MergeResult {
         const baseRev = rebaseRequest.rev
         const changes = rebaseRequest.changes
-        const branchName = rebaseRequest.branchName
+        const branchName = rebaseRequest.branch
 
         const result = this.simulateRebase(branchName ? branchName : this.name, changes, baseRev)
 

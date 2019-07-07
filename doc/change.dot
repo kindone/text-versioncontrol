@@ -1,0 +1,12 @@
+digraph change {
+  content0 [shape=box, label="content 0"] 
+  change0 [shape=diamond, label="change 0"]
+  content1 [shape=box, label="content 1"] 
+  change1 [shape=diamond, label="change 1"]
+  content2 [shape=box, label="content 2"] 
+  change2 [shape=diamond, label="change 2"]
+  content3 [shape=box, label="content 3"] 
+
+
+  content0 -> change0 -> content1 -> change1 -> content2 -> change2 -> content3
+}

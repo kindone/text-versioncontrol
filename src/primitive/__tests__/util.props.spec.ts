@@ -149,7 +149,7 @@ describe('filterChanges', () =>{
                     history1.append(changes.slice(0, i)) // 0~i-1 changes
                     const undoChange = reverseChange(history1.getContent(), targetChange)
                     history1.append(changes.slice(i))
-                    history1.merge({branchName: "B", rev: i+1, changes:[undoChange]})
+                    history1.merge({branch: "B", rev: i+1, changes:[undoChange]})
                     const result1 = history1.getContent()
 
                     // filtered

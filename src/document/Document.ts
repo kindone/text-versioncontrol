@@ -62,7 +62,7 @@ export class Document {
     }
 
     public merge(baseRev: number, changes: IDelta[]):SyncResponse {
-        return this.history.merge({ rev: baseRev, branchName: '$simulate$', changes })
+        return this.history.merge({ rev: baseRev, branch: '$simulate$', changes })
     }
 
     public getChange(rev: number): IDelta[] {

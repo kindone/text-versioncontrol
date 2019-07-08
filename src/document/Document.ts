@@ -260,7 +260,7 @@ export class Document {
         // adjust offset:
         // utilize first retain if it exists
         if (shiftedChange.ops.length > 0 && shiftedChange.ops[0].retain) {
-            shiftedChange.ops[0] = {...shiftedChange.ops[0], retain: shiftedChange.ops[0].retain + shiftAmount }
+            shiftedChange.ops[0] = {...shiftedChange.ops[0], retain: shiftedChange.ops[0].retain! + shiftAmount }
         // otherwise just append new retain
         } else {
             shiftedChange.ops.unshift({ retain: shiftAmount })

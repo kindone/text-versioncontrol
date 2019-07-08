@@ -38,11 +38,12 @@ SharedString forms the core of Text-VersionControl's OT and CRDT functionality. 
 		* Edits the content by applying change on current content
 		* Returns *transformed delta* as if the change was made in linear fashion
 		* Multiple users with their own sequence of changes independently can be applied by alternating branch. 
-  <pre><code>ss.applyChange(deltasByAlice, "Alice")
-  ss.applyChange(deltasByBob, "Bob")
-  ss.applyChange(deltasByAlice2, "Alice") // second edit by Alice
-  ss.applyChange(deltasByCharlie, "Charlie")
-  </code></pre>
+
+  			```ss.applyChange(deltasByAlice, "Alice")
+  				ss.applyChange(deltasByBob, "Bob")
+  				ss.applyChange(deltasByAlice2, "Alice") // second edit by Alice
+  				ss.applyChange(deltasByCharlie, "Charlie")```
+  				
   		* As long as you keep the order of changes within each branch, the result content will be the same no matter how you order the changes of different branches. This satisfies CRDT characteristics.
   * Wildcard branch lets you simulate a *checkpoint*, where the change is applied as if it's aware of all other changes of different branches
 	  * ```ss.applyChange(deltasAsSeen, "*")```

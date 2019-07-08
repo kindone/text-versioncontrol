@@ -9,7 +9,7 @@ export { Fragment } from './primitive/Fragment'
 export { SharedString } from './primitive/SharedString'
 export { IDelta } from './primitive/IDelta'
 export { Source } from './primitive/Source'
-export { ExDelta } from './primitive/ExDelta'
+export { ExDelta as ExDelta } from './primitive/ExDelta'
 export { Range, RangedTransforms } from './primitive/Range'
 export { Delta }
 export { Document } from './document/Document'

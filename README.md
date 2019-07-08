@@ -23,6 +23,24 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [delta representatio
 * Adding or removing attributes using retain
 	* ```{retain: 5, attributes: {"link": null}}```
 
+## Manipulating Delta
+
+Text-VersionControl provides utility functions to manipulate deltas
+
+* ```normalizeDeltas(...deltas:Delta[]):Delta```
+	* Returns a more compact and equivalent delta by removing redundant or effectless operations
+* ```flattenDeltas(...deltas:Delta[]):Delta```
+	* Flattens a sequence of multiple deltas into a single equivalent delta
+* ```cropContent(delta:Delta, start:number, end:number):Delta```
+	* Cuts content by the given range
+* ```applyChanges(content:Delta, changes:Delta[]):Delta```
+	* Returns altered content, applying the changes in sequence
+	* It is equivalent to flattenDeltas under the hood
+* ```reverseChange(baseContent:Delta, change:Delta):Delta```
+	* Given base content, returns the inverse change that would undo the given change when applied after the change
+* ```filterChanges(baseContent:Delta, changes:Delta[], criteria:(idx:number, change:Delta):Delta[]```
+	* Filters (in) changes fulfilling criteria given a base content and changes
+
 
 ## SharedString
 
@@ -39,10 +57,12 @@ SharedString forms the core of Text-VersionControl's OT and CRDT functionality. 
 		* Returns *transformed delta* as if the change was made in linear fashion
 		* Multiple users with their own sequence of changes independently can be applied by alternating branch. 
 
-  			```ss.applyChange(deltasByAlice, "Alice")
+  			```
+  			ss.applyChange(deltasByAlice, "Alice")
   			ss.applyChange(deltasByBob, "Bob")
   			ss.applyChange(deltasByAlice2, "Alice") // second edit by Alice
-  			ss.applyChange(deltasByCharlie, "Charlie")```
+  			ss.applyChange(deltasByCharlie, "Charlie")
+  			```
   		* As long as you keep the order of changes within each branch, the result content will be the same no matter how you order the changes of different branches. This satisfies CRDT characteristics.
   * Wildcard branch lets you simulate a *checkpoint*, where the change is applied as if it's aware of all other changes of different branches
 	  * ```ss.applyChange(deltasAsSeen, "*")```

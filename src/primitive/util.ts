@@ -1,12 +1,12 @@
-import Delta = require('quill-delta')
 import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
-import { ExDelta } from './ExDelta'
+import { ExDelta } from './ExDelta';
 import { IDelta } from './IDelta'
 import { SharedString } from './SharedString';
+
 
 
 
@@ -153,7 +153,7 @@ export function normalizeOps(ops: Op[]): Op[] {
 }
 
 // remove all retain-only deltas in array
-export function normalizeDeltas(deltas: IDelta[]): IDelta[] {
+export function normalizeDeltas(...deltas: IDelta[]): IDelta[] {
     return _.reduce(
         deltas,
         (newDeltas: IDelta[], delta) => {

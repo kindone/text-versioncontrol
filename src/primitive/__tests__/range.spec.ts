@@ -398,18 +398,18 @@ describe('Range', () => {
 
         const changes = [new Delta().retain(10), new Delta().retain(20)]
 
-        expectEqual(normalizeDeltas(range.cropChanges(changes)), []) // normalized
-        expectEqual(normalizeDeltas(range.cropChanges(changes)), []) // normalized
+        expectEqual(normalizeDeltas(...range.cropChanges(changes)), []) // normalized
+        expectEqual(normalizeDeltas(...range.cropChanges(changes)), []) // normalized
 
         changes.push(new Delta().retain(11).insert('123'))
-        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // normalized
+        expectEqual(normalizeDeltas(...range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // normalized
         changes.push(new Delta().delete(2))
-        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // left bounded: only range changes
+        expectEqual(normalizeDeltas(...range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // left bounded: only range changes
         changes.push(new Delta().retain(8).delete(1))
-        expectEqual(normalizeDeltas(range.cropChanges(changes)), [new Delta().retain(1).insert('123'), new Delta().delete(1)])
+        expectEqual(normalizeDeltas(...range.cropChanges(changes)), [new Delta().retain(1).insert('123'), new Delta().delete(1)])
 
         changes.push(new Delta().retain(9).insert('456'))
-        expectEqual(normalizeDeltas(range.cropChanges(changes)), [
+        expectEqual(normalizeDeltas(...range.cropChanges(changes)), [
             new Delta().retain(1).insert('123'),
             new Delta().delete(1),
             new Delta().retain(1).insert('456'),

@@ -3,25 +3,31 @@
 
 Text-VersionControl provides version and concurrency control for text editing. Based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. For use in real-time collaborative document editing and history management for text contents.
 
-## Delta
+## Operations and Delta
 
-Text-VersionControl utilizes [Quill](https://quilljs.com)'s [delta representation in JSON](https://quilljs.com/docs/delta/). It supports Operational Transformation's basic representations(retain, delete, and insert). The delta format also provides attributes and embedded objects for expressing complex content besides simple text.
+Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representation in JSON](https://quilljs.com/docs/delta/). It supports Operational Transformation's basic representations(retain, delete, and insert). The delta format also provides attributes and embedded objects for expressing complex content besides simple text.
 
 
 * Delta as content and change representation
 	* Although Delta represents *change*, static content can also be expressed using insert operations
 		* ```{insert: "Hello"}, {insert: "World", attributes: {"color": "red"}}, {insert: {"video": "http://youtube.com/sOdLN"}}```
-* Operations
+* Operations (Quill Op)
 	* ```{retain: 5}```
 	* ```{delete: 2}```
 	* ```{insert: "Hello World!"}```
-	* ```{ops: [{retain:5}, {delete:2}, {insert: "Hello World!"}]}```
+	* ```[{retain:5}, {delete:2}, {insert: "Hello World!"}]```
 * Embedded objects can hold a map of string->string
 	* ```{insert: {"img":"file:///img.gif"}}```
 * Content with attributes using insert
   	* ```{insert: "Hello", attributes: {"link": "http://github.com"}}```
-* Adding or removing attributes using retain
+* Adding attributes using retain
+    * ```{retain: 5, attributes: {"link": "http://github.com"}}```
+* Removing attributes using retain
 	* ```{retain: 5, attributes: {"link": null}}```
+* Constructing Delta
+	* ```new Delta(ops:Op[])```
+		* ```new Delta([{retain:5}, {delete:2}, {insert: "Hello World!"}])```
+		* is equivalent to ```new Delta().retain(5).delete(2).insert("Hello World!")```
 
 ## Manipulating Delta
 

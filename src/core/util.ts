@@ -1,9 +1,9 @@
 import AttributeMap from 'quill-delta/dist/AttributeMap'
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { Delta } from './Delta';
 import { DeltaComposer } from './DeltaComposer'
 import { DeltaTransformer } from './DeltaTransformer'
-import { ExDelta } from './ExDelta';
 import { IDelta } from './IDelta'
 import { SharedString } from './SharedString';
 
@@ -36,8 +36,8 @@ export function expectEqual(obj1: any, obj2: any, msg: string | strfunc = 'Not e
 }
 
 export function asExDelta(content: string | IDelta): IDelta {
-    if (content === '') return new ExDelta([])
-    else if (typeof content === 'string') return new ExDelta([{ insert: content }])
+    if (content === '') return new Delta([])
+    else if (typeof content === 'string') return new Delta([{ insert: content }])
     else return content as IDelta
 }
 
@@ -172,7 +172,7 @@ export function normalizeDeltas(...deltas: IDelta[]): IDelta[] {
         deltas,
         (newDeltas: IDelta[], delta) => {
             if (!hasNoEffect(delta)) {
-                const newDelta = delta.contexts ? new ExDelta(normalizeOps(delta.ops), delta.contexts) : new ExDelta(normalizeOps(delta.ops))
+                const newDelta = delta.contexts ? new Delta(normalizeOps(delta.ops), delta.contexts) : new Delta(normalizeOps(delta.ops))
                 newDeltas.push(newDelta)
                 return newDeltas
             } else return newDeltas
@@ -240,7 +240,7 @@ export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boole
             // console.log('insert out:', outOps)
         }
     }
-    return new ExDelta(normalizeOps(outOps))
+    return new Delta(normalizeOps(outOps))
 }
 
 export function applyChanges(content:IDelta, changes:IDelta[]) {
@@ -248,7 +248,7 @@ export function applyChanges(content:IDelta, changes:IDelta[]) {
 }
 
 export function flattenDeltas(...deltas: IDelta[]):IDelta {
-    if (deltas.length === 0) return new ExDelta()
+    if (deltas.length === 0) return new Delta()
 
     let flattened: IDelta = deltas[0]
 
@@ -283,11 +283,11 @@ export function flattenDeltas(...deltas: IDelta[]):IDelta {
             }
         }
         outOps = outOps.concat(iter.rest())
-        flattened = new ExDelta(outOps)
+        flattened = new Delta(outOps)
     }
     // if(source)
     //     console.error('warning: source information will be lost by flatten')
-    return new ExDelta(normalizeOps(flattened.ops))
+    return new Delta(normalizeOps(flattened.ops))
 }
 
 
@@ -372,9 +372,9 @@ export function cropContent(content:IDelta, start:number, end:number):IDelta
         throw new Error("invalid argument: " + JSONStringify(content) + ", start: " + start +", end: "+ end)
 
     if(fullLength ===  end)
-        return flattenDeltas(content, new ExDelta([{delete:start}, {retain:length}]))
+        return flattenDeltas(content, new Delta([{delete:start}, {retain:length}]))
     else
-        return flattenDeltas(content, new ExDelta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
+        return flattenDeltas(content, new Delta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
 }
 
 export function reverseChange(content:IDelta, change:IDelta):IDelta {

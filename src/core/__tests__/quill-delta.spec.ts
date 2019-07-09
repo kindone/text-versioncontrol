@@ -1,21 +1,21 @@
 import * as _ from 'underscore'
 import QDelta = require("quill-delta");
 import { expectEqual, flattenDeltas, transformDeltas, cropContent } from '../util'
-import { ExDelta as ExDelta } from '../ExDelta';
+import { Delta as Delta } from '../Delta';
 
 describe('Quill Delta basic operations', () => {
     it('negative value ignored', () => {
         expectEqual(new QDelta().delete(-1), new QDelta())
         expectEqual(new QDelta().retain(-1), new QDelta())
 
-        expectEqual(new ExDelta().delete(-1), new ExDelta())
-        expectEqual(new ExDelta().retain(-1), new ExDelta())
+        expectEqual(new Delta().delete(-1), new Delta())
+        expectEqual(new Delta().retain(-1), new Delta())
     })
 
     it('mutability of operations', () => {
         const delta = new QDelta()
         expectEqual(delta.insert('a'), delta)
-        const exDelta = new ExDelta()
+        const exDelta = new Delta()
         expectEqual(exDelta.insert('a'), exDelta)
     })
 
@@ -29,9 +29,9 @@ describe('Quill Delta basic operations', () => {
                 .length(),
         ).toBe(4)
 
-        expect(new ExDelta().insert('Hello').length()).toBe(5)
+        expect(new Delta().insert('Hello').length()).toBe(5)
         expect(
-            new ExDelta()
+            new Delta()
                 .insert('A')
                 .retain(2)
                 .delete(1)
@@ -55,13 +55,13 @@ describe('Quill Delta basic operations', () => {
         ).toEqual([{ retain: 2 }, { insert: 'Hello' }, { delete: 2 }])
 
         expect(
-            new ExDelta()
+            new Delta()
                 .retain(2)
                 .delete(2)
                 .insert('Hello').ops,
         ).toEqual([{ retain: 2 }, { delete: 2 }, { insert: 'Hello' }])
         expect(
-            new ExDelta()
+            new Delta()
                 .retain(2)
                 .insert('Hello')
                 .delete(2).ops,
@@ -85,14 +85,14 @@ describe('Quill Delta basic operations', () => {
         }
 
         {
-            const initial = new ExDelta()
-            const delta = new ExDelta()
+            const initial = new Delta()
+            const delta = new Delta()
                 .retain(1)
                 .insert('x')
                 .delete(1)
             expectEqual(initial.compose(delta), delta)
-            expectEqual(initial, new ExDelta())
-            expectEqual(delta, new ExDelta()
+            expectEqual(initial, new Delta())
+            expectEqual(delta, new Delta()
                 .retain(1)
                 .insert('x')
                 .delete(1))
@@ -282,9 +282,9 @@ describe('Quill Delta basic operations', () => {
         // note that delta.transform will reorder delete and insert
         expectEqual(new QDelta().transform(delta, true).ops, [{"insert":"71nw"},{"delete":1}])
 
-        const exDelta = new ExDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
-        expectEqual(transformDeltas(new ExDelta(), exDelta, true), exDelta)
-        expectEqual(new ExDelta().transform(exDelta, true), exDelta)
+        const exDelta = new Delta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
+        expectEqual(transformDeltas(new Delta(), exDelta, true), exDelta)
+        expectEqual(new Delta().transform(exDelta, true), exDelta)
     })
 
 
@@ -293,9 +293,9 @@ describe('Quill Delta basic operations', () => {
         delta.transform(new QDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }]))
         expectEqual(delta, new QDelta())
 
-        const exDelta = new ExDelta()
-        exDelta.transform(new ExDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }]))
-        expectEqual(exDelta, new ExDelta())
+        const exDelta = new Delta()
+        exDelta.transform(new Delta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }]))
+        expectEqual(exDelta, new Delta())
     })
 
     it('transformation of delta', () => {

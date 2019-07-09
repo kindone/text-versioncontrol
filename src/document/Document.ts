@@ -1,7 +1,7 @@
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { Delta } from '../core/Delta'
 import { DeltaContext } from '../core/DeltaContext';
-import { ExDelta } from '../core/ExDelta'
 import { IDelta } from '../core/IDelta'
 import { Range } from '../core/Range'
 import { SharedString } from '../core/SharedString';
@@ -126,7 +126,7 @@ export class Document {
         const ops: Op[] = [{ retain: offset }]
 
         const contexts:DeltaContext[] = [{type: 'paste', sourceUri: source.uri, sourceRev: source.rev, targetUri: this.name, targetRev: rev}]
-        const change = new ExDelta(ops.concat(pasted.ops), contexts)
+        const change = new Delta(ops.concat(pasted.ops), contexts)
         this.history.append([change])
 
         // check
@@ -257,7 +257,7 @@ export class Document {
 
     private changeShifted(change: IDelta, offset:number):IDelta {
         const shiftAmount = offset
-        const shiftedChange = new ExDelta(change.ops.concat(), change.contexts)
+        const shiftedChange = new Delta(change.ops.concat(), change.contexts)
         // adjust offset:
         // utilize first retain if it exists
         if (shiftedChange.ops.length > 0 && shiftedChange.ops[0].retain) {

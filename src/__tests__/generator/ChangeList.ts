@@ -4,12 +4,12 @@ import * as _ from 'underscore'
 import { contentLengthIncreased, JSONStringify } from "../../core/util";
 import { ArbitraryWithShrink } from "./util";
 import { genSmallBiasedDistribution } from "./primitives";
-import { ExDelta } from "../../core/ExDelta";
+import { Delta } from "../../core/Delta";
 
 
 export interface ChangeList {
     lengths:number[]
-    deltas:ExDelta[]
+    deltas:Delta[]
 }
 
 export class ChangeListArbitrary extends ArbitraryWithShrink<ChangeList> {
@@ -26,7 +26,7 @@ export class ChangeListArbitrary extends ArbitraryWithShrink<ChangeList> {
     private gen(mrng:Random):ChangeList {
         const initialLength = this.initialLength != -1 ? this.initialLength : genSmallBiasedDistribution(mrng, 20)
         const numChanges = this.numChanges != -1 ? this.numChanges : genSmallBiasedDistribution(mrng, 30)
-        const deltas:ExDelta[] = []
+        const deltas:Delta[] = []
         let lengths = [initialLength]
         let length = initialLength
 

@@ -4,11 +4,11 @@ import {  emptyOpsArbitrary } from './op';
 import * as _ from 'underscore'
 import { opsArbitrary, OpsArbitrary } from './Ops';
 import { ArbitraryWithShrink } from './util';
-import { ExDelta } from '../../core/ExDelta';
+import { Delta } from '../../core/Delta';
 
 
 
-export class DeltaArbitrary extends ArbitraryWithShrink<ExDelta>
+export class DeltaArbitrary extends ArbitraryWithShrink<Delta>
 {
     readonly opsGen:OpsArbitrary
 
@@ -17,18 +17,18 @@ export class DeltaArbitrary extends ArbitraryWithShrink<ExDelta>
         this.opsGen = opsArbitrary(baseLength, withAttr)
     }
 
-    generate(mrng:Random):Shrinkable<ExDelta> {
+    generate(mrng:Random):Shrinkable<Delta> {
         const value = this.opsGen.generate(mrng).value
-        return this.wrapper(new ExDelta(value))
+        return this.wrapper(new Delta(value))
     }
 
-    *shrinkGen(value:ExDelta):IterableIterator<Shrinkable<ExDelta>> {
+    *shrinkGen(value:Delta):IterableIterator<Shrinkable<Delta>> {
         // console.log('shrinkGen', value.ops)
         var iterator = opsArbitrary(this.baseLength, this.withAttr).shrinkGen(value.ops)
         let shrinkedOps = iterator.next()
         while(!shrinkedOps.done) {
             // console.log('shrinkGen', shrinkedOps)
-            yield shrinkedOps.value.map(ops => new ExDelta(ops))
+            yield shrinkedOps.value.map(ops => new Delta(ops))
             shrinkedOps = iterator.next()
         }
     }
@@ -36,4 +36,4 @@ export class DeltaArbitrary extends ArbitraryWithShrink<ExDelta>
 }
 
 export const deltaArbitrary = (baseLength = -1, withAttr = false) => new DeltaArbitrary(baseLength, withAttr)
-export const emptyDeltaGen = emptyOpsArbitrary.map(op => new Array<ExDelta>())
+export const emptyDeltaGen = emptyOpsArbitrary.map(op => new Array<Delta>())

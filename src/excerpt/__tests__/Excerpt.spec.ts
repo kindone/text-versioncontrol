@@ -2,7 +2,7 @@
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
 import { contentLength, JSONStringify, expectEqual, applyChanges, minContentLengthForChange } from '../../core/util'
-import { ExDelta } from '../../core/ExDelta';
+import { Delta } from '../../core/Delta';
 import { IDelta } from '../../core/IDelta';
 import Op from 'quill-delta/dist/Op';
 
@@ -12,9 +12,9 @@ describe('Excerpt', () => {
         const doc1 = new Document('doc1', 'My Document 1')
         const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
-        const doc1Changes = [new ExDelta([]).delete(3).insert('Your '), new ExDelta().retain(5).insert('precious ')]
+        const doc1Changes = [new Delta([]).delete(3).insert('Your '), new Delta().retain(5).insert('precious ')]
 
-        const doc2Changes = [new ExDelta().insert('Some introduction here: ')]
+        const doc2Changes = [new Delta().insert('Some introduction here: ')]
         doc1.append(doc1Changes)
         doc2.append(doc2Changes)
 
@@ -49,9 +49,9 @@ describe('Excerpt', () => {
         const doc1 = new Document('doc1', 'My Document 1')
         const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
-        const doc1Changes = [new ExDelta().delete(3).insert('Your '), new ExDelta().retain(5).insert('precious ')] // Your precious Document 1
+        const doc1Changes = [new Delta().delete(3).insert('Your '), new Delta().retain(5).insert('precious ')] // Your precious Document 1
 
-        const doc2Changes = [new ExDelta().insert('Some introduction here: ')] // Some introduction here: Here comes ...
+        const doc2Changes = [new Delta().insert('Some introduction here: ')] // Some introduction here: Here comes ...
         doc1.append(doc1Changes)
         doc2.append(doc2Changes)
 
@@ -75,25 +75,25 @@ describe('Excerpt', () => {
         const doc2 = new Document('doc2', 'Here comes the trouble. HAHAHAHA')
 
         const doc1Changes = [
-            new ExDelta([{ delete: 3 }, { insert: 'Your ' }]),
-            new ExDelta([{ retain: 5 }, { insert: 'precious ' }]), // Your precious Document 1
+            new Delta([{ delete: 3 }, { insert: 'Your ' }]),
+            new Delta([{ retain: 5 }, { insert: 'precious ' }]), // Your precious Document 1
         ]
 
         const doc2Changes = [
-            new ExDelta().insert('Some introduction here: '), // Some introduction here: Here comes the trouble. HAHAHAHA
+            new Delta().insert('Some introduction here: '), // Some introduction here: Here comes the trouble. HAHAHAHA
         ]
 
         const doc1ChangesAfterExcerpt = [
-            new ExDelta([{ insert: "No, It's " }, { delete: 4 }, { insert: 'Our' }]), // +8, No, it's Our
-            new ExDelta([{ retain: 13 + 8 }, { insert: ' beautiful ' }, { delete: 1 }]),
-            new ExDelta([{ retain: 13 }, { insert: 'delicious ' }]),
-            new ExDelta([{ retain: 16 }, { insert: 'ete' }, { delete: 6 }]),
+            new Delta([{ insert: "No, It's " }, { delete: 4 }, { insert: 'Our' }]), // +8, No, it's Our
+            new Delta([{ retain: 13 + 8 }, { insert: ' beautiful ' }, { delete: 1 }]),
+            new Delta([{ retain: 13 }, { insert: 'delicious ' }]),
+            new Delta([{ retain: 16 }, { insert: 'ete' }, { delete: 6 }]),
         ]
 
         const doc2ChangesAfterExcerpt = [
-            new ExDelta([{ delete: 4 }, { insert: 'Actual' }]),
-            new ExDelta([{ retain: 11 }, { insert: 'tty' }, { delete: 5 }]), // Actual pre|tty|cious
-            new ExDelta([{ retain: 11 }, { insert: 'ttier' }, { delete: 3 }]),
+            new Delta([{ delete: 4 }, { insert: 'Actual' }]),
+            new Delta([{ retain: 11 }, { insert: 'tty' }, { delete: 5 }]), // Actual pre|tty|cious
+            new Delta([{ retain: 11 }, { insert: 'ttier' }, { delete: 3 }]),
         ]
 
 
@@ -189,12 +189,12 @@ describe('Excerpt', () => {
 
 
         const doc1Changes = [
-            new ExDelta([{ delete: 1 }, { insert: 'A' }]),
+            new Delta([{ delete: 1 }, { insert: 'A' }]),
             // new Delta([{ retain: 1 }, { insert: '1' }]),
             // new Delta([{ retain: 2 }, { insert: '1' }]),
         ]
 
-        const doc2Changes = [new ExDelta([{ insert: 'B' }])]
+        const doc2Changes = [new Delta([{ insert: 'B' }])]
         doc1.append(doc1Changes)
         doc2.append(doc2Changes)
 

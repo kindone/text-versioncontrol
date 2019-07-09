@@ -3,7 +3,7 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { SharedString } from '../core/SharedString'
 import { IDelta } from '../core/IDelta';
-import { ExDelta } from '../core/ExDelta';
+import { Delta } from '../core/Delta';
 
 export function randomString(size: number): string {
     // return Math.random()
@@ -78,7 +78,7 @@ export function randomInsert(withAttr = true): Op {
 export function randomChanges(baseLength: number, numDeltas: number, withAttr = true):IDelta[] {
     const deltas: IDelta[] = []
     for (let i = 0; i < numDeltas; i++) {
-        const delta = new ExDelta(baseLength > 0 ? randomUserOps(baseLength, withAttr) : [randomInsert(withAttr)])
+        const delta = new Delta(baseLength > 0 ? randomUserOps(baseLength, withAttr) : [randomInsert(withAttr)])
         deltas.push(delta)
         baseLength += _.reduce(
             delta.ops,

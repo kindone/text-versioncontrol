@@ -5,12 +5,12 @@ import { IDelta } from './IDelta';
 import { contentLength, hasNoEffect, cropContent, normalizeOps, deltaLength, minContentLengthForChange, flattenDeltas, transformDeltas } from './util';
 
 
-export class ExDelta implements IDelta {
+export class Delta implements IDelta {
     constructor(public ops:Op[] = [], public contexts?:DeltaContext[]) {
     }
 
     /* changes the object */
-    public delete(count:number):ExDelta {
+    public delete(count:number):Delta {
         if(count <= 0)
             return this
 
@@ -19,7 +19,7 @@ export class ExDelta implements IDelta {
     }
 
     /* changes the object */
-    public retain(count: number, attributes?: AttributeMap):ExDelta {
+    public retain(count: number, attributes?: AttributeMap):Delta {
         if(count <= 0)
             return this
 
@@ -31,7 +31,7 @@ export class ExDelta implements IDelta {
     }
 
     /* changes the object */
-    public insert(content: string | object, attributes?: AttributeMap):ExDelta {
+    public insert(content: string | object, attributes?: AttributeMap):Delta {
         if(attributes)
             this.ops.push({insert: content, attributes})
         else
@@ -39,12 +39,12 @@ export class ExDelta implements IDelta {
         return this
     }
 
-    public compose(other:IDelta):ExDelta {
-        return new ExDelta(flattenDeltas(this, other).ops)
+    public compose(other:IDelta):Delta {
+        return new Delta(flattenDeltas(this, other).ops)
     }
 
-    public transform(other:IDelta, priority = false):ExDelta {
-        return new ExDelta(transformDeltas(this, other, priority).ops)
+    public transform(other:IDelta, priority = false):Delta {
+        return new Delta(transformDeltas(this, other, priority).ops)
     }
 
     public length():number {
@@ -64,12 +64,12 @@ export class ExDelta implements IDelta {
         return hasNoEffect(this)
     }
 
-    public cropped(start: number, end: number):ExDelta {
-        return new ExDelta(cropContent(this, start, end).ops, this.contexts ? this.contexts.concat() : undefined)
+    public cropped(start: number, end: number):Delta {
+        return new Delta(cropContent(this, start, end).ops, this.contexts ? this.contexts.concat() : undefined)
     }
 
-    public normalized():ExDelta {
-        return new ExDelta(normalizeOps(this.ops), this.contexts ? this.contexts.concat() : undefined)
+    public normalized():Delta {
+        return new Delta(normalizeOps(this.ops), this.contexts ? this.contexts.concat() : undefined)
     }
 
 }

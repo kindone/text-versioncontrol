@@ -42,7 +42,7 @@ Text-VersionControl provides utility functions to manipulate deltas
 * ```applyChanges(content:Delta, changes:Delta[]):Delta```
 	* Returns altered content, applying the changes in sequence
 	* It is equivalent to flattenDeltas under the hood
-* ```reverseChange(baseContent:Delta, change:Delta):Delta```
+* ```invertChange(baseContent:Delta, change:Delta):Delta```
 	* Given base content, returns the inverse change that would undo the given change when applied after the change
 * ```filterChanges(baseContent:Delta, changes:Delta[], criteria:(idx:number, change:Delta):Delta[]```
 	* Filters (in) changes fulfilling criteria given a base content and changes

@@ -377,12 +377,12 @@ export function cropContent(content:IDelta, start:number, end:number):IDelta
         return flattenDeltas(content, new Delta([{delete:start}, {retain:length}, {delete:fullLength - end}]))
 }
 
-export function reverseChange(content:IDelta, change:IDelta):IDelta {
+export function invertChange(baseContent:IDelta, change:IDelta):IDelta {
     let offset = 0
     let reversedOps:Op[] = []
     for(const changeOp of change.ops) {
         if(changeOp.retain && changeOp.attributes) {
-            const cropped = cropContent(content, offset, offset + changeOp.retain).ops
+            const cropped = cropContent(baseContent, offset, offset + changeOp.retain).ops
 
             for(const contentOp of cropped) {
                 const newAttrs:AttributeMap = {}
@@ -425,7 +425,7 @@ export function reverseChange(content:IDelta, change:IDelta):IDelta {
             // offset += 1
         }
         else if(changeOp.delete) {
-            reversedOps = reversedOps.concat(cropContent(content, offset, offset + changeOp.delete).ops)
+            reversedOps = reversedOps.concat(cropContent(baseContent, offset, offset + changeOp.delete).ops)
             offset += changeOp.delete
         }
     }
@@ -451,7 +451,7 @@ export function filterChanges(baseContent:IDelta, changes:IDelta[], criteria:(id
         }
         else {
             const targetChange = altered[i]
-            const undoChange = reverseChange(ss.toDelta(), targetChange)
+            const undoChange = invertChange(ss.toDelta(), targetChange)
             // do and undo to neutralize
             let ss2 = ss.clone()
             ss2.applyChange(targetChange, "O")

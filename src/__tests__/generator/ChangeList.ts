@@ -1,16 +1,15 @@
 import { Random, Shrinkable } from "fast-check";
-import Delta = require("quill-delta");
 import { deltaArbitrary } from "./Delta";
-
 import * as _ from 'underscore'
-import { contentLengthIncreased, JSONStringify } from "../../primitive/util";
+import { contentLengthIncreased, JSONStringify } from "../../core/util";
 import { ArbitraryWithShrink } from "./util";
 import { genSmallBiasedDistribution } from "./primitives";
+import { ExDelta } from "../../core/ExDelta";
 
 
 export interface ChangeList {
     lengths:number[]
-    deltas:Delta[]
+    deltas:ExDelta[]
 }
 
 export class ChangeListArbitrary extends ArbitraryWithShrink<ChangeList> {
@@ -27,7 +26,7 @@ export class ChangeListArbitrary extends ArbitraryWithShrink<ChangeList> {
     private gen(mrng:Random):ChangeList {
         const initialLength = this.initialLength != -1 ? this.initialLength : genSmallBiasedDistribution(mrng, 20)
         const numChanges = this.numChanges != -1 ? this.numChanges : genSmallBiasedDistribution(mrng, 30)
-        const deltas:Delta[] = []
+        const deltas:ExDelta[] = []
         let lengths = [initialLength]
         let length = initialLength
 

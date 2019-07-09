@@ -1,4 +1,4 @@
-import { JSONStringify } from '../primitive/util'
+import { JSONStringify } from '../core/util'
 import { randomChanges } from './random'
 
 describe('randoms', () => {

@@ -1,7 +1,7 @@
-import Delta = require('quill-delta')
+import { IDelta } from '../core/IDelta'
 import { History, IHistory } from '../history/History'
 import { SyncResponse } from '../history/SyncResponse'
-import { IDelta } from '../primitive/IDelta'
+
 
 export class DocClient {
     private history: IHistory

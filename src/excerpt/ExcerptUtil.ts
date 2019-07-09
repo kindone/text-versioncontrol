@@ -1,7 +1,7 @@
-import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
-import { IDelta } from '../primitive/IDelta'
-import { JSONStringify } from '../primitive/util';
+import { ExDelta } from '../core/ExDelta';
+import { IDelta } from '../core/IDelta'
+import { JSONStringify } from '../core/util';
 import { Excerpt } from './Excerpt';
 import { ExcerptMarker } from './ExcerptMarker';
 import { ExcerptSource } from './ExcerptSource';
@@ -24,7 +24,7 @@ export class ExcerptUtil {
 
         if (length - end > 0) ops.push({ delete: length - end })
 
-        return new Delta(ops)
+        return new ExDelta(ops)
     }
 
     public static makeExcerptMarker(markedAt:'left'|'right', sourceUri:string, sourceRev:number, sourceStart:number, sourceEnd:number, targetUri:string, targetRev:number, targetStart:number, targetEnd:number = -1): ExcerptMarker
@@ -55,7 +55,7 @@ export class ExcerptUtil {
 
         const ops:Op[] = [leftMarkerOp].concat(source.content.ops).concat([rightMarkerOp])
 
-        return new Delta(ops)
+        return new ExDelta(ops)
     }
 
     public static isExcerptURI(uri:string) {

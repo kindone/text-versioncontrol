@@ -1,12 +1,12 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
 import jsc = require('jsverify')
-import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { History } from '../History'
-import {  expectEqual, JSONStringify, contentLength } from '../../primitive/util'
+import {  expectEqual, JSONStringify, contentLength } from '../../core/util'
 import { DocClient } from '../../service/DocClient'
 import { DocServer } from '../../service/DocServer'
 import { randomChanges } from '../../__tests__/random'
+import { ExDelta } from '../../core/ExDelta';
 
 describe('server-client scenarios', () => {
     it('scenario 1', () => {
@@ -14,8 +14,8 @@ describe('server-client scenarios', () => {
         const client1 = new DocClient()
         const client2 = new DocClient()
 
-        client1.apply([new Delta().insert('client1 text')])
-        client2.apply([new Delta().insert('Hello world')])
+        client1.apply([new ExDelta().insert('client1 text')])
+        client2.apply([new ExDelta().insert('Hello world')])
 
         // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
 
@@ -42,7 +42,7 @@ describe('server-client scenarios', () => {
         expect(client1.getContent()).toEqual(client2.getContent())
         expect(client1.getContent()).toEqual(server.getContent())
 
-        client1.apply([new Delta().delete(3).insert('replace')])
+        client1.apply([new ExDelta().delete(3).insert('replace')])
         client1.sync(server.merge(client1.getSyncRequest()))
 
         client2.sync(server.merge(client2.getSyncRequest()))
@@ -58,11 +58,11 @@ describe('History hand-made scenarios', () => {
         const serverHistory = new History('server', initialText)
         const clientHistory = new History('client1', initialText)
 
-        const set1 = [new Delta().retain(7).insert(' text'), new Delta().insert('The ')]
+        const set1 = [new ExDelta().retain(7).insert(' text'), new ExDelta().insert('The ')]
         serverHistory.append(set1)
         // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getContent())
 
-        const set2 = [new Delta().retain(7).insert(' string'), new Delta().insert('An ')]
+        const set2 = [new ExDelta().retain(7).insert(' string'), new ExDelta().insert('An ')]
         clientHistory.append(set2)
         // console.log(clientHistory.name, clientHistory.getCurrentRev(), clientHistory.getContent())
 
@@ -81,15 +81,15 @@ describe('History hand-made scenarios', () => {
 
         const clientRev = clientHistory.getCurrentRev()
         const serverRev = serverHistory.getCurrentRev()
-        const set3 = [new Delta().retain(3).insert('pending'), new Delta().insert('More Pending').delete(3)]
+        const set3 = [new ExDelta().retain(3).insert('pending'), new ExDelta().insert('More Pending').delete(3)]
         clientHistory.append(set3)
 
         const set4 = [
-            new Delta()
+            new ExDelta()
                 .retain(2)
                 .delete(2)
                 .insert(' rebased'),
-            new Delta().insert('More rebased '),
+            new ExDelta().insert('More rebased '),
         ]
         serverHistory.append(set4)
 
@@ -104,11 +104,11 @@ describe('History hand-made scenarios', () => {
         const serverHistory = new History('server', initialText)
         const c1History = new History('client1', initialText)
 
-        const serverSet = [new Delta().retain(7).insert(' text'), new Delta().insert('The ')]
+        const serverSet = [new ExDelta().retain(7).insert(' text'), new ExDelta().insert('The ')]
         serverHistory.append(serverSet)
         // console.log(serverHistory.name, serverHistory.getCurrentRev(), serverHistory.getContent())
 
-        const client1Set = [new Delta().retain(7).insert(' string'), new Delta().insert('An ')]
+        const client1Set = [new ExDelta().retain(7).insert(' string'), new ExDelta().insert('An ')]
         c1History.append(client1Set)
         // console.log(c1History.name, c1History.getCurrentRev(), c1History.getContent())
 

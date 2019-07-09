@@ -1,15 +1,11 @@
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Excerpt, ExcerptSource, ExcerptTarget, ExcerptUtil, ExcerptSync } from '../excerpt'
-import { ExcerptMarkerWithOffset, } from '../excerpt/ExcerptUtil';
-import { History, IHistory } from '../history/History'
-import { SyncResponse } from '../history/SyncResponse'
-import { DeltaContext } from '../primitive/DeltaContext';
-import { ExDelta } from '../primitive/ExDelta'
-import { IDelta } from '../primitive/IDelta'
-import { Range } from '../primitive/Range'
-import { SharedString } from '../primitive/SharedString';
-import { Source } from '../primitive/Source'
+import { DeltaContext } from '../core/DeltaContext';
+import { ExDelta } from '../core/ExDelta'
+import { IDelta } from '../core/IDelta'
+import { Range } from '../core/Range'
+import { SharedString } from '../core/SharedString';
+import { Source } from '../core/Source'
 import {
     asExDelta,
     JSONStringify,
@@ -19,8 +15,13 @@ import {
     isEqual,
     filterChanges,
     minContentLengthForChange,
-} from '../primitive/util'
+} from '../core/util'
+import { Excerpt, ExcerptSource, ExcerptTarget, ExcerptUtil, ExcerptSync } from '../excerpt'
+import { ExcerptMarkerWithOffset, } from '../excerpt/ExcerptUtil';
+import { History, IHistory } from '../history/History'
+import { SyncResponse } from '../history/SyncResponse'
 import { DocumentSet } from './DocumentSet';
+
 
 
 

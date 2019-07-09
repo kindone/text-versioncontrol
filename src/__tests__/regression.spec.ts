@@ -1,27 +1,27 @@
-import Delta = require('quill-delta')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
-import { Range } from '../primitive/Range'
-import { SharedString } from '../primitive/SharedString'
-import { expectEqual, JSONStringify, flattenDeltas } from '../primitive/util'
+import { Range } from '../core/Range'
+import { SharedString } from '../core/SharedString'
+import { expectEqual, JSONStringify, flattenDeltas, contentLength, minContentLengthForChange } from '../core/util'
 import { randomString, randomInt } from './random'
-import { IDelta } from '../primitive/IDelta';
+import { IDelta } from '../core/IDelta';
+import { ExDelta } from '../core/ExDelta';
 
 describe('text spec regression', () => {
     it('case 1', () => {
         const initial = '02f'
         const client1 = SharedString.fromString(initial)
-        client1.applyChange(new Delta().retain(2).retain(1, { b: null, i: 1 }), 'user2')
+        client1.applyChange(new ExDelta().retain(2).retain(1, { b: null, i: 1 }), 'user2')
         // console.log(JSONStringify(client1))
         client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .retain(1, { i: null })
                 .retain(1)
                 .retain(1, { b: null, i: null }),
             'user1',
         )
         client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('haq')
                 .retain(2)
                 .delete(1)
@@ -32,14 +32,14 @@ describe('text spec regression', () => {
 
         const client2 = SharedString.fromString(initial)
         client2.applyChange(
-            new Delta()
+            new ExDelta()
                 .retain(1, { i: null })
                 .retain(1)
                 .retain(1, { b: null, i: null }),
             'user1',
         )
         client2.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('haq')
                 .retain(2)
                 .delete(1)
@@ -47,68 +47,7 @@ describe('text spec regression', () => {
             'user1',
         )
         // console.log(JSONStringify(client2))
-        client2.applyChange(new Delta().retain(2).retain(1, { b: null, i: 1 }), 'user2')
-        // console.log(JSONStringify(client2))
-
-        expectEqual(client1.toDelta(), client2.toDelta())
-    })
-
-    it('case 2', () => {
-        const initial = 'a8j'
-        const client1 = SharedString.fromString(initial)
-        client1.applyChange(
-            new Delta()
-                .delete(1)
-                .delete(1)
-                .delete(1),
-            'user1',
-        )
-        client1.applyChange(
-            new Delta()
-                .insert({ x: 'fg' })
-                .retain(1, { b: null, i: 1 })
-                .retain(1)
-                .delete(1)
-                .insert('pvs', { b: null }),
-            'user2',
-        )
-        // console.log(JSONStringify(client1))
-        client1.applyChange(
-            new Delta()
-                .insert('0m8')
-                .retain(2)
-                .retain(1, { i: 1 })
-                .insert({ y: 'gq' }, { b: null, i: null }),
-            'user1',
-        )
-        // console.log(JSONStringify(client1))
-
-        const client2 = SharedString.fromString(initial)
-        client2.applyChange(
-            new Delta()
-                .delete(1)
-                .delete(1)
-                .delete(1),
-            'user1',
-        )
-        client2.applyChange(
-            new Delta()
-                .insert('0m8')
-                .retain(2)
-                .retain(1, { i: 1 })
-                .insert({ y: 'gq' }, { b: null, i: null }),
-            'user1',
-        )
-        // console.log(JSONStringify(client2))
-        client2.applyChange(
-            new Delta()
-                .insert({ x: 'fg' })
-                .retain(1, { b: null, i: 1 })
-                .retain(1)
-                .delete(1)
-                .insert('pvs', { b: null }),
-            'user2',
-        )
+        client2.applyChange(new ExDelta().retain(2).retain(1, { b: null, i: 1 }), 'user2')
         // console.log(JSONStringify(client2))
 
         expectEqual(client1.toDelta(), client2.toDelta())
@@ -117,10 +56,10 @@ describe('text spec regression', () => {
     it('case 3', () => {
         const initial = 'y'
         const client1 = SharedString.fromString(initial)
-        client1.applyChange(new Delta().retain(1), 'user2')
+        client1.applyChange(new ExDelta().retain(1), 'user2')
         // console.log(JSONStringify(client1))
         client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('ykp')
                 .retain(1)
                 .insert({ x: '47' }),
@@ -128,7 +67,7 @@ describe('text spec regression', () => {
         )
         // console.log(JSONStringify(client1))
         client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .delete(1)
                 .retain(3)
                 .retain(1),
@@ -136,46 +75,46 @@ describe('text spec regression', () => {
         )
         // console.log(JSONStringify(client1))
         client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('c20')
                 .delete(3)
                 .retain(1),
             'user2',
         )
         // console.log(JSONStringify(client1))
-        client1.applyChange(new Delta().delete(1), 'user1')
+        client1.applyChange(new ExDelta().delete(1), 'user1')
         // console.log(JSONStringify(client1))
-        client1.applyChange(new Delta().insert({ x: 'y9' }).insert('i12'), 'user1')
+        client1.applyChange(new ExDelta().insert({ x: 'y9' }).insert('i12'), 'user1')
         // console.log(JSONStringify(client1))
         client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert({ x: 'lv' })
                 .delete(3)
                 .delete(1),
             'user1',
         )
         // console.log(JSONStringify(client1))
-        client1.applyChange(new Delta().retain(1), 'user1')
+        client1.applyChange(new ExDelta().retain(1), 'user1')
 
         const client2 = SharedString.fromString(initial)
-        client2.applyChange(new Delta().delete(1), 'user1')
+        client2.applyChange(new ExDelta().delete(1), 'user1')
         // console.log(JSONStringify(client2))
-        client2.applyChange(new Delta().retain(1), 'user2')
+        client2.applyChange(new ExDelta().retain(1), 'user2')
         // console.log(JSONStringify(client2))
-        client2.applyChange(new Delta().insert({ x: 'y9' }).insert('i12'), 'user1')
+        client2.applyChange(new ExDelta().insert({ x: 'y9' }).insert('i12'), 'user1')
         // console.log(JSONStringify(client2))
         client2.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert({ x: 'lv' })
                 .delete(3)
                 .delete(1),
             'user1',
         )
         // console.log(JSONStringify(client2))
-        client2.applyChange(new Delta().retain(1), 'user1')
+        client2.applyChange(new ExDelta().retain(1), 'user1')
         // console.log(JSONStringify(client2))
         client2.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('ykp')
                 .retain(1)
                 .insert({ x: '47' }),
@@ -183,7 +122,7 @@ describe('text spec regression', () => {
         )
         // console.log(JSONStringify(client2))
         client2.applyChange(
-            new Delta()
+            new ExDelta()
                 .delete(1)
                 .retain(3)
                 .retain(1),
@@ -191,7 +130,7 @@ describe('text spec regression', () => {
         )
         // console.log(JSONStringify(client2))
         client2.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('c20')
                 .delete(3)
                 .retain(1),
@@ -205,11 +144,11 @@ describe('text spec regression', () => {
     it('case 4', () => {
         const initial = 'v'
         const client1 = SharedString.fromString(initial)
-        const delta1 = client1.applyChange(new Delta().delete(1), 'user2')
-        const delta2 = client1.applyChange(new Delta().insert({ x: 'tx' }), 'user2')
-        const delta3 = client1.applyChange(new Delta().retain(1), 'user1')
+        const delta1 = client1.applyChange(new ExDelta().delete(1), 'user2')
+        const delta2 = client1.applyChange(new ExDelta().insert({ x: 'tx' }), 'user2')
+        const delta3 = client1.applyChange(new ExDelta().retain(1), 'user1')
         const delta4 = client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('tia')
                 .delete(1)
                 .insert({ x: 'l2' }),
@@ -228,9 +167,9 @@ describe('text spec regression', () => {
     it('case 5', () => {
         const initial = 'h6ji'
         const client1 = SharedString.fromString(initial)
-        const delta1 = client1.applyChange(new Delta().delete(3).retain(1), 'user1')
+        const delta1 = client1.applyChange(new ExDelta().delete(3).retain(1), 'user1')
         const delta2 = client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('w7j')
                 .delete(2)
                 .insert({ x: 'xd' })
@@ -240,9 +179,9 @@ describe('text spec regression', () => {
                 .insert({ x: 'ne' }),
             'user2',
         )
-        const delta3 = client1.applyChange(new Delta().retain(1), 'user1')
+        const delta3 = client1.applyChange(new ExDelta().retain(1), 'user1')
         const delta4 = client1.applyChange(
-            new Delta()
+            new ExDelta()
                 .insert('jq4')
                 .delete(6)
                 .retain(1)
@@ -264,12 +203,12 @@ describe('text spec regression', () => {
         const initial = 'ye'
         const client1 = SharedString.fromString(initial)
         const deltas: IDelta[] = []
-        deltas.push(client1.applyChange(new Delta().delete(1).delete(1), 'user2'))
-        deltas.push(client1.applyChange(new Delta().insert({ x: 'lv' }), 'user2'))
-        deltas.push(client1.applyChange(new Delta().retain(1).delete(1), 'user1'))
+        deltas.push(client1.applyChange(new ExDelta().delete(1).delete(1), 'user2'))
+        deltas.push(client1.applyChange(new ExDelta().insert({ x: 'lv' }), 'user2'))
+        deltas.push(client1.applyChange(new ExDelta().retain(1).delete(1), 'user1'))
         deltas.push(
             client1.applyChange(
-                new Delta()
+                new ExDelta()
                     .insert({ y: 'se' })
                     .delete(1)
                     .insert({ x: '1g' }),
@@ -293,7 +232,7 @@ describe('text spec regression', () => {
         const deltas: IDelta[] = []
         deltas.push(
             client1.applyChange(
-                new Delta()
+                new ExDelta()
                     .insert('u4t')
                     .delete(2)
                     .delete(1)
@@ -304,7 +243,7 @@ describe('text spec regression', () => {
         )
         deltas.push(
             client1.applyChange(
-                new Delta()
+                new ExDelta()
                     .insert('29l')
                     .retain(1)
                     .delete(1)
@@ -314,7 +253,7 @@ describe('text spec regression', () => {
         )
         deltas.push(
             client1.applyChange(
-                new Delta()
+                new ExDelta()
                     .insert({ y: '7a' })
                     .delete(1)
                     .delete(1)
@@ -326,7 +265,7 @@ describe('text spec regression', () => {
                 'user1',
             ),
         )
-        deltas.push(client1.applyChange(new Delta().delete(5).delete(1), 'user1'))
+        deltas.push(client1.applyChange(new ExDelta().delete(5).delete(1), 'user1'))
 
         // console.log(JSONStringify(deltas))
         const server = SharedString.fromString(initial)
@@ -351,7 +290,7 @@ describe('text spec regression', () => {
         const server = SharedString.fromString(initial)
         // console.log(JSONStringify(server.fragments))
         for (const c of combined) {
-            const newDelta = client1.applyChange(new Delta(c.ops), c.branch)
+            const newDelta = client1.applyChange(new ExDelta(c.ops), c.branch)
             server.applyChange(newDelta, 'merged')
             // console.log(JSONStringify(c.ops), c.branch)
             // console.log(JSONStringify(client1.fragments))
@@ -383,7 +322,7 @@ describe('text spec regression', () => {
         const server = SharedString.fromString(initial)
         // console.log(JSONStringify(server.fragments))
         for (const c of combined) {
-            const newDelta = client1.applyChange(new Delta(c.ops), c.branch)
+            const newDelta = client1.applyChange(new ExDelta(c.ops), c.branch)
             server.applyChange(newDelta, 'merged')
             // console.log(JSONStringify(c.ops), c.branch)
             // console.log(JSONStringify(client1.fragments))
@@ -407,7 +346,7 @@ describe('text spec regression', () => {
         const server = SharedString.fromString(initial)
         // console.log(JSONStringify(server.fragments))
         for (const c of combined) {
-            const newDelta = client1.applyChange(new Delta(c.ops), c.branch)
+            const newDelta = client1.applyChange(new ExDelta(c.ops), c.branch)
             server.applyChange(newDelta, 'merged')
             // console.log(JSONStringify(c.ops), c.branch)
             // console.log(JSONStringify(client1.fragments))
@@ -447,7 +386,7 @@ describe('text spec regression', () => {
         const server = SharedString.fromString(initial)
         // console.log(JSONStringify(server.fragments))
         for (const c of combined) {
-            const newDelta = client1.applyChange(new Delta(c.ops), c.branch)
+            const newDelta = client1.applyChange(new ExDelta(c.ops), c.branch)
             server.applyChange(newDelta, 'merged')
             // console.log(JSONStringify(c.ops), c.branch)
             // console.log(JSONStringify(client1.fragments))
@@ -515,7 +454,7 @@ describe('text spec regression', () => {
         const server = SharedString.fromString(initial)
         // console.log(JSONStringify(server.fragments))
         for (const c of combined) {
-            const newDelta = client1.applyChange(new Delta(c.ops), c.branch)
+            const newDelta = client1.applyChange(new ExDelta(c.ops), c.branch)
             server.applyChange(newDelta, 'merged')
             // console.log(JSONStringify(c.ops), c.branch)
             // console.log(JSONStringify(client1.fragments))

@@ -3,10 +3,9 @@ import * as _ from 'underscore'
 
 import { basicOpArbitrary, complexOpArbitrary} from './generator/op';
 import { isUniqueSequence, genUniqueSequenceSorted, genSmallBiasedDistribution } from './generator/primitives';
-import { JSONStringify, expectEqual } from '../primitive/util';
+import { JSONStringify, expectEqual } from '../core/util';
 import { retainArbitrary, deleteArbitrary } from './generator/RetainDelete';
 import { opsArbitrary } from './generator/Ops';
-import Delta = require('quill-delta');
 import { Random, Arbitrary } from 'fast-check';
 import prand from 'pure-rand';
 import { insertArbitrary } from './generator/Insert';

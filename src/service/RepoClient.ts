@@ -1,6 +1,6 @@
+import { IDelta } from '../core/IDelta'
 import { History } from '../history/History'
 import { SyncRequest } from '../history/SyncRequest'
-import { IDelta } from '../primitive/IDelta'
 import { DocClient } from './DocClient'
 import { RepoSyncResponse } from './RepoServer'
 

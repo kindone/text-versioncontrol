@@ -2,26 +2,35 @@ import AttributeMap from 'quill-delta/dist/AttributeMap';
 import Op from 'quill-delta/dist/Op';
 import { DeltaContext } from './DeltaContext';
 import { IDelta } from './IDelta';
-import { contentLength, minContentLengthForChange, flattenDeltas, transformDeltas, hasNoEffect, cropContent, normalizeOps } from './util';
+import { contentLength, hasNoEffect, cropContent, normalizeOps, deltaLength, minContentLengthForChange, flattenDeltas, transformDeltas } from './util';
 
 
 export class ExDelta implements IDelta {
     constructor(public ops:Op[] = [], public contexts?:DeltaContext[]) {
     }
 
+    /* changes the object */
     public delete(count:number):ExDelta {
+        if(count <= 0)
+            return this
+
         this.ops.push({delete: count})
         return this
     }
 
+    /* changes the object */
     public retain(count: number, attributes?: AttributeMap):ExDelta {
+        if(count <= 0)
+            return this
+
         if(attributes)
-            this.ops.push({retain: count})
-        else
             this.ops.push({retain: count, attributes})
+        else
+            this.ops.push({retain: count})
         return this
     }
 
+    /* changes the object */
     public insert(content: string | object, attributes?: AttributeMap):ExDelta {
         if(attributes)
             this.ops.push({insert: content, attributes})
@@ -30,13 +39,25 @@ export class ExDelta implements IDelta {
         return this
     }
 
+    public compose(other:IDelta):ExDelta {
+        return new ExDelta(flattenDeltas(this, other).ops)
+    }
+
+    public transform(other:IDelta, priority = false):ExDelta {
+        return new ExDelta(transformDeltas(this, other, priority).ops)
+    }
+
     public length():number {
-        return minContentLengthForChange(this)
+        return deltaLength(this)
     }
 
     /* only for content (should have no retains or deletes)*/
     public contentLength():number {
         return contentLength(this)
+    }
+
+    public minRequiredBaseContentLength():number {
+        return minContentLengthForChange(this)
     }
 
     public hasNoEffect():boolean {

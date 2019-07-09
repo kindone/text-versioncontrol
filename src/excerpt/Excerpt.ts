@@ -1,4 +1,4 @@
-import { Source } from '../primitive/Source';
+import { Source } from '../core/Source';
 import { ExcerptTarget } from './ExcerptTarget'
 
 

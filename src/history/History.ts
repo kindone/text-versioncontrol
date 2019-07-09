@@ -1,8 +1,7 @@
-import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { IDelta } from '../primitive/IDelta'
-import { SharedString } from '../primitive/SharedString'
-import { asExDelta, expectEqual } from '../primitive/util'
+import { IDelta } from '../core/IDelta'
+import { SharedString } from '../core/SharedString'
+import { asExDelta, expectEqual } from '../core/util'
 import { Savepoint } from './Savepoint'
 import { SyncRequest } from './SyncRequest'
 import { MergeResult } from './SyncResponse'

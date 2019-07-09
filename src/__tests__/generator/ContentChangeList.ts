@@ -1,8 +1,8 @@
 import { Random, Shrinkable } from "fast-check";
 
 import * as _ from 'underscore'
-import { IDelta } from "../../primitive/IDelta";
-import { contentLength } from "../../primitive/util";
+import { IDelta } from "../../core/IDelta";
+import { contentLength } from "../../core/util";
 import { ArbitraryWithShrink } from "./util";
 import { ChangeList, changeListArbitrary } from "./ChangeList";
 import { contentArbitrary } from "./Content";

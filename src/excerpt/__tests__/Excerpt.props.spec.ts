@@ -1,7 +1,7 @@
 import * as fc from 'fast-check'
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
-import { contentLength, JSONStringify, expectEqual, isEqual } from '../../primitive/util'
+import { contentLength, JSONStringify, expectEqual, isEqual } from '../../core/util'
 import * as prand from 'pure-rand'
 import { ChangeListArbitrary, ChangeList } from '../../__tests__/generator/ChangeList';
 import { DocumentSet } from '../../document/DocumentSet';

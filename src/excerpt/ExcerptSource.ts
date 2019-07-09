@@ -1,6 +1,5 @@
-import Delta = require('quill-delta')
-import { IDelta } from '../primitive/IDelta'
-import { Source } from '../primitive/Source';
+import { IDelta } from '../core/IDelta'
+import { Source } from '../core/Source';
 
 export class ExcerptSource implements Source {
 

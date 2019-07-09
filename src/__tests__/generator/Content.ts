@@ -3,7 +3,7 @@ import fc, { Random, Shrinkable } from 'fast-check';
 import * as _ from 'underscore'
 import { ArbitraryWithShrink } from './util';
 import { InsertArbitrary } from './Insert';
-import { IDelta } from '../../primitive/IDelta';
+import { IDelta } from '../../core/IDelta';
 import { genArraySplit } from './ArraySplit';
 import { genNat } from './primitives';
 

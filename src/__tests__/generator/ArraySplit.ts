@@ -1,6 +1,6 @@
 import { Random, Shrinkable } from "fast-check";
 import { genSmallBiasedDistribution, genUniqueSequenceSorted } from "./primitives";
-import { JSONStringify } from "../../primitive/util";
+import { JSONStringify } from "../../core/util";
 import { ArbitraryWithShrink } from "./util";
 import * as _ from 'underscore'
 

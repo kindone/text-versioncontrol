@@ -2,7 +2,7 @@ import * as fc from 'fast-check'
 import * as _ from 'underscore'
 
 import { basicOpArbitrary} from './generator/op';
-import { JSONStringify } from '../primitive/util';
+import { JSONStringify } from '../core/util';
 import { opsArbitrary } from './generator/Ops';
 import { Random } from 'fast-check';
 import prand from 'pure-rand';

@@ -41,6 +41,20 @@ export function asExDelta(content: string | IDelta): IDelta {
     else return content as IDelta
 }
 
+
+export function opLength(op: Op):number {
+    if (typeof op.insert === 'string') return op.insert.length
+    else if (op.insert) return 1
+    else if (op.retain) return op.retain
+    else if (op.delete) return op.delete
+
+    throw new Error('invalid op')
+}
+
+export function deltaLength(delta:IDelta):number {
+    return _.reduce(delta.ops, (len, op) =>  len + opLength(op), 0)
+}
+
 export function contentLength(content: IDelta): number {
     return _.reduce(
         content.ops,
@@ -276,14 +290,6 @@ export function flattenDeltas(...deltas: IDelta[]):IDelta {
     return new ExDelta(normalizeOps(flattened.ops))
 }
 
-export function opLength(op: Op):number {
-    if (typeof op.insert === 'string') return op.insert.length
-    else if (op.insert) return 1
-    else if (op.retain) return op.retain
-    else if (op.delete) return op.delete
-
-    throw new Error('invalid op')
-}
 
 // export function transformDeltasByQuill(prev:IDelta, target:IDelta):IDelta
 // {

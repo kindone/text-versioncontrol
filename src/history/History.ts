@@ -1,10 +1,12 @@
 import * as _ from 'underscore'
 import { IDelta } from '../core/IDelta'
+import { asDelta } from '../core/primitive';
 import { SharedString } from '../core/SharedString'
-import { asExDelta, expectEqual } from '../core/util'
+import { expectEqual } from '../core/util'
 import { Savepoint } from './Savepoint'
 import { SyncRequest } from './SyncRequest'
 import { MergeResult } from './SyncResponse'
+
 
 export interface IHistory {
     readonly name: string
@@ -36,7 +38,7 @@ export class History implements IHistory {
     private changes: IDelta[] = []
 
     constructor(public readonly name: string, initialContent: string | IDelta = '', private readonly initialRev = 0) {
-        this.doSavepoint(initialRev, asExDelta(initialContent))
+        this.doSavepoint(initialRev, asDelta(initialContent))
     }
 
     public clone():History {

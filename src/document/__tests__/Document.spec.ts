@@ -1,8 +1,9 @@
 import { Document } from "../Document";
-import { expectEqual, contentLength } from "../../core/util";
+import { expectEqual } from "../../core/util";
 import * as fc from 'fast-check'
 import { contentArbitrary } from "../../__tests__/generator/Content";
 import { Range } from "../../core/Range";
+import { contentLength } from "../../core/primitive";
 
 describe('document', () => {
 

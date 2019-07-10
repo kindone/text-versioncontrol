@@ -1,10 +1,11 @@
 import { Random, Shrinkable } from "fast-check";
 import { deltaArbitrary } from "./Delta";
 import * as _ from 'underscore'
-import { contentLengthIncreased, JSONStringify } from "../../core/util";
+import { JSONStringify } from "../../core/util";
 import { ArbitraryWithShrink } from "./util";
 import { genSmallBiasedDistribution } from "./primitives";
 import { Delta } from "../../core/Delta";
+import { contentLengthIncreased } from "../../core/primitive";
 
 
 export interface ChangeList {

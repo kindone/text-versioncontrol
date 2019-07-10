@@ -2,11 +2,12 @@
 import jsc = require('jsverify')
 import * as _ from 'underscore'
 import { History } from '../History'
-import {  expectEqual, JSONStringify, contentLength } from '../../core/util'
+import {  expectEqual, JSONStringify } from '../../core/util'
 import { DocClient } from '../../service/DocClient'
 import { DocServer } from '../../service/DocServer'
 import { randomChanges } from '../../__tests__/random'
 import { Delta } from '../../core/Delta';
+import { contentLength } from '../../core/primitive';
 
 describe('server-client scenarios', () => {
     it('scenario 1', () => {

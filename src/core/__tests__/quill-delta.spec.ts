@@ -1,7 +1,8 @@
 import * as _ from 'underscore'
 import QDelta = require("quill-delta");
-import { expectEqual, flattenDeltas, transformDeltas, cropContent } from '../util'
+import { expectEqual } from '../util'
 import { Delta as Delta } from '../Delta';
+import { flattenDeltas, cropContent, transformDeltas } from '../primitive';
 
 describe('Quill Delta basic operations', () => {
     it('negative value ignored', () => {

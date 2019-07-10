@@ -1,5 +1,5 @@
 import Op from 'quill-delta/dist/Op'
-import { sliceOp, sliceOpWithAttributes, opLength } from './util'
+import { sliceOp, sliceOpWithAttributes, opLength } from './primitive'
 
 export class DeltaComposer {
     private idx = 0

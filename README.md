@@ -1,7 +1,7 @@
 # Text VersionControl
 ## Introduction
 
-Text-VersionControl provides version and concurrency control for text editing. Based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. For use in real-time collaborative document editing and history management for text contents.
+Text-VersionControl provides version and concurrency control for text editing. Based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. For use in real-time, distributed collaborative document editing and history management for text contents.
 
 ## Operations and Delta
 
@@ -24,29 +24,39 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
     * ```{retain: 5, attributes: {"link": "http://github.com"}}```
 * Removing attributes using retain
 	* ```{retain: 5, attributes: {"link": null}}```
-* Constructing Delta
-	* ```new Delta(ops:Op[])```
+* Constructing Delta with JSON
+	* ```new Delta(ops?:Op[])```
 		* ```new Delta([{retain:5}, {delete:2}, {insert: "Hello World!"}])```
-		* is equivalent to ```new Delta().retain(5).delete(2).insert("Hello World!")```
+* Constructing Delta with chaining operations
+	* ```new Delta().retain(5).delete(2).insert("Hello World!")```
 
 ## Manipulating Delta
 
+### Primitives
 Text-VersionControl provides utility functions to manipulate deltas
 
-* ```normalizeDeltas(...deltas:Delta[]):Delta```
-	* Returns a more compact and equivalent delta by removing redundant or effectless operations
 * ```flattenDeltas(...deltas:Delta[]):Delta```
 	* Flattens a sequence of multiple deltas into a single equivalent delta
-* ```cropContent(delta:Delta, start:number, end:number):Delta```
-	* Cuts content by the given range
 * ```applyChanges(content:Delta, changes:Delta[]):Delta```
 	* Returns altered content, applying the changes in sequence
 	* It is equivalent to flattenDeltas under the hood
 * ```invertChange(baseContent:Delta, change:Delta):Delta```
 	* Given base content, returns the inverse change that would undo the given change when applied after the change
 * ```filterChanges(baseContent:Delta, changes:Delta[], criteria:(idx:number, change:Delta):Delta[]```
-	* Filters (in) changes fulfilling criteria given a base content and changes
+	* Filters (in) changes fulfilling criteria given a base content and changes. Useful to rule out certain changes keeping rest of changes instact
 
+### Delta methods (immutable)
+* ```.normalize()```
+	* Returns a more compact and equivalent delta by removing redundant or effectless operations
+	* equivalent to ```normalizeDeltas(delta)```
+* ```.transform(other, priority = false)```
+	* equivalent to ```transformDeltas(delta, priority)```
+* ```.compose(other)```
+	* equivalent to ```flattenDeltas(delta, other)```
+* ```.apply(other)```
+	* equivalent to ```.compose(other)``` and ```flattenDeltas(delta,other)``` 
+* ```.take(start, end)```
+	* equivalent to  ```cropContent(delta, start, end)```
 
 ## SharedString
 

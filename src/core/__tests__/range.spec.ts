@@ -1,9 +1,10 @@
-import { expectEqual, normalizeDeltas } from "../util";
+import { expectEqual } from "../util";
 import { Range } from "../Range";
 import Delta = require("quill-delta");
 import * as fc from "fast-check";
 import { deltaArbitrary } from "../../__tests__/generator/Delta";
 import * as _ from 'underscore'
+import { normalizeDeltas } from "../primitive";
 
 describe('Range', () => {
     it('crop0-1', () => {

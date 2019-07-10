@@ -1,11 +1,12 @@
 import fc from "fast-check";
 import { contentArbitrary } from "../../__tests__/generator/Content";
 import { deltaArbitrary } from "../../__tests__/generator/Delta";
-import { reverseChange, expectEqual, contentLength, minContentLengthForChange, normalizeOps, JSONStringify, filterOutChangesByIndice, isEqual, filterChanges, applyChanges } from "../util";
+import { invertChange, contentLength, minContentLengthForChange, normalizeOps, filterOutChangesByIndice, filterChanges, applyChanges } from "../primitive";
 import { SharedString } from "../SharedString";
 import { IDelta } from "../IDelta";
 import { History } from "../../history/History"
 import { contentChangeListArbitrary } from "../../__tests__/generator/ContentChangeList";
+import { JSONStringify, expectEqual, isEqual } from "../util";
 
 describe('reverse function', () =>{
     it('basic', () => {
@@ -16,7 +17,7 @@ describe('reverse function', () =>{
                 change.ops = normalizeOps(change.ops)
                 if(contentLength(content) < minContentLengthForChange(change))
                     return
-                const undo = reverseChange(content, change)
+                const undo = invertChange(content, change)
                 const ss1 = SharedString.fromDelta(content)
                 ss1.applyChange(change, '_')
                 let result = ss1.toDelta()
@@ -52,7 +53,7 @@ describe('filterChanges', () =>{
         const filtered = filterOutChangesByIndice(content, changes, [0])
         expectEqual(filtered.length, 1)
 
-        const undo = reverseChange(content, changes[0])
+        const undo = invertChange(content, changes[0])
         let ss = SharedString.fromDelta(content)
         ss.applyChange(changes[0], "A")
         ss = SharedString.fromDelta(ss.toDelta())
@@ -117,7 +118,7 @@ describe('filterChanges', () =>{
                 const filtered = filterOutChangesByIndice(content, changes, [0])
                 expectEqual(filtered.length, 1)
 
-                const undo = reverseChange(content, changes[0])
+                const undo = invertChange(content, changes[0])
                 let ss = SharedString.fromDelta(content)
                 ss.applyChange(changes[0], "A")
                 ss = SharedString.fromDelta(ss.toDelta())
@@ -147,7 +148,7 @@ describe('filterChanges', () =>{
 
                     // do and undo
                     history1.append(changes.slice(0, i)) // 0~i-1 changes
-                    const undoChange = reverseChange(history1.getContent(), targetChange)
+                    const undoChange = invertChange(history1.getContent(), targetChange)
                     history1.append(changes.slice(i))
                     history1.merge({branch: "B", rev: i+1, changes:[undoChange]})
                     const result1 = history1.getContent()

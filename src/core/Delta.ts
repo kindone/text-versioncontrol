@@ -2,7 +2,7 @@ import AttributeMap from 'quill-delta/dist/AttributeMap';
 import Op from 'quill-delta/dist/Op';
 import { DeltaContext } from './DeltaContext';
 import { IDelta } from './IDelta';
-import { contentLength, hasNoEffect, cropContent, normalizeOps, deltaLength, minContentLengthForChange, flattenDeltas, transformDeltas } from './util';
+import { contentLength, hasNoEffect, cropContent, normalizeOps, deltaLength, minContentLengthForChange, flattenDeltas, transformDeltas, invertChange } from './primitive';
 
 
 export class Delta implements IDelta {
@@ -39,14 +39,6 @@ export class Delta implements IDelta {
         return this
     }
 
-    public compose(other:IDelta):Delta {
-        return new Delta(flattenDeltas(this, other).ops)
-    }
-
-    public transform(other:IDelta, priority = false):Delta {
-        return new Delta(transformDeltas(this, other, priority).ops)
-    }
-
     public length():number {
         return deltaLength(this)
     }
@@ -64,12 +56,27 @@ export class Delta implements IDelta {
         return hasNoEffect(this)
     }
 
-    public cropped(start: number, end: number):Delta {
+    public take(start: number, end: number):Delta {
         return new Delta(cropContent(this, start, end).ops, this.contexts ? this.contexts.concat() : undefined)
     }
 
-    public normalized():Delta {
+    public normalize():Delta {
         return new Delta(normalizeOps(this.ops), this.contexts ? this.contexts.concat() : undefined)
     }
 
+    public compose(other:IDelta):Delta {
+        return new Delta(flattenDeltas(this, other).ops)
+    }
+
+    public apply(other:IDelta):Delta {
+        return this.compose(other)
+    }
+
+    public transform(other:IDelta, priority = false):Delta {
+        return new Delta(transformDeltas(this, other, priority).ops)
+    }
+
+    public invert(baseContent:IDelta):IDelta {
+        return new Delta(invertChange(baseContent, this).ops, this.contexts ? this.contexts.concat() : undefined)
+    }
 }

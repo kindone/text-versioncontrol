@@ -2,7 +2,7 @@ import { Random, Shrinkable } from "fast-check";
 
 import * as _ from 'underscore'
 import { IDelta } from "../../core/IDelta";
-import { contentLength } from "../../core/util";
+import { contentLength } from "../../core/primitive";
 import { ArbitraryWithShrink } from "./util";
 import { ChangeList, changeListArbitrary } from "./ChangeList";
 import { contentArbitrary } from "./Content";

@@ -3,19 +3,11 @@ import * as _ from 'underscore'
 import { Delta } from '../core/Delta'
 import { DeltaContext } from '../core/DeltaContext';
 import { IDelta } from '../core/IDelta'
+import { contentLength, cropContent, minContentLengthForChange, filterChanges, asDelta } from '../core/primitive';
 import { Range } from '../core/Range'
 import { SharedString } from '../core/SharedString';
 import { Source } from '../core/Source'
-import {
-    asExDelta,
-    JSONStringify,
-    expectEqual,
-    contentLength,
-    cropContent,
-    isEqual,
-    filterChanges,
-    minContentLengthForChange,
-} from '../core/util'
+import { JSONStringify,  expectEqual, isEqual } from '../core/util'
 import { Excerpt, ExcerptSource, ExcerptTarget, ExcerptUtil, ExcerptSync } from '../excerpt'
 import { ExcerptMarkerWithOffset, } from '../excerpt/ExcerptUtil';
 import { History, IHistory } from '../history/History'
@@ -28,11 +20,12 @@ import { DocumentSet } from './DocumentSet';
 
 
 
+
 export class Document {
     private history: IHistory
 
     constructor(public readonly name: string, content: string | IDelta) {
-        this.history = new History(name, asExDelta(content))
+        this.history = new History(name, asDelta(content))
     }
 
     public getName():string {

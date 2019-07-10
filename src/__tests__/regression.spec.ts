@@ -2,10 +2,11 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { Range } from '../core/Range'
 import { SharedString } from '../core/SharedString'
-import { expectEqual, JSONStringify, flattenDeltas, contentLength, minContentLengthForChange } from '../core/util'
+import { expectEqual, JSONStringify } from '../core/util'
 import { randomString, randomInt } from './random'
 import { IDelta } from '../core/IDelta';
 import { Delta } from '../core/Delta';
+import { flattenDeltas } from '../core/primitive';
 
 describe('text spec regression', () => {
     it('case 1', () => {

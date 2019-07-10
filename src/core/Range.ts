@@ -1,8 +1,9 @@
 import Op from 'quill-delta/dist/Op'
 import { Delta } from './Delta'
 import { IDelta } from './IDelta'
+import { normalizeOps, contentLength } from './primitive'
 import { SharedString } from './SharedString'
-import { normalizeOps, contentLength } from './util'
+
 
 export interface RangedTransforms {
     range: Range

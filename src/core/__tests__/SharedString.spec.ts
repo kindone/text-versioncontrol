@@ -1,7 +1,8 @@
 import { SharedString } from "../SharedString";
 import { contentArbitrary } from "../../__tests__/generator/Content";
 import * as fc from "fast-check";
-import { contentLength, expectEqual, normalizeOps, JSONStringify } from "../util";
+import { contentLength, normalizeOps} from "../primitive";
+import { expectEqual, JSONStringify } from "../util";
 import { contentChangeListArbitrary } from "../../__tests__/generator/ContentChangeList";
 import { deltaArbitrary } from "../../__tests__/generator/Delta";
 

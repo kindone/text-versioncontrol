@@ -1,9 +1,10 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { SharedString } from '../SharedString'
-import { expectEqual, JSONStringify, flattenDeltas } from '../util'
+import { expectEqual, JSONStringify } from '../util'
 import { randomInt, randomSharedString, randomChanges } from '../../__tests__/random'
 import { IDelta } from '../IDelta';
+import { flattenDeltas } from '../primitive';
 
 describe('hand-made scenarios', () => {
     it('scenario 1', () => {

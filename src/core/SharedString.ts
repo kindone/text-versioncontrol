@@ -4,7 +4,7 @@ import { DeltaIterator } from './DeltaIterator'
 import { Fragment, JSONStyle } from './Fragment'
 import { FragmentIterator } from './FragmentIterator'
 import { IDelta } from './IDelta'
-import { normalizeOps, minContentLengthForChange, contentLength, JSONStringify } from './util'
+import { normalizeOps } from './primitive'
 
 export class SharedString {
     public static fromString(str: string) {
@@ -37,9 +37,6 @@ export class SharedString {
     }
 
     public applyChange(change: IDelta, branch: string, debug = false): IDelta {
-        // if(contentLength(this.toDelta()) < minContentLengthForChange(change))
-        //     throw new Error('invalid change. Too long for base content: ' + JSONStringify(this.toDelta()) + " with " + JSONStringify(change) )
-
         const fragmentIter = new FragmentIterator(branch, this.fragments)
         const deltaIter = new DeltaIterator(branch, this.fragments)
 

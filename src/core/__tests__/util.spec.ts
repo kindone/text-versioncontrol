@@ -1,8 +1,9 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { contentLength, normalizeOps, expectEqual, lastRetainsRemoved, emptyOpsRemoved } from '../util'
+import { contentLength, normalizeOps, lastRetainsRemoved, emptyOpsRemoved } from '../primitive'
 import Op from 'quill-delta/dist/Op';
 import { ExcerptUtil } from '../../excerpt';
+import { expectEqual } from '../util';
 
 describe('Normalize', () => {
     it('lastRetainRemoved', () => {

@@ -1,5 +1,6 @@
 import fc from "fast-check";
-import { expectEqual, contentLength, JSONStringify } from "../../core/util";
+import { contentLength } from "../../core/primitive";
+import { expectEqual, JSONStringify } from "../../core/util";
 import { Document } from "../Document";
 import { ChangeList, ChangeListArbitrary } from "../../__tests__/generator/ChangeList";
 

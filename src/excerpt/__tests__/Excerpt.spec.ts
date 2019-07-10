@@ -1,10 +1,11 @@
 
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
-import { contentLength, JSONStringify, expectEqual, applyChanges, minContentLengthForChange } from '../../core/util'
+import { JSONStringify, expectEqual} from '../../core/util'
 import { Delta } from '../../core/Delta';
 import { IDelta } from '../../core/IDelta';
 import Op from 'quill-delta/dist/Op';
+import { contentLength, minContentLengthForChange, applyChanges } from '../../core/primitive';
 
 describe('Excerpt', () => {
 

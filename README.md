@@ -73,7 +73,7 @@ SharedString forms the core of Text-VersionControl's OT and CRDT functionality. 
 		* Returns *transformed delta* as if the change was made in linear fashion
 		* Multiple users with their own sequence of changes independently can be applied by alternating branch. 
 
-  			```
+  			```js
   			ss.applyChange(deltasByAlice, "Alice")
   			ss.applyChange(deltasByBob, "Bob")
   			ss.applyChange(deltasByAlice2, "Alice") // second edit by Alice

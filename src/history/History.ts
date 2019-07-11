@@ -15,7 +15,8 @@ export interface IHistory {
     getContent(): IDelta
     getContentAt(rev: number): IDelta
 
-    getChange(rev: number): IDelta[]
+    getChangeAt(rev: number): IDelta
+    getChangeFor(rev: number): IDelta
     getChangesFrom(fromRev: number): IDelta[]
     getChangesFromTo(fromRev: number, toRev: number): IDelta[]
 
@@ -132,14 +133,20 @@ export class History implements IHistory {
         const savepoint = this.getNearestSavepointForRev(rev)
         const ss = SharedString.fromDelta(savepoint.content)
         for (let i = savepoint.rev; i < rev; i++) {
-            ss.applyChange(this.changes[i - this.initialRev], '_')
+            ss.applyChange(this.getChangeAt(i), '_')
         }
 
         return ss.toDelta()
     }
 
-    public getChange(rev: number): IDelta[] {
-        return this.changes.slice(rev - this.initialRev, rev + 1 - this.initialRev)
+    public getChangeAt(rev: number): IDelta {
+        if(!(0 <= rev - this.initialRev && rev - this.initialRev < this.changes.length  ))
+            throw new Error('invalid argument: ' + 'rev='+rev + ' not in [' + this.initialRev + ',' + (this.changes.length + this.initialRev) + ')')
+        return this.changes[rev - this.initialRev]
+    }
+
+    public getChangeFor(rev: number): IDelta {
+        return this.getChangeAt(rev-1)
     }
 
     public getChangesFrom(fromRev: number): IDelta[] {
@@ -148,7 +155,7 @@ export class History implements IHistory {
 
     public getChangesFromTo(fromRev: number, toRev: number): IDelta[] {
         if (toRev >= 0) return this.changes.slice(fromRev - this.initialRev, toRev + 1 - this.initialRev)
-        else return this.changes.slice(fromRev - this.initialRev)
+        else return this.getChangesFrom(fromRev)
     }
 
     private mergeAt(baseRev: number, changes: IDelta[], name?: string): MergeResult {
@@ -202,7 +209,7 @@ export class History implements IHistory {
                 )
                 j++
             }
-            ss.applyChange(this.changes[rev - this.initialRev], '_')
+            ss.applyChange(this.getChangeAt(rev), '_')
         }
     }
 

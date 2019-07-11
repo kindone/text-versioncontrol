@@ -9,6 +9,19 @@ import { randomChanges } from '../../__tests__/random'
 import { Delta } from '../../core/Delta';
 import { contentLength } from '../../core/primitive';
 
+describe('interface', () => {
+    it('basic', () => {
+        const initialContent = 'initial'
+        const history = new History('A', initialContent)
+        expectEqual(history.getContentAt(0).ops, [{insert:'initial'}])
+        expect(() => history.getChangeAt(0)).toThrow()
+        const change = new Delta().insert('hello')
+        history.append([change])
+        expectEqual(history.getChangeAt(0), change)
+        expect(() => history.getChangeAt(1)).toThrow()
+    })
+})
+
 describe('server-client scenarios', () => {
     it('scenario 1', () => {
         const server = new DocServer()

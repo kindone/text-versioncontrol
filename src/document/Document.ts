@@ -59,16 +59,12 @@ export class Document {
         return this.history.merge({ rev: baseRev, branch: '$simulate$', changes })
     }
 
-    public getChange(rev: number): IDelta[] {
-        return this.history.getChange(rev)
-    }
-
     public getChangesFrom(fromRev: number): IDelta[] {
         return this.history.getChangesFrom(fromRev)
     }
 
-    public getChangeAt(rev: number): IDelta[] {
-        return this.history.getChangesFromTo(rev, rev)
+    public getChangeAt(rev: number): IDelta {
+        return this.history.getChangeAt(rev)
     }
 
     public getChangesFromTo(fromRev: number, toRev: number): IDelta[] {
@@ -154,20 +150,6 @@ export class Document {
         return this.composeSyncs(uri, excerptSource.rev, safeCroppedÇhanges, rangesTransformed)
     }
 
-    public getSingleSyncSinceExcerpted(excerptSource: ExcerptSource): ExcerptSync[] {
-        const uri = excerptSource.uri
-
-        const initialRange = new Range(excerptSource.start, excerptSource.end)
-        const changes = this.getChangesFromTo(excerptSource.rev, excerptSource.rev) // only 1 change
-        const croppedChanges = initialRange.cropChanges(changes)
-
-        const safeCroppedÇhanges = croppedChanges.map(croppedChange => {
-            return {...croppedChanges, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops)}
-        })
-        const rangesTransformed = initialRange.mapChanges(changes)
-        return this.composeSyncs(uri, excerptSource.rev, safeCroppedÇhanges, rangesTransformed)
-    }
-
     public syncExcerpt(excerpt:Excerpt, documentSet: DocumentSet, check=true, revive=false)/*: ExcerptTarget*/ {
         const source = excerpt.source
         const target = excerpt.target
@@ -191,7 +173,7 @@ export class Document {
         const sourceBranchName = tiebreaker ? "S" : "s"
 
         const beforeContent = this.getContentAt(target.rev)
-        const pasteChange = this.getChangeAt(target.rev)[0]
+        const pasteChange = this.getChangeAt(target.rev)
         const baseContent = this.getContentAt(target.rev+1)
         if(syncs.length > 0 && contentLength(baseContent) < minContentLengthForChange(sourceChanges[0]))
             throw new Error('invalid sync change')

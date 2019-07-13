@@ -61,7 +61,7 @@ Text-VersionControl provides utility functions to manipulate deltas
 
 ## SharedString
 
-![Image of a change tree](./doc/introduction.svg)
+![Image of a change tree](./doc/introduction.png)
 
 SharedString forms the core of Text-VersionControl's OT and CRDT functionality. SharedString is a mutable object that can be *edited* by receiving changes as delta, with awareness of forking and merging.
 
@@ -81,6 +81,7 @@ SharedString forms the core of Text-VersionControl's OT and CRDT functionality. 
   			ss.applyChange(deltasByCharlie, "Charlie")
   			```
   		* As long as you keep the order of changes within each branch, the result content will be the same no matter how you order the changes of different branches. This satisfies CRDT characteristics.
+  		* `branch` also takes a role as a tiebreaker for concurrent inserts.
   * Wildcard branch lets you simulate a *checkpoint*, where the change is applied as if it's aware of all other changes of different branches
 	  * `ss.applyChange(deltasAsSeen, "*")`
 		  * The star wildcard branch sees the previous changes of all branches and can be seen by all branches later on
@@ -97,22 +98,22 @@ History utilizes SharedString to provide higher level functionalities. It keeps 
 
 * Initialization
 	* `new History(name:string, initialContent: Delta | string)`
+	* `name` here exists for tiebreaking concurrent inserts during merge or rebase.  
 * Applying changes
 	* By appending at current revision:
 		* `history.append(deltas)`
-	* By merging forked changes departed from base revision:
+	* By merging forked sequence of changes diverged from a base revision:
 		* `history.merge({rev: baseRev, changes: deltasByAlice, branch: "Alice"})`
-		![Image of merging](./doc/merge.svg)
-	* By rebasing forked changes departed from base revision. 
+		![Image of merging](./doc/merge.png)
+		* `branchName` works as the insert tiebreaker by comparing with History's `name` value
+	* By rebasing forked sequence of changes diverged from a base revision. 
 		* `history.rebase({rev: baseRev, changes: deltasByAlice, branch: "Alice"})`
-		![Image of rebasing](./doc/rebase.svg)
-		* Unlike merging, rebasing forces new changes to be first applied on the base revision, followed by existing changes in history since the base revision transformed. Beware rebasing alters changes already recorded in history.
+		![Image of rebasing](./doc/rebase.png)
+		* Unlike merging, rebasing forces new set of changes to be first applied on the base revision, followed by existing changes in the history since the base revision, transformed. Beware rebasing replaces changes already recorded in the history.
 * Content, changes, and revisions
 	
-	![Image of revision relationship](./doc/change.svg)
-	* By default `rev 0` contains the initial content
-	* Change at `rev n` means change right after content `rev n`
-	* Content at `rev 1` is made by applying change `rev 0` on content at `rev 0`
+	![Image of revision relationship](./doc/change.png)
+	
 	* Getting the current revision
 		* `history.getCurrentRev()`
 	* Getting the content	
@@ -124,5 +125,7 @@ History utilizes SharedString to provide higher level functionalities. It keeps 
 		* `history.getChangesFromTo(revFrom, revTo)`
 
 ## Document
-### TODO
+
 Keeps history and provides more complex handling of document-level operations
+
+### TODO

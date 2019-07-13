@@ -1,10 +1,11 @@
 digraph introduction {
+  node [shape=box]
   //node [fontname=Arial];
-  initial [label="Initial 'Hi!'"]
+  initial [label="Initial: 'Hi!'"]
   alice_rev0 [label=<Alice deletes 'i': H<font color='red'><s>i</s></font>!>]
   alice_rev1 [label=<Alice inserts 'ello': 'H<font color='green'>ello</font>!'>]
   bob_rev0 [label=<Bob inserts ', pretty': 'Hi<font color='green'>, pretty</font>!'>]
-  charlie_rev0 [label=<Charlie inserts ' world': 'Hi<font color='green'> world</font>!'>]
+  charlie_rev0 [label=<Charlie inserts ' world': 'Hi <font color='green'>world</font>!'>]
   merged1 [label=<Merged: 'H<font color='red'><s>i</s></font><font color='green'>ello, pretty</font>!'>]
   merged2 [label=<Merged: 'H<font color='red'><s>i</s></font><font color='green'>ello, pretty world</font>!'>]
 

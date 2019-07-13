@@ -6,7 +6,7 @@ digraph merge {
     b_client1 [label="client rev 1"]
     b_client2 [label="client rev 2"]
 
-    b_rev0 -> b_rev1 -> b_rev2
+    b_rev0 -> b_rev1 -> b_rev2 [penwidth=4]
     b_rev0 -> b_client1 -> b_client2
   }
 
@@ -20,7 +20,7 @@ digraph merge {
     rev4 [label="rev 4 (original rev 2 transformed)"]
 
     rev0 -> rev1 -> rev2
-    rev0 -> client1 -> client2 -> rev3 -> rev4
+    rev0 -> client1 -> client2 -> rev3 -> rev4 [penwidth=4]
     rev1 -> rev3 [style="dotted", color=red]
     rev2 -> rev4 [style="dotted", color=red]
   }

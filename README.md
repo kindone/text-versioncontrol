@@ -1,7 +1,8 @@
 # Text-VersionControl
 ## Introduction
 
-Text-VersionControl provides version and concurrency control for text editing. Based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. For use in real-time, distributed collaborative document editing and history management for text contents.
+Text-VersionControl provides version and concurrency control for text editing. Based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. It's for use in real-time, distributed collaborative document editing and history management for text contents.
+
 
 ## Operations and Delta
 

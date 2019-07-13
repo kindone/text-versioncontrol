@@ -1,11 +1,12 @@
 digraph introduction {
-  initial [label="initial 'Hi!'"]
-  alice_rev0 [label="Alice deletes 'i': 'H!'"]
-  alice_rev1 [label="Alice inserts 'ello': 'Hello!'"]
-  bob_rev0 [label="Bob inserts ', pretty ': 'Hi, pretty!'"]
-  charlie_rev0 [label="Charlie inserts ' world': 'Hi world!'"]
-  merged1 [label="merged: 'Hello, pretty!'"]
-  merged2 [label="merged: 'Hello, pretty world!'"]
+  //node [fontname=Arial];
+  initial [label="Initial 'Hi!'"]
+  alice_rev0 [label=<Alice deletes 'i': H<font color='red'><s>i</s></font>!>]
+  alice_rev1 [label=<Alice inserts 'ello': 'H<font color='green'>ello</font>!'>]
+  bob_rev0 [label=<Bob inserts ', pretty': 'Hi<font color='green'>, pretty</font>!'>]
+  charlie_rev0 [label=<Charlie inserts ' world': 'Hi<font color='green'> world</font>!'>]
+  merged1 [label=<Merged: 'H<font color='red'><s>i</s></font><font color='green'>ello, pretty</font>!'>]
+  merged2 [label=<Merged: 'H<font color='red'><s>i</s></font><font color='green'>ello, pretty world</font>!'>]
 
   initial -> alice_rev0 -> alice_rev1 -> merged1;
   initial -> bob_rev0 -> merged1;

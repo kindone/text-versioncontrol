@@ -1,4 +1,4 @@
-# Text VersionControl
+# Text-VersionControl
 ## Introduction
 
 Text-VersionControl provides version and concurrency control for text editing. Based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. For use in real-time, distributed collaborative document editing and history management for text contents.
@@ -60,7 +60,7 @@ Text-VersionControl provides utility functions to manipulate deltas
 
 ## SharedString
 
-![Image of a change tree](./doc/introduction.jpg)
+![Image of a change tree](./doc/introduction.svg)
 
 SharedString forms the core of Text-VersionControl's OT and CRDT functionality. SharedString is a mutable object that can be *edited* by receiving changes as delta, with awareness of forking and merging.
 
@@ -110,6 +110,7 @@ History utilizes SharedString to provide higher level functionalities. It keeps 
 	
 	![Image of revision relationship](./doc/change.jpg)
 	* By default ```rev 0``` contains the initial content
+	* Change at ```rev n``` means change right after content ```rev n```
 	* Content at ```rev 1``` is made by applying change ```rev 0``` on content at ```rev 0``` 
 	* Getting the current revision
 		* ```history.getCurrentRev()```

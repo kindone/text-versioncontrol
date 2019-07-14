@@ -37,27 +37,27 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
 	{retain: 5}
 	{delete: 2}
 	{insert: "Hello World!"}
-	[{retain:5}, {delete:2}, {insert: "Hello World!"}]
 	```
 	
-* Embedded objects can hold a map of string->string, 
+* Embedded objects can hold a map of string->string.
 
 	```js
-	{insert: {"img":"file:///img.gif"}}
+	{insert: {"img": "file:///img.gif"}}
 	```
 	
-* Content with attributes using insert
+* Content with attributes
 
   	```js
   	{insert: "Hello", attributes: {"link": "http://github.com"}}
   	```
-* Adding attributes using retain
+  	
+* Adding attributes
     
 	```js
 	{retain: 5, attributes: {"link": "http://github.com"}}
 	```
 	
-* Removing attributes using retain
+* Removing attributes
 
 	```js
 	{retain: 5, attributes: {"link": null}}
@@ -65,33 +65,62 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
 
 
 ### Constructing Delta
-`new Delta(ops?:Op[])`
+
+
+```js
+new Delta(ops?:Op[])
+```
 
 * Initialize with JSON
-	* `new Delta([{retain:5}, {delete:2}, {insert: "Hello World!"}])`
+
+	```js
+	new Delta([{retain: 5}, {delete: 2}, {insert: "Hello World!"}])
+	```
 * Construct by chaining
-	* `new Delta().retain(5).delete(2).insert("Hello World!")`
-	* Available methods
-		* `insert(content: string | object, attributes?):Delta`
-		* `retain(count: number, attributes?):Delta`
-		* `delete(count: number):Delta`
+	
+	```js
+	new Delta().retain(5).delete(2).insert("Hello World!")
+	```
+	* Available method variants
+
+	```js
+	delta.insert("hello") // simple text content
+	delta.insert("world", {"color": "red"}) // text with attributes
+	delta.insert({"img": "./ball.gif"})	// embedded content
+	delta.insert({"video": "./ball.gif"}, {"w": "300", "h": "600"})	// embedded content with attributes
+	delta.retain(5)
+	delta.retain(3, {"bold": "true"}) // adding or modifying an attribute
+	delta.retain(3, {"bold": null}) // removing an attribute
+	delta.delete(2)
+	```
 
 
 ### Manipulating Delta
-* `.normalize()`
+
+```js
+let delta = new Delta().insert("hello").insert(" world").retain(2).retain(3)
+// normalize 
+delta = delta.normalize() // == new Delta().insert("hello world").retain(5)
+// slice
+delta.take(1,2) // == new Delta().insert("e")
+// apply or compose
+delta.apply(new Delta().retain(1).delete(4).insert("i")) // == new Delta().insert("hi world")
+```
+
+
+* `normalize():Delta`
 	* Returns a more compact and equivalent delta by removing redundant or effectless operations
 	* Equivalent to `normalizeDeltas(delta)`
 
-* `.take(start, end)`
+* `take(start:number, end:number):Delta`
 	* Return new delta slicing the original delta by the given range
-	* e.g. `new Delta().insert('Hello').take(1,2)` equals `new Delta().insert('e')`
 	* equivalent to `cropContent(delta, start, end)`
 	
-* `.apply(other:Delta):Delta` or `.compose(other:Delta):Delta`
+* `apply(other:Delta):Delta` or `.compose(other:Delta):Delta`
 	* This methods combines two deltas into a single flattened delta.
 	* Equivalent to `flattenDeltas(delta, other)`
 
-* `.transform(other:Delta, priority = false)`
+* `transform(other:Delta, priority = false)`
 	* Returns transformed `other` as if this delta has preceded it
 	* `priority` is used for insert tiebreaking
 	* Equivalent to `transformDeltas(delta, other, priority)`

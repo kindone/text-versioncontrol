@@ -262,6 +262,15 @@ new History(name:string, initialContent: Delta | string)
 	```
 	
 	![Image of merging](./doc/merge.png)
+	* **Returns**: `MergeResult`
+
+		```js
+		{ rev: number, // latest revision after applying merge
+		 content: Delta, // result content
+		 reqChanges: Delta[], // request changes (passed changes transformed)
+		 resChanges: Delta[] } // response changes (base changes)
+		```
+		
 	* `branchName` works as the insert tiebreaker by comparing with History's `name` value
 * By rebasing forked sequence of changes diverged from a base revision. 
 	
@@ -270,6 +279,14 @@ new History(name:string, initialContent: Delta | string)
 	```
 	
 	![Image of rebasing](./doc/rebase.png)
+	* **Returns**: `MergeResult`
+
+		```js
+		{ rev: number, // latest revision after applying rebase
+		 content: Delta, // result content
+		 reqChanges: Delta[], // request changes (passed changes)
+		 resChanges: Delta[] } // response changes (base changes transfromed)
+		```
 	* Unlike merging, rebasing forces new set of changes to be first applied on the base revision, followed by existing changes (transformed) in the history since the base revision. Beware rebasing replaces changes already recorded in the history.
 
 ### Revisions, snapshots, and changes

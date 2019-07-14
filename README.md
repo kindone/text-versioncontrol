@@ -118,7 +118,7 @@ new Delta(ops?:Op[])
 	normalize():Delta
 	```
 
-	* **Returns**: a more compact and equivalent delta by removing redundant or effectless operations
+	* **Returns**: a more compact and equivalent delta by removing redundant or effect-less operations
 	* Equivalent to `normalizeDeltas(delta)`
 
 * take
@@ -149,7 +149,7 @@ new Delta(ops?:Op[])
 	```
 	
 	* **Returns** transformed `other` as if this delta has preceded it
-	* `priority` is used for insert tiebreaking
+	* `priority` is used for insert tie-breaking
 	* Equivalent to `transformDeltas(delta, other, priority)`
 
 * invert
@@ -245,7 +245,7 @@ History utilizes SharedString to provide higher level functionalities such as sn
 new History(name:string, initialContent: Delta | string)
 ```
 	
-* `name` here exists for tiebreaking concurrent inserts during merge or rebase.  
+* `name` here exists for tie-breaking concurrent inserts during merge or rebase.  
 	
 ### Applying changes
 
@@ -285,7 +285,7 @@ new History(name:string, initialContent: Delta | string)
 		{ rev: number, // latest revision after applying rebase
 		 content: Delta, // result content
 		 reqChanges: Delta[], // request changes (passed changes)
-		 resChanges: Delta[] } // response changes (base changes transfromed)
+		 resChanges: Delta[] } // response changes (base changes transformed)
 		```
 	* Unlike merging, rebasing forces new set of changes to be first applied on the base revision, followed by existing changes (transformed) in the history since the base revision. Beware rebasing replaces changes already recorded in the history.
 
@@ -318,7 +318,7 @@ new History(name:string, initialContent: Delta | string)
 
 ## Miscellaneous
 
-##### Notes on similiarity and difference to Quill's Delta
+##### Notes on similarity and difference to Quill's Delta
 
 Text-VersionControl borrows Quill Delta's representation and many of method names but does not behave the same in a few cases. For example, many of the methods of Quill's Delta reorder adjacent delete and insert (which in most cases does not change the effect), but Text-VersionControl's equivalent methods preserve it. See the following examples:
 

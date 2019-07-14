@@ -1,6 +1,9 @@
 # Text-VersionControl
 ## Introduction
 
+
+![Image of a change tree](./doc/introduction.png)
+
 Text-VersionControl provides version and concurrency control for text editing based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. It's for use in real-time, distributed collaborative document editing and history management for text contents.
 
 
@@ -172,8 +175,6 @@ Text-VersionControl provides utility functions to manipulate deltas
 
 ## SharedString
 
-![Image of a change tree](./doc/introduction.png)
-
 SharedString forms the core of Text-VersionControl's OT and CRDT functionality. SharedString is a mutable object that can be *edited* by receiving changes as delta. It can consolidate concurrent, distributed edits by multiple users.
 
 ### Initialization
@@ -194,10 +195,10 @@ applyChange(change:Delta, branch:string):Delta
 * Multiple users with their own sequence of changes independently can be applied by alternating branch. 
 
 	```js
-	ss.applyChange(changesByAlice, "Alice")
-	ss.applyChange(changesByBob, "Bob") // Bob is unaware of Alice's changes
-	ss.applyChange(changesByAlice2, "Alice") // second edit by Alice, while unaware of Bob's changes
-	ss.applyChange(changesByCharlie, "Charlie") // Charlie is unaware of Alice's or Bob's changes
+	ss.applyChange(changeByAlice, "Alice")
+	ss.applyChange(changeByBob, "Bob") // Bob is unaware of Alice's change
+	ss.applyChange(changeByAlice2, "Alice") // second edit by Alice, while unaware of Bob's change
+	ss.applyChange(changeByCharlie, "Charlie") // Charlie is unaware of Alice's or Bob's changes
 	```
 		
 	* As long as you keep the order of changes within each branch, the result content will be the same no matter how you order the changes of different branches. This satisfies CRDT characteristics.
@@ -207,15 +208,15 @@ applyChange(change:Delta, branch:string):Delta
   * The star wildcard branch sees the previous changes of all branches and can be seen by all branches later on
   
 	  ```js
-	  ss.applyChange(changesByStar, "*")
-	  ss.applyChange(changesByCharlie, "Charlie") // Charlie is aware of changes by '*'
+	  ss.applyChange(changeByStar, "*")
+	  ss.applyChange(changeByCharlie, "Charlie") // Charlie is aware of change by '*'
 	  ```
   
   * The underscore wildcard branch sees the previous changes of all branches but cannot be seen by other branches later on
   
 	  ```js
-	  ss.applyChange(changesByUnderScore, "_")
-	  ss.applyChange(changesByCharlie, "Charlie") // Charlie is unaware of changes by '_'
+	  ss.applyChange(changeByUnderScore, "_")
+	  ss.applyChange(changeByCharlie, "Charlie") // Charlie is unaware of change by '_'
 	  ```
   
 	 	  

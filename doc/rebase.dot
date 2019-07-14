@@ -5,9 +5,12 @@ digraph merge {
     b_rev2 [label="rev 2"]
     b_client1 [label="client rev 1"]
     b_client2 [label="client rev 2"]
+    inv1 [style=invisible]
+    inv2 [style=invisible]
 
     b_rev0 -> b_rev1 -> b_rev2 [penwidth=4]
     b_rev0 -> b_client1 -> b_client2
+    b_rev2 -> inv1 -> inv2 [style=invisible, arrowhead=none]
   }
 
   subgraph cluster_1 {
@@ -21,8 +24,12 @@ digraph merge {
 
     rev0 -> rev1 -> rev2
     rev0 -> client1 -> client2 -> rev3 -> rev4 [penwidth=4]
-    rev1 -> rev3 [style="dotted", color=red]
-    rev2 -> rev4 [style="dotted", color=red]
+    rev1 -> rev3 [style="dashed", color=red]
+    rev2 -> rev4 [style="dashed", color=red]
+
+    {rank = same; rev1; client1}
+    {rank = same; rev2; client2}
+
   }
 
 }

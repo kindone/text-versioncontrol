@@ -4,6 +4,21 @@
 Text-VersionControl provides version and concurrency control for text editing based on [OT(Operatioal Transformation)](https://en.wikipedia.org/wiki/Operational_transformation) and [CRDT (Conflict-free Replicated Data Type)](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) ideas. It's for use in real-time, distributed collaborative document editing and history management for text contents.
 
 
+## Getting Started
+Install by `npm install text-versioncontrol --save`
+
+## Table of Contents
+
+* [Operations and Delta](#operations-and-delta)
+	* [Operations](#operations)
+	* [Constructing Delta](#constructing-delta)
+ 	* [Manipulating Delta](#manipulating-delta)
+ 	* [Primitives](#primitives)
+* [SharedString](#sharedstring)
+* [History](#history)
+* [Miscellaneous](#miscellaneous)
+
+
 ## Operations and Delta
 
 Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representation in JSON](https://quilljs.com/docs/delta/). It supports Operational Transformation's basic representations(retain, delete, and insert). The delta format also provides attributes and embedded objects for expressing complex content besides simple text. 
@@ -11,22 +26,42 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
 ### Operations
 
 * Content can be expressed using insert operations
-		* `{insert: "Hello"}, {insert: "World", attributes: {"color": "red"}}, {insert: {"video": "http://youtube.com/sOdLN"}}`
-* Operations
-	* `{retain: 5}`
-	* `{delete: 2}`
-	* `{insert: "Hello World!"}`
-	* `[{retain:5}, {delete:2}, {insert: "Hello World!"}]`
-* Embedded objects can hold a map of string->string, 
-	* `{insert: {"img":"file:///img.gif"}}`
-* Content with attributes using insert
-  	* `{insert: "Hello", attributes: {"link": "http://github.com"}}`
-* Adding attributes using retain
-    * `{retain: 5, attributes: {"link": "http://github.com"}}`
-* Removing attributes using retain
-	* `{retain: 5, attributes: {"link": null}}`
 
-## Delta
+	```js
+	{insert: "Hello"}, {insert: "World", attributes: {"color": "red"}}, {insert: {"video": "http://youtube.com/sOdLN"}}
+	```
+		
+* Operations
+
+	```js
+	{retain: 5}
+	{delete: 2}
+	{insert: "Hello World!"}
+	[{retain:5}, {delete:2}, {insert: "Hello World!"}]
+	```
+	
+* Embedded objects can hold a map of string->string, 
+
+	```js
+	{insert: {"img":"file:///img.gif"}}
+	```
+	
+* Content with attributes using insert
+
+  	```js
+  	{insert: "Hello", attributes: {"link": "http://github.com"}}
+  	```
+* Adding attributes using retain
+    
+	```js
+	{retain: 5, attributes: {"link": "http://github.com"}}
+	```
+	
+* Removing attributes using retain
+
+	```js
+	{retain: 5, attributes: {"link": null}}
+	```
 
 
 ### Constructing Delta
@@ -34,15 +69,15 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
 
 * Initialize with JSON
 	* `new Delta([{retain:5}, {delete:2}, {insert: "Hello World!"}])`
-* Construct by Chaining
+* Construct by chaining
 	* `new Delta().retain(5).delete(2).insert("Hello World!")`
 	* Available methods
-		* `.insert(content: string | object, attributes?)`
-		* `.retain(count: number, attributes?)`
-		* `.delete(count: number)`
+		* `insert(content: string | object, attributes?):Delta`
+		* `retain(count: number, attributes?):Delta`
+		* `delete(count: number):Delta`
 
 
-### Delta methods (immutable)
+### Manipulating Delta
 * `.normalize()`
 	* Returns a more compact and equivalent delta by removing redundant or effectless operations
 	* Equivalent to `normalizeDeltas(delta)`
@@ -145,11 +180,7 @@ History utilizes SharedString to provide higher level functionalities such as sn
 		* `history.getChangesFrom(rev)` 
 		* `history.getChangesFromTo(revFrom, revTo)`
 
-## Document
 
-Keeps history and provides more complex handling of document-level operations
-
-### TODO
 
 ## Miscellaneous
 

@@ -4,7 +4,14 @@ import { expectEqual } from '../util'
 import { Delta as Delta } from '../Delta';
 import { flattenDeltas, cropContent, transformDeltas } from '../primitive';
 
+describe('Delta methods', () => {
+    it('take', () => {
+        expectEqual(new Delta().insert('hello').take(1,2), new Delta().insert('e'))
+    })
+})
+
 describe('Quill Delta basic operations', () => {
+
     it('negative value ignored', () => {
         expectEqual(new QDelta().delete(-1), new QDelta())
         expectEqual(new QDelta().retain(-1), new QDelta())
@@ -277,46 +284,46 @@ describe('Quill Delta basic operations', () => {
 
 
     it('transform on empty delta', () => {
-        const delta = new QDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
-        expectEqual(transformDeltas(new QDelta(), delta, true), delta)
-        expectEqual(transformDeltas(new QDelta(), delta, true).ops, [{"insert":"71"},{"delete":1},{"insert":"nw"}])
+        const qDelta = new QDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
+        expectEqual(transformDeltas(new QDelta(), qDelta, true), qDelta)
+        expectEqual(transformDeltas(new QDelta(), qDelta, true).ops, [{"insert":"71"},{"delete":1},{"insert":"nw"}])
         // note that delta.transform will reorder delete and insert
-        expectEqual(new QDelta().transform(delta, true).ops, [{"insert":"71nw"},{"delete":1}])
+        expectEqual(new QDelta().transform(qDelta, true).ops, [{"insert":"71nw"},{"delete":1}])
 
-        const exDelta = new Delta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
-        expectEqual(transformDeltas(new Delta(), exDelta, true), exDelta)
-        expectEqual(new Delta().transform(exDelta, true), exDelta)
+        const delta = new Delta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
+        expectEqual(transformDeltas(new Delta(), delta, true), delta)
+        expectEqual(new Delta().transform(delta, true), delta)
     })
 
 
     it('immutability of transformation', () => {
-        const delta = new QDelta()
-        delta.transform(new QDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }]))
-        expectEqual(delta, new QDelta())
+        const qDelta = new QDelta()
+        qDelta.transform(new QDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }]))
+        expectEqual(qDelta, new QDelta())
 
-        const exDelta = new Delta()
-        exDelta.transform(new Delta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }]))
-        expectEqual(exDelta, new Delta())
+        const delta = new Delta()
+        delta.transform(new Delta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }]))
+        expectEqual(delta, new Delta())
     })
 
     it('transformation of delta', () => {
-        const delta = new QDelta()
+        const qDelta = new QDelta()
             .delete(4)
             .retain(5)
             .delete(6)
         const target = new QDelta().retain(3).insert('first')
-        expectEqual(delta.transform(target, true).ops, [{ insert: 'first' }])
-        expectEqual(transformDeltas(delta, target, true).ops, [{ insert: 'first' }])
+        expectEqual(qDelta.transform(target, true).ops, [{ insert: 'first' }])
+        expectEqual(transformDeltas(qDelta, target, true).ops, [{ insert: 'first' }])
     })
 
     it('transformation of delta2', () => {
-        const delta = new QDelta()
+        const qDelta = new QDelta()
             .delete(4)
             .retain(5)
             .delete(6)
         const target = new QDelta().retain(3).insert('first')
-        expectEqual(delta.transform(target, false).ops, [{ insert: 'first' }])
-        expectEqual(transformDeltas(delta, target, false).ops, [{ insert: 'first' }])
+        expectEqual(qDelta.transform(target, false).ops, [{ insert: 'first' }])
+        expectEqual(transformDeltas(qDelta, target, false).ops, [{ insert: 'first' }])
     })
 
     it('transformation of delta3', () => {

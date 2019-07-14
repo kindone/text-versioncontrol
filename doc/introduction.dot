@@ -1,4 +1,5 @@
 digraph introduction {
+  graph [/*label="Orthogonal edges",*/ splines=ortho, nodesep=0.8]
   node [shape=box]
   //node [fontname=Arial];
   initial [label="Initial: 'Hi!'"]

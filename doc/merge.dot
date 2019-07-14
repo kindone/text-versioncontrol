@@ -1,5 +1,5 @@
 digraph merge {
-
+  graph [label="Orthogonal edges", splines=ortho, nodesep=0.8]
   subgraph cluster_0 {
     b_rev0 [label="rev 0"]
     b_rev1 [label="rev 1"]

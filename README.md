@@ -82,7 +82,7 @@ Text-VersionControl provides utility functions to manipulate deltas
 
 ## SharedString
 
-![Image of a change tree](./doc/introduction.svg)
+![Image of a change tree](./doc/introduction.png)
 
 SharedString forms the core of Text-VersionControl's OT and CRDT functionality. SharedString is a mutable object that can be *edited* by receiving changes as delta, with awareness of forking and merging.
 
@@ -115,7 +115,7 @@ SharedString forms the core of Text-VersionControl's OT and CRDT functionality. 
 
 
 ## History
-History utilizes SharedString to provide higher level functionalities. It keeps the content and changes as Delta. 
+History utilizes SharedString to provide higher level functionalities such as snapshot access, append, merge, or rebase. It keeps the content and changes as Delta. 
 
 * Initialization
 	* `new History(name:string, initialContent: Delta | string)`
@@ -133,13 +133,13 @@ History utilizes SharedString to provide higher level functionalities. It keeps 
 		* Unlike merging, rebasing forces new set of changes to be first applied on the base revision, followed by existing changes in the history since the base revision, transformed. Beware rebasing replaces changes already recorded in the history.
 * Content, changes, and revisions
 	
-	![Image of revision relationship](./doc/change.svg)
+	![Image of revision relationship](./doc/change.png)
 	
 	* Getting the current revision
 		* `history.getCurrentRev()`
-	* Getting the content	
+	* Getting the content 
 		* `history.getContent() // content at current revision`
-		* `history.getContentAt(rev)`
+		* `history.getContentAt(rev) // snapshot content at rev`
 	* Getting the changes
 		* `history.getChangeAt(rev) // change made on content at rev`
 		* `history.getChangesFrom(rev)` 

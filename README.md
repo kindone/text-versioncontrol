@@ -142,7 +142,7 @@ new Delta(ops?:Op[])
 * transform
 
 	```js
-	transform(other:Delta, priority = false)
+	transform(other:Delta, priority = false):Delta
 	```
 	
 	* **Returns** transformed `other` as if this delta has preceded it
@@ -156,6 +156,7 @@ new Delta(ops?:Op[])
 	```
 	
 	* **Returns**: the inversion of a change when applied on `baseContent`. 
+ 	* In other words, it returns `D'` where `baseContent.apply(D).apply(D') == baseContent` holds for content `baseContent` and change `D`.
 	* Useful for generating an undo change.
 	* `baseContent` is required for correctly inverting addition/removal of attributes
 	* equivalent to `invertChange(baseConent, delta)`
@@ -166,20 +167,14 @@ Text-VersionControl provides utility functions to manipulate deltas
 
 * `flattenDeltas(...deltas:Delta[]):Delta`
 	* Flattens a sequence of multiple deltas into a single equivalent delta
-* `applyChanges(content:Delta, changes:Delta[]):Delta`
-	* Returns altered content, applying the changes in sequence
-	* It calls flattenDeltas under the hood
-* `invertChange(baseContent:Delta, change:Delta):Delta`
-	* Given a base content, returns the inverse change that would undo the given change when applied
-	* In other words, it returns the `D'` where `baseContent.apply(D).apply(D') == baseContent` holds for content `baseContent` and change `D`.
 * `filterChanges(baseContent:Delta, changes:Delta[], criteria:(idx:number, change:Delta):Delta[]`
-	* Filters changes that are fulfilling criteria given a base content and sequence of changes. Useful to rule out certain changes keeping rest of changes intact
+	* Filters changes that are fulfilling criteria given a base content and sequence of changes. Useful to rule out certain changes while keeping (the effect of) rest of changes intact
 
 ## SharedString
 
 ![Image of a change tree](./doc/introduction.png)
 
-SharedString forms the core of Text-VersionControl's OT and CRDT functionality. SharedString is a mutable object that can be *edited* by receiving changes as delta, with awareness of forking and merging.
+SharedString forms the core of Text-VersionControl's OT and CRDT functionality. SharedString is a mutable object that can be *edited* by receiving changes as delta. It can consolidate concurrent, distributed edits by multiple users.
 
 ### Initialization
 	
@@ -194,32 +189,35 @@ ss = SharedString.fromString("Hello World")
 applyChange(change:Delta, branch:string):Delta
 ```
 	
-* Edits the content by applying change. It mutates SharedString.
+* Edits the content by applying change. This mutates SharedString.
 * **Returns** *transformed change* as if the change was made in linear fashion
 * Multiple users with their own sequence of changes independently can be applied by alternating branch. 
 
 	```js
-	ss.applyChange(deltasByAlice, "Alice")
-	ss.applyChange(deltasByBob, "Bob")
-	ss.applyChange(deltasByAlice2, "Alice") // second edit by Alice
-	ss.applyChange(deltasByCharlie, "Charlie")
+	ss.applyChange(changesByAlice, "Alice")
+	ss.applyChange(changesByBob, "Bob") // Bob is unaware of Alice's changes
+	ss.applyChange(changesByAlice2, "Alice") // second edit by Alice, while unaware of Bob's changes
+	ss.applyChange(changesByCharlie, "Charlie") // Charlie is unaware of Alice's or Bob's changes
 	```
 		
 	* As long as you keep the order of changes within each branch, the result content will be the same no matter how you order the changes of different branches. This satisfies CRDT characteristics.
 	* `branch` also takes a role as a tiebreaker for concurrent inserts.
-* Wildcard branch lets you simulate a *checkpoint*, where the change is applied as if it's aware of all other changes of different branches
-
-  ```js
-  ss.applyChange(deltasAsSeen, "*")
-  ```
+* Wildcard branch lets you simulate a *checkpoint*, where the change is applied as if it's aware of all other changes from different branches
+ 
+  * The star wildcard branch sees the previous changes of all branches and can be seen by all branches later on
   
-	  * The star wildcard branch sees the previous changes of all branches and can be seen by all branches later on
+	  ```js
+	  ss.applyChange(changesByStar, "*")
+	  ss.applyChange(changesByCharlie, "Charlie") // Charlie is aware of changes by '*'
+	  ```
   
-  ```js
-  ss.applyChange(deltasAsSeen, "_")
-  ```
+  * The underscore wildcard branch sees the previous changes of all branches but cannot be seen by other branches later on
   
- 	  * The underscore wildcard branch sees the previous changes of all branches but cannot be seen by other branches later on
+	  ```js
+	  ss.applyChange(changesByUnderScore, "_")
+	  ss.applyChange(changesByCharlie, "Charlie") // Charlie is unaware of changes by '_'
+	  ```
+  
 	 	  
 ### Rendering current content
 	
@@ -271,9 +269,9 @@ new History(name:string, initialContent: Delta | string)
 	```
 	
 	![Image of rebasing](./doc/rebase.png)
-	* Unlike merging, rebasing forces new set of changes to be first applied on the base revision, followed by existing changes in the history since the base revision, transformed. Beware rebasing replaces changes already recorded in the history.
+	* Unlike merging, rebasing forces new set of changes to be first applied on the base revision, followed by existing changes (transformed) in the history since the base revision. Beware rebasing replaces changes already recorded in the history.
 
-### Content, changes, and revisions
+### Revisions, snapshots, and changes
 	
 ![Image of revision relationship](./doc/change.png)
 	

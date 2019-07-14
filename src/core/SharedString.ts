@@ -148,13 +148,17 @@ export class SharedString {
         return {ops}
     }
 
-    public toDelta(): IDelta {
+    public toDelta(branch?: string): IDelta {
         const ops = _.reduce(
             this.fragments,
             (result: Op[], fragment) => {
                 const op = fragment.toOp()
-                if (!fragment.isDeleted() && op.insert !== '') return result.concat(fragment.toOp())
-                else return result
+                if (typeof branch === 'undefined' && (!fragment.isDeleted() && op.insert !== ''))
+                    return result.concat(fragment.toOp())
+                else if(typeof branch === 'string' && (fragment.isVisibleTo(branch) && op.insert !== ''))
+                    return result.concat(fragment.toOp())
+                else
+                    return result
             },
             [],
         )

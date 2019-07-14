@@ -41,6 +41,29 @@ describe('SharedString', () => {
         }))
     })
 
+    it('toDelta branch', () => {
+        const contentArb = contentArbitrary()
+
+        // toDelta and original content
+        fc.assert(fc.property(contentArb, (content) => {
+            const ss = SharedString.fromDelta(content)
+            expectEqual(normalizeOps(content.ops), normalizeOps(ss.toDelta("any").ops))
+        }), {numRuns:1000})
+
+        const contentChangeArb = contentChangeListArbitrary()
+
+        // sharedstring with changes applied should emit the correct delta
+        fc.assert(fc.property(contentChangeArb, (contentAndChangeList) => {
+            const content = contentAndChangeList.content
+            const changes = contentAndChangeList.changeList.deltas
+            const ss = SharedString.fromDelta(content)
+            for(const change of changes)
+                ss.applyChange(change, "x")
+            expectEqual(normalizeOps(SharedString.fromDelta(ss.toDelta("x")).toDelta("x").ops), normalizeOps(ss.toDelta("x").ops))
+            expectEqual(ss.toDelta("y").ops, normalizeOps(content.ops)) // should be invisible to other branch
+        }))
+    })
+
     it('toFlattenedDelta', () => {
         // ??
     })

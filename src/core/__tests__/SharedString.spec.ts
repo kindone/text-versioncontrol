@@ -61,6 +61,7 @@ describe('SharedString', () => {
                 ss.applyChange(change, "x")
             expectEqual(normalizeOps(SharedString.fromDelta(ss.toDelta("x")).toDelta("x").ops), normalizeOps(ss.toDelta("x").ops))
             expectEqual(ss.toDelta("y").ops, normalizeOps(content.ops)) // should be invisible to other branch
+
         }))
     })
 

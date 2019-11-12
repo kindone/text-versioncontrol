@@ -302,6 +302,60 @@ describe('Mutual Excerpts', () => {
         doc1.syncExcerpt(excerpt2_to_1, docSet)
         expectEqual(textOnly(doc1.getContent()), "aaPQbb")
     })
+
+
+    it('on three docs', () => {
+        const doc1 = new Document("doc1", "ab")
+        const doc2 = new Document("doc2", "XY")
+        const doc3 = new Document("doc3", "MN")
+        const docSet = { getDocument: (uri:String) => uri === 'doc1' ? doc1 : (uri === 'doc2' ? doc2 : doc3)}
+
+        const source1 = doc1.takeExcerpt(0,2)
+        doc2.pasteExcerpt(1, source1)
+        expectEqual(textOnly(doc1.getContent()), "ab")
+        expectEqual(textOnly(doc2.getContent()), "XabY")
+        expectEqual(textOnly(doc3.getContent()), "MN")
+
+        const source2 = doc2.takeExcerpt(2,4)
+        doc3.pasteExcerpt(1, source2)
+        expectEqual(textOnly(doc1.getContent()), "ab")
+        expectEqual(textOnly(doc2.getContent()), "XabY")
+        expectEqual(textOnly(doc3.getContent()), "MabN") //pasted
+
+        const source3 = doc3.takeExcerpt(2,4)
+        doc1.pasteExcerpt(1, source3)
+        expectEqual(textOnly(doc1.getContent()), "aabb") // pasted
+        expectEqual(textOnly(doc2.getContent()), "XabY")
+        expectEqual(textOnly(doc3.getContent()), "MabN")
+
+        doc1.append([{ops:[{retain:3}, {insert:'Q'}]}])
+        expectEqual(textOnly(doc1.getContent()), "aaQbb") // added Q (ab -> aQb)
+        doc2.append([{ops:[{retain:3}, {insert:'P'}]}])
+        expectEqual(textOnly(doc2.getContent()), "XaPbY") // added P
+        doc3.append([{ops:[{retain:3}, {insert:'R'}]}])
+        expectEqual(textOnly(doc3.getContent()), "MaRbN") // added R
+
+        const excerpt1_to_2 = doc2.getFullExcerpts()[0].excerpt
+        const excerpt2_to_3 = doc3.getFullExcerpts()[0].excerpt
+        const excerpt3_to_1 = doc1.getFullExcerpts()[0].excerpt
+
+        doc1.syncExcerpt(excerpt3_to_1, docSet)
+        expectEqual(textOnly(doc1.getContent()), "aaRQbb") // paste 3 to 1(ab) -> add Q -> sync 3 (add R)
+
+        doc2.syncExcerpt(excerpt1_to_2, docSet)
+        expectEqual(textOnly(doc2.getContent()), "XaPaRQbbY") // paste 1 to 2(ab) -> add P -> sync 1 : (paste 3 to 1(ab), add Q, sync 3 (add R))
+
+        // converges
+        doc3.syncExcerpt(excerpt2_to_3, docSet)
+        expectEqual(textOnly(doc3.getContent()), "MaRPQbN")
+
+        doc1.syncExcerpt(excerpt3_to_1, docSet)
+        expectEqual(textOnly(doc1.getContent()), "aaRPQbb")
+
+        doc2.syncExcerpt(excerpt1_to_2, docSet)
+        expectEqual(textOnly(doc2.getContent()), "XaPaRQbbY")
+
+    })
 })
 
 

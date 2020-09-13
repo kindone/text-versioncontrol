@@ -3,6 +3,7 @@ import { genNat } from "./primitives";
 import { ArbitraryWithShrink } from "./util"
 import * as _ from 'underscore'
 
+type Key = "x" | "xy" | "xyz"
 type XorXYorXYZ = {[key in "x" | "xy" | "xyz"]?: string}
 
 
@@ -32,17 +33,17 @@ export class EmbedObjArbitrary extends ArbitraryWithShrink<XorXYorXYZ> {
 
     public *shrinkGen(value:XorXYorXYZ):IterableIterator<Shrinkable<XorXYorXYZ>> {
 
-        const sliceKeyBack = (value:XorXYorXYZ, key:string):XorXYorXYZ => {
-            if((key in value) && value[key].length > 1)
-                return _.extend(_.clone(value), {[key]: value[key].slice(0, -1)})
+        const sliceKeyBack = (value:XorXYorXYZ, key:Key):XorXYorXYZ => {
+            if((key in value) && value[key]!.length > 1)
+                return _.extend(_.clone(value), {[key]: value[key]!.slice(0, -1)})
             else {
                 return _.omit(_.clone(value), key)
             }
         }
 
-        const sliceKeyFront = (value:XorXYorXYZ, key:string):XorXYorXYZ => {
-            if((key in value) && value[key].length > 1)
-                return _.extend(_.clone(value), {[key]: value[key].slice(1)})
+        const sliceKeyFront = (value:XorXYorXYZ, key:Key):XorXYorXYZ => {
+            if((key in value) && value[key]!.length > 1)
+                return _.extend(_.clone(value), {[key]: value[key]!.slice(1)})
             else {
                 return _.omit(_.clone(value), key)
             }
@@ -52,8 +53,8 @@ export class EmbedObjArbitrary extends ArbitraryWithShrink<XorXYorXYZ> {
         {
             // console.log('shrinkGen', key)
             if(key in value) {
-                yield this.wrapper(sliceKeyFront(value, key))
-                yield this.wrapper(sliceKeyBack(value, key))
+                yield this.wrapper(sliceKeyFront(value, key as Key))
+                yield this.wrapper(sliceKeyBack(value, key as Key))
             }
         }
 

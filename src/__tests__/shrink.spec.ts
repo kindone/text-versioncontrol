@@ -1,7 +1,7 @@
 import * as fc from 'fast-check'
 import * as _ from 'underscore'
 
-import { basicOpArbitrary, complexOpArbitrary} from './generator/op';
+import { basicOpArbitrary, complexOpArbitrary} from './generator/Op';
 import { isUniqueSequence, genUniqueSequenceSorted, genSmallBiasedDistribution } from './generator/primitives';
 import { JSONStringify, expectEqual } from '../core/util';
 import { retainArbitrary, deleteArbitrary } from './generator/RetainDelete';

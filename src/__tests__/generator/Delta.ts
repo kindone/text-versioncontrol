@@ -1,5 +1,5 @@
 import { Random, Shrinkable } from 'fast-check';
-import {  emptyOpsArbitrary } from './op';
+import {  emptyOpsArbitrary } from './Op';
 
 import * as _ from 'underscore'
 import { opsArbitrary, OpsArbitrary } from './Ops';

@@ -33,7 +33,7 @@ class ExcerptModel {
 }
 
 class AppendToDocCommand implements fc.Command<ExcerptModel, Document[]> {
-    private changeList:ChangeList
+    private changeList:ChangeList | null = null
 
     constructor(private id:number, private numChanges:number, private seed:number /*public readonly changeList:ChangeList*/) {}
 
@@ -69,12 +69,12 @@ class AppendToDocCommand implements fc.Command<ExcerptModel, Document[]> {
     }
 
     private getChangeList(length:number, numChanges:number) {
-        if(!this.changeList) {
+        if(this.changeList == null) {
             const random = new fc.Random(prand.mersenne(this.seed))
             this.changeList = new ChangeListArbitrary(length, numChanges).generate(random).value
         }
 
-        return this.changeList
+        return this.changeList!
     }
 }
 

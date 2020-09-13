@@ -185,7 +185,7 @@ describe('commutativity', () => {
         for (let j = 0; j < 50; j++) {
             const ss = randomSharedString()
             const user1Deltas = randomChanges(ss.toText().length, 2)
-            const user2Deltas = []
+            const user2Deltas:IDelta[] = []
 
             for (let i = 0; i < 60; i++) {
                 testCombination(ss, user1Deltas, user2Deltas)

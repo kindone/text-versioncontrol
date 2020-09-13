@@ -7,6 +7,9 @@ import { genArraySplit } from "./ArraySplit";
 import { ArbitraryWithShrink } from "./util";
 import * as _ from 'underscore'
 
+interface Indexable {
+  [key: string]: any;
+}
 
 export class OpsArbitrary extends ArbitraryWithShrink<Op[]> {
     constructor(readonly baseLength:number = -1, readonly withAttr = false) {
@@ -72,11 +75,11 @@ export class OpsArbitrary extends ArbitraryWithShrink<Op[]> {
         const filterInserts = (ops:Op[]) => _.filter(ops, (op) => !op.insert)
         const filterAttributes = (ops:Op[]) => _.filter(ops, (op) => !op.attributes)
         const decKey = (ops:Op[], key:string) => _.map(ops, op => {
-            if((key in op) && op[key] > 0) {
-                const cloned = _.clone(op)
-                cloned[key] -= 1
-                if(cloned[key] <= 0)
-                    delete cloned[key]
+            if((key in op) && (op as Indexable)[key]! > 0) {
+                const cloned = _.clone(op) as Op
+                (cloned as Indexable)[key]! -= 1
+                if((cloned as Indexable)[key]! <= 0)
+                    delete (cloned as Indexable)[key]
                 return cloned
             }
             else

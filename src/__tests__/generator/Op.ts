@@ -24,7 +24,7 @@ class OpArbitrary extends Arbitrary<Op> {
         else if(kind === 1) {
             return insertArbitrary(this.minLen, this.maxLen, this.withEmbed, this.withAttr).generate(mrng)
         }
-        else if (kind === 2) {
+        else {
             return deleteArbitrary(this.minLen, this.maxLen).generate(mrng)
         }
     }

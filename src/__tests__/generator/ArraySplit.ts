@@ -3,6 +3,8 @@ import { genSmallBiasedDistribution, genUniqueSequenceSorted } from "./primitive
 import { JSONStringify } from "../../core/util";
 import { ArbitraryWithShrink } from "./util";
 import * as _ from 'underscore'
+import fc from "fast-check";
+import { Arbitrary } from "fast-check";
 
 type ArraySplit = { from: number; length:number}
 
@@ -43,6 +45,42 @@ export function genArraySplit(mrng:Random, length:number, minSplits = -1, maxSpl
         throw new Error(`reduced(${reduced}) != length(${length}), ${JSONStringify(arr)}`)
 
     return arr
+}
+
+// generate set in [1, length-1]
+// minSplits, maxSplits
+const UniqueSequenceSortedGen = (length: number, min = -1, max = -1):Arbitrary<Array<number>> => {
+    if(min == -1 || max == -1)
+        return fc.set<number>(fc.integer(1, length-1))
+    else
+        return fc.set<number>(fc.integer(1, length-1), min, max)
+}
+
+// [x] ->  2 splits, [x,y] -> 3 splits, ...
+// [0,x], [x,n]
+const ArraySplitGen = (length: number, minSplits = -1, maxSplits = -1) => {
+    if((minSplits >= 0 && length < minSplits) || (maxSplits >= 0 && length < maxSplits))
+        throw new Error(`length too small: ${length}, minSplits: ${minSplits}, maxSplits: ${maxSplits}`)
+    else if(length <= 0)
+        throw new Error(`length too small: ${length}, minSplits: ${minSplits}, maxSplits: ${maxSplits}`)
+
+    return UniqueSequenceSortedGen(length, minSplits == -1 ? -1 : minSplits-1, maxSplits == -1 ? -1 : maxSplits-1).map(seq => {
+        const arr:ArraySplit[] = []
+        arr.push({from: 0, length: seq[0]})
+        for(let i = 0; i < seq.length - 1; i++) {
+            arr.push({from: seq[i], length: seq[i+1]-seq[i]})
+        }
+        arr.push({from: seq[seq.length-1], length: length - seq[seq.length-1]})
+
+        const reduced = _.reduce(arr, (sum, split) => {
+            return sum + split.length
+        }, 0)
+
+        if(reduced != length)
+            throw new Error(`reduced(${reduced}) != length(${length}), ${JSONStringify(arr)}`)
+
+        return arr
+    })
 }
 
 

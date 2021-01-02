@@ -19,7 +19,7 @@ export class ContentArbitrary extends ArbitraryWithShrink<IDelta>
         const baseLength = this.baseLength >= 0 ? this.baseLength : genNat(mrng, 20)
         if(baseLength > 0) {
             const splits = genArraySplit(mrng, baseLength)
-            const inserts = splits.map(split => new InsertArbitrary(split.length, split.length, this.withEmbed, this.withAttr).generate(mrng).value)
+            const inserts = splits.map(split => InsertArbitrary(split.length, split.length, this.withEmbed, this.withAttr).generate(mrng).value)
             return this.wrapper({ops:inserts})
         }
         else {

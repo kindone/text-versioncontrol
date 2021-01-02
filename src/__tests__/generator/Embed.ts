@@ -1,65 +1,16 @@
-import { Random, Arbitrary, Shrinkable, string } from "fast-check";
-import { genNat } from "./primitives";
-import { ArbitraryWithShrink } from "./util"
+import fc, { Arbitrary, string } from "fast-check";
 import * as _ from 'underscore'
 
 type Key = "x" | "xy" | "xyz"
-type XorXYorXYZ = {[key in "x" | "xy" | "xyz"]?: string}
+export type XorXYorXYZ = {[key in Key]?: string}
 
-
-export class EmbedObjArbitrary extends ArbitraryWithShrink<XorXYorXYZ> {
-
-    constructor(readonly stringArb:Arbitrary<string> = string(1,10), readonly numKinds = 2) {
-        super()
-
-        if(numKinds > 3)
-            throw Error("unsupported number of kinds > 3: " + numKinds)
-    }
-
-    public generate(mrng:Random):Shrinkable<XorXYorXYZ> {
-        const field = this.gen(mrng)
-        return this.wrapper(field)
-    }
-
-    private gen(mrng:Random):XorXYorXYZ {
-        const kind = genNat(mrng, this.numKinds)
-
-        return this.stringArb.generate(mrng).map(str => {
-            if(kind === 0) return { x: str}
-            else if(kind === 1) return { xy: str}
-            else return { xyz: str}
-        }).value
-    }
-
-    public *shrinkGen(value:XorXYorXYZ):IterableIterator<Shrinkable<XorXYorXYZ>> {
-
-        const sliceKeyBack = (value:XorXYorXYZ, key:Key):XorXYorXYZ => {
-            if((key in value) && value[key]!.length > 1)
-                return _.extend(_.clone(value), {[key]: value[key]!.slice(0, -1)})
-            else {
-                return _.omit(_.clone(value), key)
+export const embedObjArbitrary = (stringArb:Arbitrary<string> = string(1,10), numKinds = 2):Arbitrary<XorXYorXYZ> => {
+    return stringArb.chain(str => {
+        return fc.integer(0, numKinds - 1).map(kind => {
+                if(kind === 0) return { x: str}
+                else if(kind === 1) return { xy: str}
+                else return { xyz: str}
             }
-        }
-
-        const sliceKeyFront = (value:XorXYorXYZ, key:Key):XorXYorXYZ => {
-            if((key in value) && value[key]!.length > 1)
-                return _.extend(_.clone(value), {[key]: value[key]!.slice(1)})
-            else {
-                return _.omit(_.clone(value), key)
-            }
-        }
-
-        for(const key of ["x", "xy", "xyz"])
-        {
-            // console.log('shrinkGen', key)
-            if(key in value) {
-                yield this.wrapper(sliceKeyFront(value, key as Key))
-                yield this.wrapper(sliceKeyBack(value, key as Key))
-            }
-        }
-
-    }
+        )
+    })
 }
-
-export const embedObjArbitrary =  (stringArb:Arbitrary<string> = string(1,10), numKinds = 2) => new EmbedObjArbitrary(stringArb, numKinds)
-// export const OpEmbedGen = fc.jsonObject(2)

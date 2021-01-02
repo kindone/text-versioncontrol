@@ -1,10 +1,10 @@
 import Op from "quill-delta/dist/Op";
-import fc, { Arbitrary, asciiString, Random, Shrinkable, string } from "fast-check";
-import { EmbedObjArbitrary } from "./Embed";
+import fc, { Arbitrary, ascii, asciiString, Random, Shrinkable, string } from "fast-check";
 import AttributeMap from "quill-delta/dist/AttributeMap";
 import { AttributeMapArbitrary } from "./Attribute";
 import { genNat } from "./primitives";
 import { ArbitraryWithShrink } from "./util";
+import { embedObjArbitrary, XorXYorXYZ} from "./Embed";
 
 
 export interface SimpleInsert extends Op {
@@ -25,99 +25,58 @@ export interface Insert {
     attributes?:AttributeMap
 }
 
-export class SimpleInsertArbitrary extends ArbitraryWithShrink<SimpleInsert> {
-    constructor(readonly stringArb:Arbitrary<string> = asciiString()) {
-        super()
-    }
 
-    public generate(mrng:Random):Shrinkable<SimpleInsert> {
-        return this.stringArb.generate(mrng).map(str => { return { insert: str} })
-    }
+export const SimpleInsertArbitrary: (stringArb:Arbitrary<string>) => Arbitrary<SimpleInsert> = (stringArb:Arbitrary<string> = asciiString(1, 20)) => {
+    return stringArb.map( str => { return {insert: str} });
+}
 
-    // FIXME: replace generate with this wehn shrink is ready
-    public generate2(mrng:Random):Shrinkable<SimpleInsert> {
-        const insert = this.stringArb.generate(mrng).map(str => { return { insert: str} }).value
-        return this.wrapper(insert)
-    }
+export const SimpleEmbedArbitrary = () => embedObjArbitrary().map(obj => {
+    return { insert: obj}
+})
 
-    public *shrinkGen(value:SimpleInsert):IterableIterator<Shrinkable<SimpleInsert>> {
-        // TODO
+export const EmbedArbitrary = (withAttr:Boolean = false) =>  {
+    if(withAttr) {
+        return fc.boolean().chain(hasAttr => {
+            return fc.record({insert: embedObjArbitrary(),
+                attributes: new AttributeMapArbitrary()})
+        })
+    }
+    else {
+        return SimpleEmbedArbitrary()
     }
 }
 
-
-export class SimpleEmbedArbitrary extends Arbitrary<SimpleEmbed> {
-    public generate(mrng:Random):Shrinkable<SimpleEmbed> {
-        return new EmbedObjArbitrary().generate(mrng).map(obj => { return { insert: obj} })
-    }
-}
-
-export class EmbedArbitrary  extends Arbitrary<Embed> {
-    constructor(readonly withAttr = false) {
-        super()
-    }
-
-    public generate(mrng:Random):Shrinkable<Embed> {
-        const hasAttr = mrng.nextBoolean()
-        if(hasAttr)
-            return fc.record({ insert: new SimpleEmbedArbitrary().map(e => e.insert),
-                attributes: new AttributeMapArbitrary() }).generate(mrng)
-        else
-            return fc.record({ insert: new SimpleEmbedArbitrary().map(e => e.insert)}).generate(mrng)
-    }
-}
-
-export class InsertArbitrary extends ArbitraryWithShrink<Insert> {
-
-    constructor(readonly minLength = 1, readonly maxLength = Number.MAX_VALUE,
-                readonly withEmbed = false, readonly withAttr = false) {
-        super()
-    }
-
-    public generate(mrng:Random):Shrinkable<Insert> {
-        const kind = genNat(mrng, this.withAttr ? 4 : 2)
-        switch (kind) {
-            case 0:
+export const InsertArbitrary = (minLength = 1, maxLength = Number.MAX_VALUE,
+    withEmbed = false, withAttr = false) => {
+        const gen:(kind:number) => Arbitrary<Insert> = kind => {
+            if(kind === 0)
                 // insert
-                return this.simpleInsert(mrng)
-            case 1:
+                return SimpleInsertArbitrary(string(minLength, maxLength))
+            else if(kind == 1) {
                 // embed
-                if(this.withEmbed && this.minLength <= 1 && this.maxLength >= 1)
-                    return this.simpleEmbed(mrng)
+                if(withEmbed && minLength <= 1 && maxLength >= 1)
+                    return SimpleEmbedArbitrary()
                 else
-                    return this.simpleInsert(mrng)
-            case 2:
+                    return SimpleInsertArbitrary(string(minLength, maxLength))
+            }
+            else if(kind == 2) {
                 // insert with attribute
-                return this.insertWithAttr(mrng)
-            case 3:
-            default:
+                return fc.record({ insert: SimpleInsertArbitrary(string(minLength, maxLength)).map(i => i.insert),
+                    attributes: new AttributeMapArbitrary() })
+            }
+            else {
                 // embed with attribute
-                if(this.withEmbed && this.minLength <= 1 && this.maxLength >= 1)
-                    return this.embedWithAttr(mrng)
+                if(withEmbed && minLength <= 1 && maxLength >= 1)
+                    return fc.record({ insert: SimpleEmbedArbitrary().map(i => i.insert),
+                        attributes: new AttributeMapArbitrary() })
                 else
-                    return this.insertWithAttr(mrng)
+                    return fc.record({ insert: SimpleInsertArbitrary(string(minLength, maxLength)).map(i => i.insert),
+                        attributes: new AttributeMapArbitrary() })
+            }
         }
+        return fc.integer(0, withAttr ? 4: 2).chain(gen)
     }
 
-    public simpleInsert(mrng:Random) {
-        return new SimpleInsertArbitrary(string(this.minLength, this.maxLength)).generate(mrng)
-    }
-
-    public simpleEmbed(mrng:Random) {
-        return new SimpleEmbedArbitrary().generate(mrng)
-    }
-
-    public insertWithAttr(mrng:Random) {
-        return fc.record({ insert: new SimpleInsertArbitrary(string(this.minLength, this.maxLength)).map(i => i.insert),
-                         attributes: new AttributeMapArbitrary() }).generate(mrng)
-    }
-
-    public embedWithAttr(mrng:Random) {
-        return fc.record({ insert: new SimpleEmbedArbitrary().map(i => i.insert),
-                         attributes: new AttributeMapArbitrary() }).generate(mrng)
-    }
-}
-
-export const embedArbitrary = (withAttr = false) => new EmbedArbitrary(withAttr)
+export const embedArbitrary = (withAttr = false) => EmbedArbitrary(withAttr)
 export const insertArbitrary = (minLength = 1, maxLength = 20,
-    withEmbed = false, withAttr = false) => new InsertArbitrary(minLength, maxLength, withEmbed, withAttr)
+    withEmbed = false, withAttr = false) => InsertArbitrary(minLength, maxLength, withEmbed, withAttr)

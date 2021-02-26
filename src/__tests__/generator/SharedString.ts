@@ -1,9 +1,7 @@
-import { Random } from "fast-check";
+import { PrintableASCIIStringGen } from "jsproptest";
 import { SharedString } from "../../core/SharedString";
-import { genAsciiString, genNat } from "./primitives";
 
- export function genSharedString(mrng:Random) {
-
-    return SharedString.fromString(genAsciiString(mrng, genNat(mrng, 10) + 1))
+ export function SharedStringGen() {
+    return PrintableASCIIStringGen(0, 10).map(str => SharedString.fromString(str))
 }
 

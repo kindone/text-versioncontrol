@@ -1,10 +1,8 @@
 import Op from "quill-delta/dist/Op";
-import fc, { Arbitrary, ascii, asciiString, Random, Shrinkable, string } from "fast-check";
 import AttributeMap from "quill-delta/dist/AttributeMap";
 import { AttributeMapArbitrary } from "./Attribute";
-import { genNat } from "./primitives";
-import { ArbitraryWithShrink } from "./util";
-import { embedObjArbitrary, XorXYorXYZ} from "./Embed";
+import { EmbedObjGen } from "./Embed";
+import { booleanGen, Generator, inRange, PrintableASCIIStringGen, TupleGen } from "jsproptest";
 
 
 export interface SimpleInsert extends Op {
@@ -26,57 +24,61 @@ export interface Insert {
 }
 
 
-export const SimpleInsertArbitrary: (stringArb:Arbitrary<string>) => Arbitrary<SimpleInsert> = (stringArb:Arbitrary<string> = asciiString(1, 20)) => {
-    return stringArb.map( str => { return {insert: str} });
+export function SimpleInsertGen(contentGen:Generator<string> = PrintableASCIIStringGen(1, 10)) {
+    return contentGen.map(str => { return {insert: str} })
 }
 
-export const SimpleEmbedArbitrary = () => embedObjArbitrary().map(obj => {
-    return { insert: obj}
-})
+export function SimpleEmbedGen() {
+    return EmbedObjGen().map(obj => {
+        return { insert: obj}
+    })
+}
 
-export const EmbedArbitrary = (withAttr:Boolean = false) =>  {
+export const EmbedGen = (withAttr:Boolean = false) =>  {
     if(withAttr) {
-        return fc.boolean().chain(hasAttr => {
-            return fc.record({insert: embedObjArbitrary(),
-                attributes: new AttributeMapArbitrary()})
+        booleanGen().flatMap(hasAttr => {
+            if(hasAttr)
+                return TupleGen(EmbedObjGen(), AttributeMapArbitrary()).map(tuple => { return {
+                    insert: tuple[0], attributes: tuple[1]
+                }})
+            else
+                return SimpleEmbedGen()
         })
     }
     else {
-        return SimpleEmbedArbitrary()
+        return SimpleEmbedGen()
     }
 }
 
-export const InsertArbitrary = (minLength = 1, maxLength = Number.MAX_VALUE,
-    withEmbed = false, withAttr = false) => {
-        const gen:(kind:number) => Arbitrary<Insert> = kind => {
-            if(kind === 0)
-                // insert
-                return SimpleInsertArbitrary(string(minLength, maxLength))
-            else if(kind == 1) {
-                // embed
-                if(withEmbed && minLength <= 1 && maxLength >= 1)
-                    return SimpleEmbedArbitrary()
-                else
-                    return SimpleInsertArbitrary(string(minLength, maxLength))
-            }
-            else if(kind == 2) {
-                // insert with attribute
-                return fc.record({ insert: SimpleInsertArbitrary(string(minLength, maxLength)).map(i => i.insert),
-                    attributes: new AttributeMapArbitrary() })
-            }
-            else {
-                // embed with attribute
-                if(withEmbed && minLength <= 1 && maxLength >= 1)
-                    return fc.record({ insert: SimpleEmbedArbitrary().map(i => i.insert),
-                        attributes: new AttributeMapArbitrary() })
-                else
-                    return fc.record({ insert: SimpleInsertArbitrary(string(minLength, maxLength)).map(i => i.insert),
-                        attributes: new AttributeMapArbitrary() })
-            }
+export function InsertGen(minLength = 1, maxLength = 20, withEmbed = false, withAttr = false) {
+    const gen:(kind:number) => Generator<Insert> = kind => {
+        if(kind === 0)
+            // insert
+            return SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength))
+        else if(kind == 1) {
+            // embed
+            if(withEmbed && minLength <= 1 && maxLength >= 1)
+                return SimpleEmbedGen()
+            else
+                return SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength))
         }
-        return fc.integer(0, withAttr ? 4: 2).chain(gen)
+        else if(kind == 2) {
+            // insert with attribute
+            return TupleGen(SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength)).map(obj => obj.insert), AttributeMapArbitrary()).map(
+                tuple => {return {insert: tuple[0], attributes: tuple[1]}}
+            )
+        }
+        else {
+            // embed with attribute
+            if(withEmbed && minLength <= 1 && maxLength >= 1) {
+                return TupleGen(SimpleEmbedGen().map(obj => obj.insert), AttributeMapArbitrary()).map(
+                    tuple => {return {insert: tuple[0], attributes: tuple[1]}}
+                )
+            }
+            else
+                return TupleGen(SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength)).map(obj => obj.insert), AttributeMapArbitrary()).map(
+                    tuple => {return {insert: tuple[0], attributes: tuple[1]}})
+        }
     }
-
-export const embedArbitrary = (withAttr = false) => EmbedArbitrary(withAttr)
-export const insertArbitrary = (minLength = 1, maxLength = 20,
-    withEmbed = false, withAttr = false) => InsertArbitrary(minLength, maxLength, withEmbed, withAttr)
+    return inRange(0, withAttr ? 4: 2).flatMap(gen)
+}

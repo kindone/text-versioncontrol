@@ -1,4 +1,4 @@
-import { forAll, Property, interval, stringGen } from 'jsproptest'
+import { Property, interval, stringGen } from 'jsproptest'
 
 describe('jsproptest', () => {
     it('basic', () => {
@@ -6,6 +6,6 @@ describe('jsproptest', () => {
             return a < 10 || b.length > 3
         })
 
-        prop.forAll(interval(0,10), stringGen(0, 10))
+        expect(() => prop.forAll(interval(0,10), stringGen(0, 10))).toThrow()
     })
 })

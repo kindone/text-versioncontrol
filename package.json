@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "test": "jest --config jestconfig.json",
+    "test": "jest --config jestconfig.json --verbose",
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
@@ -24,11 +24,9 @@
   ],
   "devDependencies": {
     "@types/jest": "^23.3.2",
-    "fast-check": "^1.14.0",
-    "jest": "^23.5.0",
+    "jest": "^26.6.3",
     "jest-each": "^24.7.1",
-    "jsproptest": "^0.1.1",
-    "jsverify": "^0.8.3",
+    "jsproptest": "^0.3.6",
     "prettier": "^1.14.2",
     "pure-rand": "^1.6.2",
     "ts-jest": "^23.1.4",

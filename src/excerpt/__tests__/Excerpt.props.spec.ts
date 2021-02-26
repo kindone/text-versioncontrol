@@ -1,16 +1,16 @@
-import * as fc from 'fast-check'
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
 import { JSONStringify, expectEqual, isEqual } from '../../core/util'
-import * as prand from 'pure-rand'
-import { ChangeListArbitrary, ChangeList } from '../../__tests__/generator/ChangeList';
+import { ChangeList, ChangeListGen } from '../../__tests__/generator/ChangeList';
 import { DocumentSet } from '../../document/DocumentSet';
 import { contentLength } from '../../core/primitive';
+import { Action, integers, interval, just, PrintableASCIIStringGen, TupleGen, chainTuple, SetGen, UniqueArrayGen, statefulProperty, actionGenOf } from 'jsproptest'
+import { Excerpt } from '../Excerpt';
 
 
 
 
-const DocumentInitialGen = (name:string) => fc.asciiString(20).map(content => new Document(name, content))
+const DocumentInitialGen = (name:string) => PrintableASCIIStringGen(0, 20).map(content => new Document(name, content))
 
 class ExcerptModel {
     public contentLengths:number[] = []
@@ -32,51 +32,26 @@ class ExcerptModel {
     }
 }
 
-class AppendToDocCommand implements fc.Command<ExcerptModel, Document[]> {
-    private changeList:ChangeList | null = null
-
-    constructor(private id:number, private numChanges:number, private seed:number /*public readonly changeList:ChangeList*/) {}
-
-    public check(model: Readonly<ExcerptModel>):boolean {
-        // fc.pre(model.contentLengths[this.id] === this.getChangeList(model.contentLengths[this.id], this.numChanges).lengths[0])
-        return true
-    }
-
-    public run(model: ExcerptModel, docSet: Document[]): void {
+const AppendGen = (docSet:Document[], _:ExcerptModel) => TupleGen(integers(0, docSet.length), interval(1,3)).chain(pair =>
+    ChangeListGen(contentLength(docSet[pair[0]].getContent()), pair[1])).map(tuple => new Action((docSet:Document[], model:ExcerptModel) => {
+        const [docId, _] = tuple[0]
+        const changeList = tuple[1]
         expectEqual(contentLength(docSet[0].getContent()), model.contentLengths[0])
         expectEqual(contentLength(docSet[1].getContent()), model.contentLengths[1])
 
         expectEqual(model.getExcerpts(0).length, docSet[0].getFullExcerpts().length)
         expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
 
-        const doc = docSet[this.id]
-        const changes = this.getChangeList(model.contentLengths[this.id], this.numChanges).deltas
-        doc.append(changes)
-        model.contentLengths[this.id] = contentLength(doc.getContent())
+        const doc = docSet[docId]
+        doc.append(changeList.deltas)
+        model.contentLengths[docId] = contentLength(doc.getContent())
 
         // in case excerpts are removed
         model.setExcerpts(0, docSet[0].getFullExcerpts())
         model.setExcerpts(1, docSet[1].getFullExcerpts())
+    })
+)
 
-    }
-
-    public toString() {
-        return `append(${this.id}, ${this.numChanges}, ${this.seed})`
-    }
-
-    public [fc.cloneMethod]() {
-        return new AppendToDocCommand(this.id, this.numChanges, this.seed)
-    }
-
-    private getChangeList(length:number, numChanges:number) {
-        if(this.changeList == null) {
-            const random = new fc.Random(prand.mersenne(this.seed))
-            this.changeList = new ChangeListArbitrary(length, numChanges).generate(random).value
-        }
-
-        return this.changeList!
-    }
-}
 
 interface Take {
     id:number
@@ -90,100 +65,109 @@ interface Paste {
     offset:number
 }
 
+// toString() {
+//     return `excerpt(${JSONStringify(this.take)}, ${JSONStringify(this.paste)})`
+// }
 
-class TakeAndPasteExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
-    constructor(private take:Take, private paste:Paste) {}
+const TakeAndAppendExcerptGen = (docSet:Document[], _:ExcerptModel) => {
+    const takeDocArgGen = integers(0, docSet.length).chain(takeDocId => interval(0, docSet[takeDocId].getCurrentRev()))
 
-    public check(m: Readonly<ExcerptModel>):boolean {
-        return true
-    }
-
-    public run(model: ExcerptModel, docSet: Document[]): void {
-        expectEqual(contentLength(docSet[0].getContent()), model.contentLengths[0])
-        expectEqual(contentLength(docSet[1].getContent()), model.contentLengths[1])
-
-        expectEqual(model.getExcerpts(0).length, docSet[0].getFullExcerpts().length)
-        expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
-
-        const takeDoc = docSet[this.take.id]
-        const takeRev = takeDoc.getCurrentRev() > 0 ? (this.take.rev % takeDoc.getCurrentRev()) : 0
+    const takeGen = chainTuple(takeDocArgGen, tuple => {
+        const takeDocId = tuple[0]
+        const takeRev = tuple[1]
+        const takeDoc = docSet[takeDocId]
         const takeLen = contentLength(takeDoc.getContentAt(takeRev))
-        if(takeLen === 0) // nothing to excerpt from
-            return
+        // takeFrom, takeTo
+        if(takeLen < 2)
+            throw new Error('nothing to take excerpt from')
+        return UniqueArrayGen(integers(0, takeLen), 2, 2)
+    }).map<Take>(tuple => {
+        return {id: tuple[0], rev: tuple[1], from:tuple[2][0], to: tuple[2][1]}
+    })
 
-        const takeFrom = takeLen > 1 ? (this.take.from % (takeLen-1)) : 0
-        let takeTo = (takeLen - takeFrom) > 0 ? ((this.take.to % (takeLen - takeFrom)) + takeFrom) : 0
-        if(takeFrom === takeTo) {
-            takeTo = takeFrom + 1
-        }
+    const pasteDocArgGen = integers(0, docSet.length).chain(pasteDocId => interval(0, docSet[pasteDocId].getCurrentRev()))
 
-        expect(takeFrom < takeLen && takeTo < takeLen)
+    const pasteGen = chainTuple(pasteDocArgGen, tuple => {
+        const pasteDocId = tuple[0]
+        const pasteDoc = docSet[pasteDocId]
+        const pasteLength = contentLength(pasteDoc.getContent())
+        // pasteOffset
+        return interval(0, pasteLength)// offset may include length
+    }).map<Paste>(tuple => {
+        return {id:tuple[0], offset:tuple[1]}
+    })
 
-        const pasteDoc = docSet[this.paste.id]
-        const pasteLen = contentLength(pasteDoc.getContent())
-        const pasteOffset = pasteLen > 0 ? this.paste.offset % pasteLen : 0
-        const pasteRev = pasteDoc.getCurrentRev()
+    const takeAndPasteGen = TupleGen(takeGen, pasteGen)
 
-        const source = takeDoc.takeExcerptAt(takeRev, takeFrom, takeTo)
-        const target = pasteDoc.pasteExcerpt(pasteOffset, source).target
+    return takeAndPasteGen.map(tuple => {
+        const take = tuple[0]
+        const paste = tuple[1]
+        const takeDoc = docSet[take.id]
+        const pasteDoc = docSet[paste.id]
+        return new Action<Document[], ExcerptModel>((docSet:Document[], model:ExcerptModel) => {
+            expectEqual(contentLength(docSet[0].getContent()), model.contentLengths[0])
+            expectEqual(contentLength(docSet[1].getContent()), model.contentLengths[1])
 
-        const debugInfo = [this.take,
-            takeDoc.getCurrentRev(),
-            this.paste,
-            takeLen,
-            takeRev,
-            takeFrom,
-            takeTo,
-            pasteLen,
-            pasteOffset]
+            expectEqual(model.getExcerpts(0).length, docSet[0].getFullExcerpts().length)
+            expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
 
-        // check pasted content
-        expect(contentLength(source.content) > 0)
-        expectEqual(source.content, pasteDoc.takeExcerpt(target.start+1, target.end).content, JSONStringify(debugInfo))
+            const takeLen = contentLength(takeDoc.getContentAt(take.rev))
+            if(takeLen === 0) // nothing to excerpt from
+                return
 
-        // check marker
-        {
-            const actualOp = pasteDoc.takeExcerpt(target.start, target.start+1).content.ops[0]
-            const actualMarker = actualOp.insert
-            const actualAttributes = actualOp.attributes
+            expect(take.from < take.to)
+            expect(take.from < takeLen && take.to < takeLen)
 
-            const expectedMarker = {excerpted: "doc" + this.take.id + "?rev=" + takeRev + "&start=" + takeFrom + "&end=" + takeTo}
-            const expectedAttributes = {markedAt: "left", targetUri: "doc" + this.paste.id, targetRev: (pasteRev).toString(), targetStart: pasteOffset.toString(), targetEnd: (pasteOffset + (takeTo-takeFrom)+ 1).toString()/*length: contentLength(source.content).toString()*/, copied: "true"}
-            expectEqual(actualMarker, expectedMarker)
-            expectEqual(actualAttributes, expectedAttributes)
-        }
+            const pasteDoc = docSet[paste.id]
+            const pasteLen = contentLength(pasteDoc.getContent())
+            const pasteOffset = pasteLen > 0 ? paste.offset % pasteLen : 0
+            const pasteRev = pasteDoc.getCurrentRev()
 
-        // TODO: check right marker
+            const source = takeDoc.takeExcerptAt(take.rev, take.from, take.to)
+            const target = pasteDoc.pasteExcerpt(pasteOffset, source).target
 
-        if(!isEqual(model.getExcerpts(this.paste.id).length + 1, pasteDoc.getFullExcerpts().length)) {
-                throw new Error(JSONStringify(model.getExcerpts(this.paste.id)) + " != " + JSONStringify(pasteDoc.getFullExcerpts()))
-        }
+            const debugInfo = [take,
+                takeDoc.getCurrentRev(),
+                paste,
+                takeLen,
+                take.rev,
+                take.from,
+                take.to,
+                pasteLen,
+                pasteOffset]
 
+            // check pasted content
+            expect(contentLength(source.content) > 0)
+            expectEqual(source.content, pasteDoc.takeExcerpt(target.start+1, target.end).content, JSONStringify(debugInfo))
 
-        // update model
-        model.contentLengths[this.take.id] = contentLength(docSet[this.take.id].getContent())
-        model.contentLengths[this.paste.id] = contentLength(docSet[this.paste.id].getContent())
-        model.setExcerpts(0, docSet[0].getFullExcerpts())
-        model.setExcerpts(1, docSet[1].getFullExcerpts())
-    }
+            // check marker
+            {
+                const actualOp = pasteDoc.takeExcerpt(target.start, target.start+1).content.ops[0]
+                const actualMarker = actualOp.insert
+                const actualAttributes = actualOp.attributes
 
-    public [fc.cloneMethod]() {
-        return new TakeAndPasteExcerptCommand(this.take, this.paste)
-    }
+                const expectedMarker = {excerpted: "doc" + take.id + "?rev=" + take.rev + "&start=" + take.from + "&end=" + take.to}
+                const expectedAttributes = {markedAt: "left", targetUri: "doc" + paste.id, targetRev: (pasteRev).toString(), targetStart: pasteOffset.toString(), targetEnd: (pasteOffset + (take.to-take.from)+ 1).toString()/*length: contentLength(source.content).toString()*/, copied: "true"}
+                expectEqual(actualMarker, expectedMarker)
+                expectEqual(actualAttributes, expectedAttributes)
+            }
 
-    public toString() {
-        return `excerpt(${JSONStringify(this.take)}, ${JSONStringify(this.paste)})`
-    }
+            // TODO: check right marker
+
+            if(!isEqual(model.getExcerpts(paste.id).length + 1, pasteDoc.getFullExcerpts().length)) {
+                    throw new Error(JSONStringify(model.getExcerpts(paste.id)) + " != " + JSONStringify(pasteDoc.getFullExcerpts()))
+            }
+            // update model
+            model.contentLengths[take.id] = contentLength(docSet[take.id].getContent())
+            model.contentLengths[paste.id] = contentLength(docSet[paste.id].getContent())
+            model.setExcerpts(0, docSet[0].getFullExcerpts())
+            model.setExcerpts(1, docSet[1].getFullExcerpts())
+        })
+    })
 }
 
-class UpdateMarkerCommand implements fc.Command<ExcerptModel, Document[]> {
-    constructor(private id:number, private index:number) {}
-
-    public check(m: Readonly<ExcerptModel>):boolean {
-        return true
-    }
-
-    public run(model: ExcerptModel, docSet: Document[]): void {
+const UpdateMarkerGen = (docSet:Document[], _:ExcerptModel) => integers(0, docSet.length).map( docId =>
+    new Action((docSet: Document[], model: ExcerptModel) => {
         // check model
         expectEqual(contentLength(docSet[0].getContent()), model.contentLengths[0])
         expectEqual(contentLength(docSet[1].getContent()), model.contentLengths[1])
@@ -192,19 +176,11 @@ class UpdateMarkerCommand implements fc.Command<ExcerptModel, Document[]> {
         expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
 
         // update model
-        model.contentLengths[this.id] = contentLength(docSet[this.id].getContent())
+        model.contentLengths[docId] = contentLength(docSet[docId].getContent())
         model.setExcerpts(0, docSet[0].getFullExcerpts())
         model.setExcerpts(1, docSet[1].getFullExcerpts())
     }
-
-    public [fc.cloneMethod]() {
-        return new SyncExcerptCommand(this.id, this.index)
-    }
-
-    public toString() {
-        return `marker(${JSONStringify(this.id)}, ${JSONStringify(this.index)})`
-    }
-}
+))
 
 class MyDocumentSet implements DocumentSet {
     constructor(readonly documents:Document[]) {}
@@ -218,16 +194,22 @@ class MyDocumentSet implements DocumentSet {
     }
 }
 
-class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
-    constructor(private id:number, private index:number) {}
-
-    public check(m: Readonly<ExcerptModel>):boolean {
-        return true
+function findDocId(docSet:Document[], uri:string):number {
+    for(let i = 0; i < docSet.length; i++) {
+        if(docSet[i].name === uri)
+            return i
     }
+    return -1
+}
 
-    public run(model: ExcerptModel, docSet: Document[]): void {
+const SyncExcerptGen = (docSet:Document[], _:ExcerptModel) => integers(0, docSet.length).chain( docId =>
+    integers(0, docSet[docId].getFullExcerpts().length)
+).map(tuple => {
+    const docId = tuple[0]
+    const excerptId = tuple[1]
+    return new Action((model: ExcerptModel, docSet: Document[]) => {
         // perform check and run
-        const targetDoc = docSet[this.id]
+        const targetDoc = docSet[docId]
         const excerpts = targetDoc.getFullExcerpts()
         if(excerpts.length == 0)
             return
@@ -238,10 +220,9 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
         expectEqual(model.getExcerpts(0).length, docSet[0].getFullExcerpts().length)
         expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
 
-        const index = this.index % excerpts.length
-        const excerpt = excerpts[index].excerpt
+        const excerpt = excerpts[excerptId].excerpt
         // const excerpt = ExcerptUtil.decomposeMarker(excerptMarker)
-        const sourceDocId = this.findDocId(docSet, excerpt.source.uri)
+        const sourceDocId = findDocId(docSet, excerpt.source.uri)
         expect(sourceDocId != -1)
         const sourceDoc = docSet[sourceDocId]
 
@@ -266,27 +247,11 @@ class SyncExcerptCommand implements fc.Command<ExcerptModel, Document[]> {
             throw new Error(JSONStringify(beforeContent) + " VS " + JSONStringify(afterContent) + " SYNCS: " + JSONStringify(syncs) + " TARGET: " + JSONStringify(targetDoc.getChangesFrom(beforeTargetRev)))
 
         // update model
-        model.contentLengths[this.id] = contentLength(docSet[this.id].getContent())
+        model.contentLengths[docId] = contentLength(docSet[docId].getContent())
         model.setExcerpts(0, docSet[0].getFullExcerpts())
         model.setExcerpts(1, docSet[1].getFullExcerpts())
-    }
-
-    public [fc.cloneMethod]() {
-        return new SyncExcerptCommand(this.id, this.index)
-    }
-
-    public toString() {
-        return `sync(${JSONStringify(this.id)}, ${JSONStringify(this.index)})`
-    }
-
-    private findDocId(docSet:Document[], uri:string):number {
-        for(let i = 0; i < docSet.length; i++) {
-            if(docSet[i].name === uri)
-                return i
-        }
-        return -1
-    }
-}
+    })
+})
 
 describe('Excerpt properties', () => {
     it('Document excerpt', () => {
@@ -294,52 +259,11 @@ describe('Excerpt properties', () => {
         // append + take/paste excerpt
 
         // generator for initial document
-        const doc1Arb = DocumentInitialGen('doc0')
-        const doc2Arb = DocumentInitialGen('doc1')
-        const docSetArb = fc.tuple(doc1Arb, doc2Arb)
-
-        const appendGen = fc.record({
-            id:fc.integer(0,1),
-            numChanges: fc.integer(0,10),
-            seed: fc.integer()
-        })
-
-        const takeGen = fc.record({
-            id:fc.integer(0,1),
-            rev:fc.integer(0, 100000),
-            from:fc.nat(),
-            to:fc.nat()
-        })
-
-        const pasteGen = fc.record({
-            id:fc.integer(0,1),
-            offset:fc.nat()
-        })
-
-        const takeAndPasteGen = fc.record({
-            take:takeGen,
-            paste:pasteGen
-        })
-
-        const syncExcerptGen = fc.record({
-            id:fc.integer(0,1),
-            index:fc.nat()
-        })
-
-        // command generator
-        const commandsArb = fc.commands([
-            appendGen.map(append => new AppendToDocCommand(append.id, append.numChanges, append.seed)),
-            takeAndPasteGen.map(tnp => new TakeAndPasteExcerptCommand(tnp.take, tnp.paste)),
-            syncExcerptGen.map(sync => new SyncExcerptCommand(sync.id, sync.index))
-        ])
-
-        fc.assert(
-            fc.property(docSetArb, commandsArb, (initialDocSet, commands) => {
-              const real = initialDocSet
-              const model = new ExcerptModel(real)
-              fc.modelRun(() => ({ model, real }), commands)
-            }),
-            { verbose: true, numRuns:10000, endOnFailure: true }
-        )
+        const doc1Gen = DocumentInitialGen('doc0')
+        const doc2Gen = DocumentInitialGen('doc1')
+        const docSetGen = TupleGen(doc1Gen, doc2Gen)
+        const actionGen = actionGenOf(AppendGen, UpdateMarkerGen, TakeAndAppendExcerptGen)
+        const prop = statefulProperty(docSetGen, (docSet) => new ExcerptModel(docSet), actionGen)
+        prop.setNumRuns(20).go()
     })
 })

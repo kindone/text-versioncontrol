@@ -20,11 +20,11 @@ describe('Quill Delta basic operations', () => {
         expectEqual(new Delta().retain(-1), new Delta())
     })
 
-    it('mutability of operations', () => {
-        const delta = new QDelta()
+    it('immutability of operations', () => {
+        const qDelta = new QDelta()
+        expectEqual(qDelta.insert('a'), qDelta)
+        const delta = new Delta()
         expectEqual(delta.insert('a'), delta)
-        const exDelta = new Delta()
-        expectEqual(exDelta.insert('a'), exDelta)
     })
 
     it('length', () => {

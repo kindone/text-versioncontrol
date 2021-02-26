@@ -1,10 +1,10 @@
 import { expectEqual } from "../util";
 import { Range } from "../Range";
 import Delta = require("quill-delta");
-import * as fc from "fast-check";
-import { deltaArbitrary } from "../../__tests__/generator/Delta";
 import * as _ from 'underscore'
 import { normalizeDeltas } from "../primitive";
+import { DeltaGen } from "../../__tests__/generator/Delta";
+import { interval, Property } from "jsproptest";
 
 describe('Range', () => {
     it('crop0-1', () => {
@@ -420,53 +420,52 @@ describe('Range', () => {
 
 describe('property tests', () => {
     it('cropChanges and applyChanges',() => {
-        const deltaArb = deltaArbitrary(10)
-        const fromArb = fc.integer(0, 20)
-        const lengthArb = fc.integer(0, 20)
+        const deltaArb = DeltaGen(10)
+        const fromArb = interval(0, 20)
+        const lengthArb = interval(0, 20)
         let minDiff = 1000
 
-        fc.assert(
-            fc.property(deltaArb, fromArb, lengthArb, (delta, from, len) => {
-                // const length = minContentLengthForChange(delta)
-                const range = new Range(from, from + len)
-                const rangeLength = range.end - range.start
-                const newRange = range.applyChanges([delta])
-                const newRangeLength = newRange.end - newRange.start
-                const newDelta = range.cropDelta(delta)
-                const newDeltaLength1 = _.reduce(newDelta.ops, (len, op) => {
-                    if(typeof op.insert === 'string')
-                        return len
-                    else if(op.insert)
-                        return len
-                    else if(op.retain)
-                        return len + op.retain
-                    else if(op.delete)
-                        return len + op.delete
-                    else
-                        throw new Error('unexpected op')
-                },0)
+        const prop = new Property((delta:Delta, from:number, len:number) => {
+            // const length = minContentLengthForChange(delta)
+            const range = new Range(from, from + len)
+            const rangeLength = range.end - range.start
+            const newRange = range.applyChanges([delta])
+            const newRangeLength = newRange.end - newRange.start
+            const newDelta = range.cropDelta(delta)
+            const newDeltaLength1 = _.reduce(newDelta.ops, (len, op) => {
+                if(typeof op.insert === 'string')
+                    return len
+                else if(op.insert)
+                    return len
+                else if(op.retain)
+                    return len + op.retain
+                else if(op.delete)
+                    return len + op.delete
+                else
+                    throw new Error('unexpected op')
+            },0)
 
-                const newDeltaLength2 = _.reduce(newDelta.ops, (len, op) => {
-                    if(typeof op.insert === 'string')
-                        return len + op.insert.length
-                    else if(op.insert)
-                        return len + 1
-                    else if(op.retain)
-                        return len + op.retain
-                    else if(op.delete)
-                        return len + op.delete
-                    else
-                        throw new Error('unexpected op')
-                },0)
+            const newDeltaLength2 = _.reduce(newDelta.ops, (len, op) => {
+                if(typeof op.insert === 'string')
+                    return len + op.insert.length
+                else if(op.insert)
+                    return len + 1
+                else if(op.retain)
+                    return len + op.retain
+                else if(op.delete)
+                    return len + op.delete
+                else
+                    throw new Error('unexpected op')
+            },0)
 
-                if(rangeLength < newDeltaLength1)
-                    throw new Error(rangeLength.toString() + " < " + newDeltaLength1.toString())
-                if(rangeLength - newDeltaLength1 < minDiff )
-                    minDiff = rangeLength - newDeltaLength1
-                // if(newRangeLength < newDeltaLength2)
-                //     throw new Error(newRangeLength.toString() + " < " + newDeltaLength2.toString())
-            }),
-            { verbose: true, numRuns:100 }
-        )
+            if(rangeLength < newDeltaLength1)
+                throw new Error(rangeLength.toString() + " < " + newDeltaLength1.toString())
+            if(rangeLength - newDeltaLength1 < minDiff )
+                minDiff = rangeLength - newDeltaLength1
+            // if(newRangeLength < newDeltaLength2)
+            //     throw new Error(newRangeLength.toString() + " < " + newDeltaLength2.toString())
+        })
+
+        prop.forAll(deltaArb, fromArb, lengthArb)
     })
 })

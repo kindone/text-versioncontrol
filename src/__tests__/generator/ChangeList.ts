@@ -1,71 +1,50 @@
-import { Random, Shrinkable } from "fast-check";
-import { deltaArbitrary } from "./Delta";
-import * as _ from 'underscore'
+
+import { DeltaGen } from "./Delta";
 import { JSONStringify } from "../../core/util";
-import { ArbitraryWithShrink } from "./util";
-import { genSmallBiasedDistribution } from "./primitives";
 import { Delta } from "../../core/Delta";
 import { contentLengthIncreased } from "../../core/primitive";
+import { Arbitrary, Generator, inRange, interval, just, oneOf, Random, Shrinkable, Stream, TupleGen } from "jsproptest";
 
 
 export interface ChangeList {
-    lengths:number[]
     deltas:Delta[]
+    lengths:number[]
 }
 
-export class ChangeListArbitrary extends ArbitraryWithShrink<ChangeList> {
+interface DeltaAndLength {
+    delta:Delta
+    length:number
+}
 
-    constructor(readonly initialLength:number = -1, readonly numChanges:number = -1, readonly withAttr = false) {
-        super()
-    }
+export function ChangeListGen(initialLength = -1, numChanges = -1, withAttr = false):Generator<ChangeList> {
+    const initialLengthGen = initialLength != -1 ? just(initialLength) : oneOf(inRange(0, 3), interval(3, 20))
+    const numChangesGen = numChanges != -1 ? just(numChanges) : interval(1, 20)
 
-    public generate(mrng:Random):Shrinkable<ChangeList> {
-        const value = this.gen(mrng)
-        return this.wrapper(value)
-    }
+    return TupleGen(initialLengthGen, numChangesGen).flatMap(tuple => {
+        const initialLength = tuple[0]
+        const numChanges = tuple[1]
 
-    private gen(mrng:Random):ChangeList {
-        const initialLength = this.initialLength != -1 ? this.initialLength : genSmallBiasedDistribution(mrng, 20)
-        const numChanges = this.numChanges != -1 ? this.numChanges : genSmallBiasedDistribution(mrng, 30)
-        const deltas:Delta[] = []
-        let lengths = [initialLength]
-        let length = initialLength
+        const deltaAndLengthGen = (length:number) => DeltaGen(length, withAttr).map<[Delta,number]>(delta => {
+            const newLength = contentLengthIncreased(length, delta)
+            if(newLength < 0)
+                throw new Error("unexpected negative length:" + JSONStringify([length, newLength]) +  "/" + JSONStringify(delta))
+            return [delta, newLength]
+        })
 
-        for(let i = 0; i < numChanges; i++) {
-            const delta = deltaArbitrary(length, false).generate(mrng).value
-            deltas.push(delta)
-            length = contentLengthIncreased(length, delta)
-
+        let deltasAndLengthsGen:Generator<[Delta[], number[]]> = deltaAndLengthGen(initialLength).map(deltaAndLength => [[deltaAndLength[0]], [initialLength, deltaAndLength[1]]])
+        return deltaAndLengthGen(initialLength).accumulate(deltaAndLength => {
+            const delta = deltaAndLength[0]
+            const length = deltaAndLength[1]
             if(length < 0)
-                throw new Error("unexpected negative length:" + JSONStringify(lengths) +  "/" + JSONStringify(deltas))
-            lengths.push(length)
-        }
-
-        return { lengths, deltas }
-    }
-
-    public *shrinkGen(value:ChangeList):IterableIterator<Shrinkable<ChangeList>> {
-        if(value.deltas.length == 0)
-            return
-
-        if(value.deltas.length > 1) {
-            yield this.wrapper({lengths: value.lengths.slice(0,-1), deltas:value.deltas.slice(0, -1)})
-            yield this.wrapper({lengths: value.lengths.slice(1), deltas:value.deltas.slice(1)})
-        }
-
-        // shrink last delta
-        var iterator = deltaArbitrary(value.lengths[value.lengths.length-1], this.withAttr).shrinkGen(value.deltas[value.deltas.length-1])
-        let shrinkedDelta = iterator.next()
-        while(!shrinkedDelta.done) {
-            // console.log('shrinkGen', shrinkedOps)
-            const newDeltas = _.clone(value.deltas)
-            newDeltas[newDeltas.length-1] = shrinkedDelta.value.value
-            const shrinkedChangeList = {lengths:value.lengths, deltas:newDeltas}
-            yield this.wrapper(shrinkedChangeList)
-            shrinkedDelta = iterator.next()
-        }
-    }
+                throw new Error("unexpected negative length:" + length +  "/" + JSONStringify(delta))
+            return deltaAndLengthGen(length)
+        }, numChanges, numChanges).map(deltasAndLengths => {
+            const changeList:ChangeList = {deltas:[], lengths:[]}
+            deltasAndLengths.forEach(deltaAndLength => {
+                changeList.deltas.push(deltaAndLength[0])
+                changeList.lengths.push(deltaAndLength[1])
+            })
+            return changeList
+        })
+    })
 }
-
-export const changeListArbitrary = (initialLength:number = -1, numChanges:number = -1) => new ChangeListArbitrary(initialLength, numChanges)
-

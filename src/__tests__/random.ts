@@ -1,9 +1,9 @@
-import jsc = require('jsverify')
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { SharedString } from '../core/SharedString'
 import { IDelta } from '../core/IDelta';
 import { Delta } from '../core/Delta';
+import { Random } from 'jsproptest';
 
 export function randomString(size: number): string {
     // return Math.random()
@@ -26,7 +26,8 @@ export function randomString(size: number): string {
 export function randomInt(dist: number) {
     // return 0~dist-1
     // return Math.floor(Math.random() * dist)
-    return Math.floor(jsc.random(0, dist - 1))
+    const random = new Random()
+    return random.inRange(0, dist)
 }
 
 export function randomAttribute() {

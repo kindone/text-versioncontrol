@@ -1,10 +1,20 @@
 import { SharedString } from "../SharedString";
-import { contentArbitrary } from "../../__tests__/generator/Content";
-import * as fc from "fast-check";
 import { contentLength, normalizeOps} from "../primitive";
 import { expectEqual, JSONStringify } from "../util";
-import { contentChangeListArbitrary } from "../../__tests__/generator/ContentChangeList";
-import { deltaArbitrary } from "../../__tests__/generator/Delta";
+import { ContentGen } from "../../__tests__/generator/Content";
+import { ContentChangeListGen } from "../../__tests__/generator/ContentChangeList";
+import { forAll } from "jsproptest";
+import { IDelta } from "../../core/IDelta"
+import Op from "quill-delta/dist/Op";
+import { ChangeList } from "../../__tests__/generator/ChangeList";
+import { DeltaGen } from "../../__tests__/generator/Delta";
+
+type ContentAndChangeList = {
+    content: {
+        ops: Op[];
+    };
+    changeList: ChangeList
+}
 
 describe('SharedString', () => {
     it('fromDelta', () => {
@@ -20,40 +30,40 @@ describe('SharedString', () => {
     })
 
     it('toDelta', () => {
-        const contentArb = contentArbitrary()
+        const contentGen = ContentGen()
 
         // toDelta and original content
-        fc.assert(fc.property(contentArb, (content) => {
+        forAll((content:IDelta) => {
             const ss = SharedString.fromDelta(content)
             expectEqual(normalizeOps(content.ops), normalizeOps(ss.toDelta().ops))
-        }), {numRuns:1000})
+        }, contentGen)
 
-        const contentChangeArb = contentChangeListArbitrary()
+        const contentChangeGen = ContentChangeListGen()
 
         // sharedstring with changes applied should emit the correct delta
-        fc.assert(fc.property(contentChangeArb, (contentAndChangeList) => {
+        forAll((contentAndChangeList:ContentAndChangeList) => {
             const content = contentAndChangeList.content
             const changes = contentAndChangeList.changeList.deltas
             const ss = SharedString.fromDelta(content)
             for(const change of changes)
                 ss.applyChange(change, "x")
             expectEqual(normalizeOps(SharedString.fromDelta(ss.toDelta()).toDelta().ops), normalizeOps(ss.toDelta().ops))
-        }))
+        }, contentChangeGen)
     })
 
     it('toDelta branch', () => {
-        const contentArb = contentArbitrary()
+        const contentGen = ContentGen()
 
         // toDelta and original content
-        fc.assert(fc.property(contentArb, (content) => {
+        forAll((content:IDelta) => {
             const ss = SharedString.fromDelta(content)
             expectEqual(normalizeOps(content.ops), normalizeOps(ss.toDelta("any").ops))
-        }), {numRuns:1000})
+        }, contentGen)
 
-        const contentChangeArb = contentChangeListArbitrary()
+        const contentChangeGen = ContentChangeListGen()
 
         // sharedstring with changes applied should emit the correct delta
-        fc.assert(fc.property(contentChangeArb, (contentAndChangeList) => {
+        forAll((contentAndChangeList:ContentAndChangeList) => {
             const content = contentAndChangeList.content
             const changes = contentAndChangeList.changeList.deltas
             const ss = SharedString.fromDelta(content)
@@ -62,7 +72,7 @@ describe('SharedString', () => {
             expectEqual(normalizeOps(SharedString.fromDelta(ss.toDelta("x")).toDelta("x").ops), normalizeOps(ss.toDelta("x").ops))
             expectEqual(ss.toDelta("y").ops, normalizeOps(content.ops)) // should be invisible to other branch
 
-        }))
+        }, contentChangeGen)
     })
 
     it('toFlattenedDelta', () => {
@@ -124,9 +134,9 @@ describe('SharedString', () => {
     })
 
     it('applyChanges wildcard: * change behaves the same when no other change is present', () => {
-        const contentChangeArb = contentChangeListArbitrary()
+        const contentChangeGen = ContentChangeListGen()
 
-        fc.assert(fc.property(contentChangeArb, (contentAndChangeList) => {
+        forAll((contentAndChangeList:ContentAndChangeList) => {
             const content = contentAndChangeList.content
             const changes = contentAndChangeList.changeList.deltas
             const ss1 = SharedString.fromDelta(content)
@@ -139,13 +149,13 @@ describe('SharedString', () => {
 
             expectEqual(ss1.toDelta(), ss2.toDelta())
 
-        }), {numRuns:1000})
+        }, contentChangeGen)
     })
 
     it('applyChanges wildcard change applies as if it were applied to a flattened delta', () => {
-        const contentChangeArb = contentChangeListArbitrary()
+        const contentChangeGen = ContentChangeListGen()
 
-        fc.assert(fc.property(contentChangeArb, (contentAndChangeList) => {
+        forAll((contentAndChangeList:ContentAndChangeList) => {
             const content = contentAndChangeList.content
             const changes = contentAndChangeList.changeList.deltas
             const ss = SharedString.fromDelta(content)
@@ -153,16 +163,16 @@ describe('SharedString', () => {
                 ss.applyChange(change, "x")
 
             const len = contentLength(ss.toDelta())
-            const deltaArb = deltaArbitrary(len)
-            fc.assert(fc.property(deltaArb, (delta) => {
+            const deltaGen = DeltaGen(len)
+            forAll((delta:IDelta) => {
                 const ss3 = ss.clone()
                 const ss2 = SharedString.fromDelta(ss.toDelta())
                 ss3.applyChange(delta, "*")
                 ss2.applyChange(delta, "*")
                 expectEqual(normalizeOps(ss3.toDelta().ops), normalizeOps(ss2.toDelta().ops), JSONStringify(content) + " => " + JSONStringify(changes) + " / " + JSONStringify(delta))
-            }))
+            }, deltaGen)
 
 
-        }))
+        }, contentChangeGen)
     })
 })

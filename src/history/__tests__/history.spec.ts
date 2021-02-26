@@ -1,5 +1,4 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
-import jsc = require('jsverify')
 import * as _ from 'underscore'
 import { History } from '../History'
 import {  expectEqual, JSONStringify } from '../../core/util'
@@ -220,11 +219,5 @@ describe('generated scenarios', () => {
                 JSONStringify(set5) + ' and ' + JSONStringify(set6) + ' and ' + JSONStringify(set5ForClient),
             )
         }
-    })
-})
-
-describe('sort', () => {
-    jsc.property('idempotent', 'array nat', (arr: number[]) => {
-        return _.isEqual(arr.sort().sort(), arr.sort())
     })
 })

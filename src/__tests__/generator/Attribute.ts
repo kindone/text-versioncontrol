@@ -1,39 +1,30 @@
-import fc, { Random, Arbitrary, asciiString, Shrinkable } from "fast-check";
-import { genNat } from "./primitives";
-import AttributeMap from "quill-delta/dist/AttributeMap";
 
+import { integers, just, PrintableASCIIStringGen, TupleGen } from 'jsproptest'
+import { Generator } from "jsproptest";
 
+type Key = "i" | "b"
+export type IOrB = {[key in Key]?: string|null}
 
-export class AttributeMapArbitrary extends Arbitrary<AttributeMap> {
-    constructor(readonly arb:Arbitrary<any> = asciiString()) {
-        super()
-    }
-
-    public generate(mrng:Random):Shrinkable<AttributeMap> {
-        const kind = genNat(mrng, 8)
+export function AttributeMapArbitrary(strGen:Generator<string> = PrintableASCIIStringGen(0, 3)):Generator<IOrB> {
+    return integers(0, 8).flatMap<IOrB>(kind => {
         switch (kind) {
             case 0:
-                return this.arb.generate(mrng).map(obj => { return { b: obj} })
+                return strGen.map<IOrB>(str => { return { b: str} })
             case 1:
-                return fc.constant({ b: null }).generate(mrng)
+                return just<IOrB>({ b: null })
             case 2:
-                return this.arb.generate(mrng).map(obj => { return { i: obj} })
+                return strGen.map<IOrB>(str => { return { i: str} })
             case 3:
-                return fc.constant({ i: null }).generate(mrng)
+                return just<IOrB>({ i: null })
             case 4:
-                return this.arb.generate(mrng).map(obj => { return { b: obj, i: obj} })
+                return TupleGen(strGen, strGen).map<IOrB>(tuple => { return { b: tuple[0], i: tuple[1]} })
             case 5:
-                return fc.constant({ b:null, i: null }).generate(mrng)
+                return just<IOrB>({ b: null, i: null })
             case 6:
-                return this.arb.generate(mrng).map(obj => { return { b: obj, i: null} })
+                return strGen.map<IOrB>(str => { return { b: str, i: null} })
             case 7:
             default:
-                return this.arb.generate(mrng).map(obj => { return { b: null, i: obj} })
+                return strGen.map<IOrB>(str => { return { b:null, i: str} })
         }
-    }
+    })
 }
-
-const OpAttributeGen = fc.jsonObject(2)
-
-export const attributeMapArbitrary = () => new AttributeMapArbitrary()
-

@@ -1,36 +1,20 @@
-import fc, { Random, Shrinkable } from 'fast-check';
-
-import * as _ from 'underscore'
-import { ArbitraryWithShrink } from './util';
-import { InsertArbitrary } from './Insert';
+import { Insert, InsertGen } from './Insert';
+import { ArraySplitsGen } from './ArraySplit';
+import { Generator, interval, just, TupleGen } from 'jsproptest';
+import Op from 'quill-delta/dist/Op';
 import { IDelta } from '../../core/IDelta';
-import { genArraySplit } from './ArraySplit';
-import { genNat } from './primitives';
 
-
-
-export class ContentArbitrary extends ArbitraryWithShrink<IDelta>
-{
-    constructor(readonly baseLength: number = -1, readonly withEmbed = false, readonly withAttr = false) {
-        super()
-    }
-
-    public generate(mrng:Random):Shrinkable<IDelta> {
-        const baseLength = this.baseLength >= 0 ? this.baseLength : genNat(mrng, 20)
+export function ContentGen(baseLength = -1, withEmbed = false, withAttr = false):Generator<IDelta> {
+    const baseLengthGen = baseLength >= 0 ? just(baseLength) : interval(1, 20)
+    return baseLengthGen.flatMap(baseLength => {
         if(baseLength > 0) {
-            const splits = genArraySplit(mrng, baseLength)
-            const inserts = splits.map(split => InsertArbitrary(split.length, split.length, this.withEmbed, this.withAttr).generate(mrng).value)
-            return this.wrapper({ops:inserts})
+            const splitsGen = ArraySplitsGen(baseLength)
+            return splitsGen.flatMap(splits => {
+                return TupleGen<Generator<Insert>[]>(...splits.map(split => InsertGen(split.length, split.length, withEmbed, withAttr)))
+            }).map(inserts => {return {ops: inserts }})
         }
         else {
-            return this.wrapper({ops:[]})
+            return just({ops:[]})
         }
-    }
-
-    public *shrinkGen(value:IDelta):IterableIterator<Shrinkable<IDelta>> {
-        // TODO
-    }
+    })
 }
-
-// export const contentArbitrary = (withAttr = false):fc.Arbitrary<Change> => fc.array(new InsertArbitrary(1, 20, true, withAttr),10).map(ops => ({ops}))
-export const contentArbitrary = (baseLength = -1, withEmbed = false, withAttr = false):fc.Arbitrary<IDelta> => new ContentArbitrary(baseLength, withEmbed, withAttr)

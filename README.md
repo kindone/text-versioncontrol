@@ -33,7 +33,7 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
 	```js
 	{insert: "Hello"}, {insert: "World", attributes: {"color": "red"}}, {insert: {"video": "http://youtube.com/sOdLN"}}
 	```
-		
+
 * Operations
 
 	```js
@@ -41,25 +41,25 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
 	{delete: 2}
 	{insert: "Hello World!"}
 	```
-	
+
 * Embedded objects can hold a map of string->string.
 
 	```js
 	{insert: {"img": "file:///img.gif"}}
 	```
-	
+
 * Content with attributes
 
   	```js
   	{insert: "Hello", attributes: {"link": "http://github.com"}}
   	```
-  	
+
 * Adding attributes
-    
+
 	```js
 	{retain: 5, attributes: {"link": "http://github.com"}}
 	```
-	
+
 * Removing attributes
 
 	```js
@@ -80,7 +80,7 @@ new Delta(ops?:Op[])
 	new Delta([{retain: 5}, {delete: 2}, {insert: "Hello World!"}])
 	```
 * Construct by chaining
-	
+
 	```js
 	new Delta().retain(5).delete(2).insert("Hello World!")
 	```
@@ -104,7 +104,7 @@ new Delta(ops?:Op[])
 
 	```js
 	let delta = new Delta().insert("hello").insert(" world").retain(2).retain(3)
-	// normalize 
+	// normalize
 	delta = delta.normalize() // == new Delta().insert("hello world").retain(5)
 	// slice
 	delta.take(1,2) // == new Delta().insert("e")
@@ -126,17 +126,17 @@ new Delta(ops?:Op[])
 	```js
 	take(start:number, end:number):Delta
 	```
-	
+
 	* **Returns**: new delta slicing the original delta by the given range
 	* Equivalent to `cropContent(delta, start, end)`
-	
+
 * apply or compose
 
 	```js
 	apply(other:Delta):Delta
 	compose(other:Delta):Delta
 	```
-	
+
 	* **Returns**: Combination of two deltas into a single flattened delta.
 	* Applying a change on a content
 	* Combining two changes into one
@@ -147,7 +147,7 @@ new Delta(ops?:Op[])
 	```js
 	transform(other:Delta, priority = false):Delta
 	```
-	
+
 	* **Returns** transformed `other` as if this delta has preceded it
 	* `priority` is used for insert tie-breaking
 	* Equivalent to `transformDeltas(delta, other, priority)`
@@ -178,18 +178,18 @@ Text-VersionControl provides utility functions to manipulate deltas
 SharedString forms the core of Text-VersionControl's OT and CRDT functionality. SharedString is a mutable object that can be *edited* by receiving changes as delta. It can consolidate concurrent, distributed edits by multiple users.
 
 ### Initialization
-	
+
 ```js
 ss = SharedString.fromDelta({ops:[{insert:"Hello World"}]})
 ss = SharedString.fromString("Hello World")
 ```
-	
+
 ### Applying changes
 
 ```js
 applyChange(change:Delta, branch:string):Delta
 ```
-	
+
 * Edits the content by applying change. This mutates SharedString.
 * **Returns** *transformed change* as if the change was made in linear fashion
 * Multiple users with their own sequence of changes independently can be applied by alternating branch. 
@@ -200,33 +200,32 @@ applyChange(change:Delta, branch:string):Delta
 	ss.applyChange(changeByAlice2, "Alice") // second edit by Alice, while unaware of Bob's change
 	ss.applyChange(changeByCharlie, "Charlie") // Charlie is unaware of Alice's or Bob's changes
 	```
-		
+
 	* As long as you keep the order of changes within each branch, the result content will be the same no matter how you order the changes of different branches. This satisfies CRDT characteristics.
 	* `branch` also takes a role as a tiebreaker for concurrent inserts.
 * Wildcard branch lets you simulate a *checkpoint*, where the change is applied as if it's aware of all other changes from different branches
- 
+
   * The star wildcard branch sees the previous changes of all branches and can be seen by all branches later on
-  
+
 	  ```js
 	  ss.applyChange(changeByStar, "*")
 	  ss.applyChange(changeByCharlie, "Charlie") // Charlie is aware of change by '*'
 	  ```
-  
+
   * The underscore wildcard branch sees the previous changes of all branches but cannot be seen by other branches later on
-  
+
 	  ```js
 	  ss.applyChange(changeByUnderScore, "_")
 	  ss.applyChange(changeByCharlie, "Charlie") // Charlie is unaware of change by '_'
 	  ```
-  
-	 	  
+
 ### Rendering current content
-	
+
 ```js
 ss.toDelta() // the content seen as if changes in all branches were consolidated
 ss.toDelta(branch) // the content visible on specific branch
 ```
- 	
+
 ### Other methods
 
 * Clone current state
@@ -237,30 +236,30 @@ ss.toDelta(branch) // the content visible on specific branch
 
 
 ## History
-History utilizes SharedString to provide higher level functionalities such as snapshot access, append, merge, or rebase. It keeps the content and changes as Delta. 
+History utilizes SharedString to provide higher level functionalities such as snapshot access, append, merge, or rebase. It keeps the content and changes as Delta.
 
 ### Initialization
 
 ```js
 new History(name:string, initialContent: Delta | string)
 ```
-	
-* `name` here exists for tie-breaking concurrent inserts during merge or rebase.  
-	
+
+* `name` here exists for tie-breaking concurrent inserts during merge or rebase.
+
 ### Applying changes
 
 * By appending at current revision:
-	
+
 	```js
 	history.append(deltas)
 	```
-	
+
 * By merging forked sequence of changes diverged from a base revision:
-	
+
 	```js
 	history.merge({rev: baseRev, changes: deltasByAlice, branch: "Alice"})
 	```
-	
+
 	![Image of merging](./doc/merge.png)
 	* **Returns**: `MergeResult`
 
@@ -270,14 +269,14 @@ new History(name:string, initialContent: Delta | string)
 		 reqChanges: Delta[], // request changes (passed changes transformed)
 		 resChanges: Delta[] } // response changes (base changes)
 		```
-		
+
 	* `branchName` works as the insert tiebreaker by comparing with History's `name` value
-* By rebasing forked sequence of changes diverged from a base revision. 
-	
+* By rebasing forked sequence of changes diverged from a base revision.
+
 	```js
 	history.rebase({rev: baseRev, changes: deltasByAlice, branch: "Alice"})
 	```
-	
+
 	![Image of rebasing](./doc/rebase.png)
 	* **Returns**: `MergeResult`
 
@@ -290,24 +289,24 @@ new History(name:string, initialContent: Delta | string)
 	* Unlike merging, rebasing forces new set of changes to be first applied on the base revision, followed by existing changes (transformed) in the history since the base revision. Beware rebasing replaces changes already recorded in the history.
 
 ### Revisions, snapshots, and changes
-	
+
 ![Image of revision relationship](./doc/change.png)
-	
+
 * Getting the current revision
-	
+
 	```js
 	history.getCurrentRev()
 	```
-	
-* Getting the content 
-	
+
+* Getting the content
+
 	```js
 	history.getContent() // content at current revision
 	history.getContentAt(rev) // snapshot content at rev
 	```
-	
+
 * Getting the changes
-	
+
 	```js
 	history.getChangeAt(rev) // change made on content at rev
 	history.getChangesFrom(rev)
@@ -323,14 +322,14 @@ new History(name:string, initialContent: Delta | string)
 Text-VersionControl borrows Quill Delta's representation and many of method names but does not behave the same in a few cases. For example, many of the methods of Quill's Delta reorder adjacent delete and insert (which in most cases does not change the effect), but Text-VersionControl's equivalent methods preserve it. See the following examples:
 
 *  Result of `new Delta().retain(2).delete(2).insert('Hello')`
-	
+
 	```js
 	[{retain: 2}, {insert: 'Hello'}, {delete: 2}] // Quill
 	[{retain: 2}, {delete: 2}, {insert: 'Hello'}] // Text-VersionControl
 	```
-	
+
 *  Result of `new Delta([{insert: 'ab'}, {delete: 1}, {insert: 'cd'}]).compose([{retain: 4}]`
-	
+
 	```js
 	[{insert: 'abcd'}, {delete: 1}] // Quill
 	[{insert: 'ab'}, {delete: 1}, {insert: 'cd'}] // Text-VersionControl

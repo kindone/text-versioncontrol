@@ -1,9 +1,10 @@
 import { Document } from "../Document";
 import { expectEqual } from "../../core/util";
-import * as fc from 'fast-check'
-import { contentArbitrary } from "../../__tests__/generator/Content";
+import { ContentGen } from "../../__tests__/generator/Content";
 import { Range } from "../../core/Range";
 import { contentLength } from "../../core/primitive";
+import { forAll, interval } from "jsproptest";
+import { IDelta } from "../../core/IDelta";
 
 describe('document', () => {
 
@@ -47,8 +48,7 @@ describe('document', () => {
 
     it('document.take equals range.crop', () => {
         // return
-        fc.assert(
-            fc.property(contentArbitrary(), fc.integer(0, 10), fc.integer(0, 10), (content, num1, num2) => {
+        forAll((content:IDelta, num1:number, num2:number) => {
                 // console.log(content)
                 const len = contentLength(content)
                 const n1 = len > 0 ? num1 % len : 0
@@ -62,9 +62,7 @@ describe('document', () => {
 
                 const crop = new Range(start, end).cropContent(doc.getContent())
                 // console.log(take, crop)
-            })
-            ,{ verbose: true, numRuns:100, endOnFailure: true }
-        );
+        } ,ContentGen(), interval(0, 10), interval(0, 10));
     })
 
 

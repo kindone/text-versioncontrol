@@ -1,180 +1,63 @@
-import * as fc from 'fast-check'
-import * as _ from 'underscore'
+import { forAll, interval, Property, Random } from "jsproptest"
+import { contentLengthIncreased, minContentLengthForChange } from "../core/primitive"
+import { JSONStringify } from "../core/util"
+import { ArraySplitsGen, ArraySplit } from "./generator/ArraySplit"
+import { ChangeList, ChangeListGen } from "./generator/ChangeList"
+import { DeltaGen } from "./generator/Delta"
 
-import { basicOpArbitrary} from './generator/Op';
-import { JSONStringify } from '../core/util';
-import { opsArbitrary } from './generator/Ops';
-import { Random } from 'fast-check';
-import prand from 'pure-rand';
-
-const mrng = new Random(prand.xorshift128plus(0))
-
-describe('basic fastcheck', () => {
-    it('sort', () => {
-
-        fc.assert(fc.property(fc.array(fc.integer()), (arr: number[]) => {
-            return _.isEqual(arr.sort().sort(), arr.sort())
-        }))
-    })
-
-    it('basic fc usage', () => {
-        fc.assert(fc.property(fc.boolean(), b => (b && b) === b))
-    })
-
-    it('multiple args', () => {
-        fc.assert(fc.property(fc.tuple(fc.nat(), fc.nat()), ([num1, num2]) => {
-            return num1 + num2 >= num1
-        }))
-    })
+describe('generate', () => {
 
     it('attributeMap', () => {
-// interface AttributeMap {
-//     [key:string]:string|AttributeMap
-// }
-        // fc.dictionary(fc.ascii(), fc.(fc.ascii(), fc.dictionary(fc.ascii(), fsc.ascii()))
-        // const attributeValueMap = ():fc.Arbitrary<{[Key:string]:AttributeMap}> => fc.dictionary(fc.ascii(), attributeValueMap())
-        // const attributeValueMapArb = attributeValueMap()
-
-        fc.assert(fc.property(fc.jsonObject(2), (map) => {
-            return true
-        }))
     })
 
-    // it('basic op', () => {
-    //     fc.assert(fc.property(IntegerPositiveGen, (num) => {
-    //         fc.assert(fc.property(OpBasicGen(num), (op) => {
-    //             // console.log(JSONStringify(op))
-    //             return (op.retain && op.retain <= num) || (op.delete && op.delete <= num) || (typeof op.insert !== 'undefined')
-    //         }))
-    //     }))
+    it('ArraySplit', () => {
+        const minLength = 1
+        const maxLength = 30
+        const tupleGen = interval(minLength, maxLength).chain(length => interval(minLength, length)).chain(lenthAndMinSplits => interval(lenthAndMinSplits[1], lenthAndMinSplits[0])).map(tup => [tup[0][0], tup[0][1], tup[1]])
+        const prop = new Property((tup:[number, number, number]) => {
+            const [length, minSplits, maxSplits] = tup
+            const arraySplitsGen = ArraySplitsGen(length, minSplits, maxSplits)
+            expect(length).toBeGreaterThanOrEqual(minSplits)
+            expect(length).toBeGreaterThanOrEqual(maxSplits)
+            expect(minSplits).toBeLessThanOrEqual(maxSplits)
 
-    // })
+            forAll((arraySplits:ArraySplit[]) => {
+                expect(arraySplits[arraySplits.length-1].from + arraySplits[arraySplits.length-1].length).toBe(length)
 
-    // it('complex op', () => {
-    //     fc.assert(fc.property(IntegerPositiveGen, (num) => {
-    //         fc.assert(fc.property(OpComplexGen(num), (op) => {
-    //             // console.log(JSONStringify(op))
-    //             return (op.retain && op.retain <= num) || (op.delete && op.delete <= num) || (typeof op.insert !== 'undefined')
-    //         }))
-    //     }))
-
-    // })
-
-    // it('basic delta splits', () => {
-    //     fc.assert(fc.property(DeltaGen(5), (splits) => {
-    //         return true
-    //     }))
-    // })
-
-    // it('basic delta', () => {
-    //     fc.assert(fc.property(DeltaGen(5), (delta) => {
-    //         // console.log(JSONStringify(delta))
-    //         return true
-    //     }))
-    // })
-
-    // // it('basic changes', () => {
-    // //     fc.assert(fc.property(ChangeListGen(5, 5), (deltas) => {
-    // //         console.log(JSONStringify(deltas))
-    // //         return true
-    // //     }))
-
-    // // })
-
-    it('basic changes', () => {
-        // fc.assert(fc.property(new InsertArbitrary(true), (insert) => {
-        //     console.log(JSONStringify(insert))
-        //     return true
-        // }))
-
-        let i = 0
-
-        const arb = basicOpArbitrary()
-
-        fc.assert(fc.property(arb, (op) => {
-            // console.log(JSONStringify(op))
-            i++
-
-            return i < 300
-        }))
-
-        const shrinkable = opsArbitrary().generate(mrng)
-
-        console.log(JSONStringify(shrinkable))
-        console.log(JSONStringify(shrinkable.shrink().take(10)))
-
-        // fc.assert(fc.property(new ChangeListArbitrary(5, 5), (changeList) => {
-        //     // console.log(JSONStringify(changeList.deltas))
-        //     return true
-        // }))
-
+                return (arraySplits.length >= minSplits && arraySplits.length <= maxSplits)
+            }, arraySplitsGen)
+        })
+        prop.setNumRuns(100).forAll(tupleGen)
     })
 
-    it('basic ops', () => {
-
-        let i = 0
-
-        fc.assert(fc.property(opsArbitrary(), (ops) => {
-            // console.log(JSONStringify(ops))//, contentLengthIncreased(new Delta(ops)))
-            i++
-            // fc.assert(deltaLength(new Delta(ops)) ===
-            return i < 300
-        }))
-
-        const shrinkable = opsArbitrary().generate(mrng)
-
-        console.log(JSONStringify(shrinkable))
-        console.log(JSONStringify(shrinkable.shrink().take(10)))
-
-
+    it('generate Delta', () => {
+        const prop = new Property((initialLength:number, seed:number):void => {
+            const random = new Random(seed.toString())
+            const delta = DeltaGen(initialLength).generate(random).value
+            const minLength = minContentLengthForChange(delta)
+            if(minLength != initialLength)
+                throw new Error(`${initialLength},${minLength},${JSONStringify(delta)}`)
+            const newLength = contentLengthIncreased(initialLength, delta)
+            if(newLength < 0)
+                throw new Error(`${initialLength},${newLength},${JSONStringify(delta)}`)
+        })
+        prop.setNumRuns(10000).forAll(interval(0, 30), interval(0, 100))
     })
 
+    it('Delta bug', () => {
+        const random = new Random('65')
+        expect(contentLengthIncreased(11, DeltaGen(11).generate(random).value)).toBeGreaterThanOrEqual(0)
+    })
+
+    it('generate ChangeList', () => {
+        // forAll((initialLength:number, numChanges:number, seed:number):void => {
+        //     const random = new Random(seed.toString())
+        //     ChangeListGen(initialLength, numChanges).generate(random)
+        // }, interval(0, 10), interval(1, 20), interval(0, 100))
+        // const random = new Random()
+        // for(let i = 0; i < 1000; i++)
+        //     console.log(JSONStringify(ChangeListGen().generate(random).value))
+        forAll((_changeList:ChangeList):void => {
+        }, ChangeListGen(10, 50))
+    })
 })
-
-
-
-// describe('Op generator', () => {
-//     jsc.property('idempotent', OpGen, (op: Op) => {
-//         // console.log(op)
-//         let numActive = 0
-//         if (op.insert) numActive++
-//         if (op.delete) numActive++
-//         if (op.retain) numActive++
-
-//         return numActive === 1
-//     })
-
-//     jsc.property('size and length', OpGen, (op: Op) => {
-//         // console.log(op)
-//         let numActive = 0
-//         if (op.insert) numActive++
-//         if (op.delete) numActive++
-//         if (op.retain) numActive++
-
-//         return numActive === 1
-//     })
-// })
-
-// describe('Generators', () => {
-//     console.log('nat:', jsc.nat(5).generator(5))
-//     console.log('nat:', jsc.nat(5).generator(7))
-//     console.log('asciinestring:', jsc.asciinestring.generator(10))
-
-//     console.log('op:', OpGen.generator(7))
-//     console.log('delta:', DeltaGen.generator(3))
-//     console.log('deltas:', DeltasGen.generator(3))
-//     console.log('changes:', JSONStringify(ChangesGen.generator(3)))
-// })
-
-// describe('Changes generator', () => {
-//     jsc.property('test', ChangesGen, (changes: Delta[]) => {
-//         const length = 10
-//         const content = new Delta({ ops: [{ insert: '1234567890' }] })
-//         let applied = content
-//         for (const change of changes) {
-//             applied = applied.compose(change)
-//         }
-
-//         return true
-//     })
-// })

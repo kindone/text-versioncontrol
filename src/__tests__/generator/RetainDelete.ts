@@ -1,7 +1,7 @@
-import fc, { Arbitrary, Random, Shrinkable } from "fast-check";
 import { AttributeMapArbitrary } from "./Attribute";
 import Op from "quill-delta/dist/Op";
 import AttributeMap from "quill-delta/dist/AttributeMap";
+import { booleanGen, Generator, inRange, integers, TupleGen } from "jsproptest";
 
 
 export interface SimpleRetain extends Op {
@@ -14,38 +14,25 @@ export interface Retain extends Op {
 }
 
 
-export class SimpleRetainArbitrary extends Arbitrary<SimpleRetain> {
-    constructor(readonly minLen = 1, readonly maxLen = 100) {
-        super()
-    }
-
-    public generate(mrng:Random):Shrinkable<SimpleRetain> {
-        return fc.integer().generate(mrng).map(num => { return { retain: num} })
-    }
+export function SimpleRetainGen(minLen = 1, maxLen = 100):Generator<SimpleRetain> {
+    return integers(minLen, maxLen).map(num => { return { retain: num}})
 }
 
-class RetainArbitrary extends Arbitrary<Retain> {
-    constructor(readonly minLen = 1, readonly maxLen = 100, readonly withAttr = false) {
-        super()
+export function RetainGen(minLen = 1, maxLen = 100, withAttr = false) {
+    if(withAttr) {
+        booleanGen().flatMap(hasAttr => {
+            if(hasAttr) {
+                return TupleGen(inRange(minLen, maxLen), AttributeMapArbitrary()).map(tuple => { return { retain: tuple[0], attributes: tuple[1]} })
+            }
+            else {
+                return SimpleRetainGen(minLen, maxLen)
+            }
+        })
     }
-
-    generate(mrng:Random):Shrinkable<Retain> {
-        if(this.withAttr) {
-            const hasAttr = mrng.nextBoolean()
-            const arb = hasAttr ?
-            fc.record({ retain: fc.integer(this.minLen, this.maxLen),
-                attributes: new AttributeMapArbitrary() }) : simpleRetainArbitrary(this.minLen, this.maxLen)
-            return arb.generate(mrng)
-        }
-        else
-            return simpleRetainArbitrary(this.minLen, this.maxLen).generate(mrng)
-    }
-
-
+    else
+        return SimpleRetainGen(minLen, maxLen)
 }
 
-
-export const simpleRetainArbitrary = (minLen:number = 1, maxLen:number = 100) => new SimpleRetainArbitrary(minLen, maxLen)
-export const retainWithAttrArbitrary = (minLen:number = 1, maxLen:number = 100):Arbitrary<Op> => fc.record({retain: fc.integer(minLen, maxLen), attr: new AttributeMapArbitrary()})
-export const retainArbitrary = (minLen:number = 1, maxLen:number = 100, withAttr = false):Arbitrary<Op> => new RetainArbitrary(minLen, maxLen, withAttr)
-export const deleteArbitrary = (minLen:number = 1, maxLen:number = 100) => fc.record({delete: fc.integer(minLen, maxLen)})
+export function DeleteGen(minLen = 1, maxLen = 100) {
+    return inRange(minLen, maxLen).map(num => { return {delete: num} })
+}

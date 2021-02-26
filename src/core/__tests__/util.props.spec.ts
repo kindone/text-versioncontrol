@@ -1,19 +1,19 @@
-import fc from "fast-check";
-import { contentArbitrary } from "../../__tests__/generator/Content";
-import { deltaArbitrary } from "../../__tests__/generator/Delta";
+import { ContentGen } from "../../__tests__/generator/Content";
 import { invertChange, contentLength, minContentLengthForChange, normalizeOps, filterOutChangesByIndice, filterChanges, applyChanges } from "../primitive";
 import { SharedString } from "../SharedString";
 import { IDelta } from "../IDelta";
 import { History } from "../../history/History"
-import { contentChangeListArbitrary } from "../../__tests__/generator/ContentChangeList";
 import { JSONStringify, expectEqual, isEqual } from "../util";
+import { DeltaGen } from "../../__tests__/generator/Delta";
+import { forAll } from "jsproptest";
+import { Delta } from "../Delta";
+import { ContentChangeList, ContentChangeListGen } from "../../__tests__/generator/ContentChangeList";
 
 describe('reverse function', () =>{
     it('basic', () => {
-        const contentArb = contentArbitrary(-1, true)
-        const changeArb = deltaArbitrary(-1, true)
-        fc.assert(
-            fc.property(contentArb, changeArb, (content, change) => {
+        const contentGen = ContentGen(-1, true)
+        const changeGen = DeltaGen(-1, true)
+        forAll((content:IDelta, change:Delta) => {
                 change.ops = normalizeOps(change.ops)
                 if(contentLength(content) < minContentLengthForChange(change))
                     return
@@ -35,9 +35,7 @@ describe('reverse function', () =>{
                 ss2.applyChange(undo, '_')
                 ss2.applyChange(change, '_')
                 expectEqual(normalizeOps(result.ops), normalizeOps(ss2.toDelta().ops))
-            }),
-            { verbose: true, numRuns:1000 }
-        )
+            }, contentGen, changeGen)
     })
 })
 
@@ -107,10 +105,9 @@ describe('filterChanges', () =>{
     })
 
     it('one', () => {
-        const contentChangeArb = contentChangeListArbitrary(-1, 2)
+        const contentChangeGen = ContentChangeListGen(-1, 2)
 
-        fc.assert(
-            fc.property(contentChangeArb, (contentChangeList) => {
+        forAll((contentChangeList:ContentChangeList) => {
                 const content = contentChangeList.content
                 const changeList = contentChangeList.changeList
                 const changes = changeList.deltas
@@ -130,15 +127,12 @@ describe('filterChanges', () =>{
                 if(!isEqual(ss.toDelta(), ss2.toDelta()))
                     throw new Error(JSONStringify(ss) + " / " + JSONStringify(ss2))
 
-            }),
-            { verbose: true, numRuns:1000 }
-        )
+            }, contentChangeGen)
     })
     it('basic', () => {
-        const contentChangeArb = contentChangeListArbitrary(-1, 1)
+        const contentChangeGen = ContentChangeListGen(-1, 1)
 
-        fc.assert(
-            fc.property(contentChangeArb, (contentChangeList) => {
+        forAll((contentChangeList:ContentChangeList) => {
                 const content = contentChangeList.content
                 const changes = contentChangeList.changeList.deltas
 
@@ -162,8 +156,6 @@ describe('filterChanges', () =>{
                     expectEqual(result1, result2)
                 }
 
-            }),
-            { verbose: true, numRuns:1000 }
-        )
+            }, contentChangeGen)
     })
 })

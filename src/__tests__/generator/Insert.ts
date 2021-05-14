@@ -1,6 +1,6 @@
 import Op from "quill-delta/dist/Op";
 import AttributeMap from "quill-delta/dist/AttributeMap";
-import { AttributeMapArbitrary } from "./Attribute";
+import { AttributeMapGen } from "./Attribute";
 import { EmbedObjGen } from "./Embed";
 import { booleanGen, Generator, inRange, PrintableASCIIStringGen, TupleGen } from "jsproptest";
 
@@ -34,11 +34,11 @@ export function SimpleEmbedGen() {
     })
 }
 
-export const EmbedGen = (withAttr:Boolean = false) =>  {
+export const EmbedGen = (withAttr:Boolean = true) =>  {
     if(withAttr) {
         booleanGen().flatMap(hasAttr => {
             if(hasAttr)
-                return TupleGen(EmbedObjGen(), AttributeMapArbitrary()).map(tuple => { return {
+                return TupleGen(EmbedObjGen(), AttributeMapGen()).map(tuple => { return {
                     insert: tuple[0], attributes: tuple[1]
                 }})
             else
@@ -50,7 +50,7 @@ export const EmbedGen = (withAttr:Boolean = false) =>  {
     }
 }
 
-export function InsertGen(minLength = 1, maxLength = 20, withEmbed = false, withAttr = false) {
+export function InsertGen(minLength = 1, maxLength = 20, withEmbed = true, withAttr = true) {
     const gen:(kind:number) => Generator<Insert> = kind => {
         if(kind === 0)
             // insert
@@ -64,19 +64,19 @@ export function InsertGen(minLength = 1, maxLength = 20, withEmbed = false, with
         }
         else if(kind == 2) {
             // insert with attribute
-            return TupleGen(SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength)).map(obj => obj.insert), AttributeMapArbitrary()).map(
+            return TupleGen(SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength)).map(obj => obj.insert), AttributeMapGen(false)).map(
                 tuple => {return {insert: tuple[0], attributes: tuple[1]}}
             )
         }
         else {
             // embed with attribute
             if(withEmbed && minLength <= 1 && maxLength >= 1) {
-                return TupleGen(SimpleEmbedGen().map(obj => obj.insert), AttributeMapArbitrary()).map(
+                return TupleGen(SimpleEmbedGen().map(obj => obj.insert), AttributeMapGen(false)).map(
                     tuple => {return {insert: tuple[0], attributes: tuple[1]}}
                 )
             }
             else
-                return TupleGen(SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength)).map(obj => obj.insert), AttributeMapArbitrary()).map(
+                return TupleGen(SimpleInsertGen(PrintableASCIIStringGen(minLength, maxLength)).map(obj => obj.insert), AttributeMapGen(false)).map(
                     tuple => {return {insert: tuple[0], attributes: tuple[1]}})
         }
     }

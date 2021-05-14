@@ -1,39 +1,83 @@
-import { expectEqual } from "../util";
+import { expectEqual, JSONStringify } from "../util";
 import { Range } from "../Range";
 import Delta = require("quill-delta");
 import * as _ from 'underscore'
 import { normalizeDeltas } from "../primitive";
 import { DeltaGen } from "../../__tests__/generator/Delta";
-import { interval, Property } from "jsproptest";
+import { ArrayGen, forAll, interval, Property } from "jsproptest";
+import { RangeGen } from "../../__tests__/generator/Range";
+import { Insert, InsertGen } from "../../__tests__/generator/Insert";
+import { ContentGen } from "../../__tests__/generator/Content";
+import { IDelta } from "../IDelta";
+import { RetainGen } from "../../__tests__/generator/RetainDelete";
 
-describe('Range', () => {
-    it('crop0-1', () => {
+describe('Range::cropContent', () => {
+    it('crop "a" by (0,1) will result in "a" ', () => {
         const range = new Range(0, 1)
-
         expectEqual(range.cropContent({ops:[{insert:"a"}]}),
             {ops: [{insert:"a"}]}
         )
+
     })
 
-    it('crop0-0', () => {
+    it('crop "a" by (0,0) will result in empty', () => {
         const range = new Range(0, 0)
-
         expectEqual(range.cropContent({ops:[{insert:"a"}]}),
             {ops: []}
         )
     })
 
-    it('crop empty', () => {
+    it('cropped result of an empty is an empty', () => {
         const empty = {ops: []}
         const range = new Range(0, 0)
         expectEqual(range.cropContent(empty), empty)
     })
 
-    it('applyChange', () => {
+    it('crop any content by (0,1)',() => {
+        const range = new Range(0, 1)
+        forAll((content:IDelta) => {
+            const croppedContent = range.cropContent(content)
+            if(content.ops.length > 1) {
+                const firstOp = content.ops[0]
+                // sliced
+                if(typeof firstOp.insert == 'string') {
+                    expectEqual(normalizeDeltas(croppedContent), normalizeDeltas({ops: [{insert: firstOp.insert[0], attributes: firstOp.attributes}]}))
+                }
+                else {
+                    expectEqual(normalizeDeltas(croppedContent), normalizeDeltas({ops: [firstOp]}))
+                }
+            }
+        }, ContentGen())
+    })
+
+    it('crop any content by (0,0) will result in empty', () => {
+        const range = new Range(0, 0)
+        forAll((content:IDelta) => {
+            expectEqual(normalizeDeltas(range.cropContent(content)), [])
+        }, ContentGen())
+    })
+
+    it('crop empty content by any range will result in empty', () => {
+        const emptyContent = new Delta()
+        forAll((range:Range) => {
+            expectEqual(normalizeDeltas(range.cropContent(emptyContent)), [])
+        }, RangeGen())
+    })
+})
+
+
+describe('Range::applyChange', () => {
+
+    it('retain does no effect on range', () => {
+        forAll((retain:IDelta) => {
+
+        }, RetainGen())
+    })
+
+    it('delete shifts range to the left', () => {
         const range = new Range(10, 20)
         expectEqual(range.applyChange(new Delta().delete(10)), new Range(0, 10))
         expectEqual(range.applyChange(new Delta().delete(11)), new Range(0, 9))
-
         expectEqual(range.applyChange(new Delta().retain(5).delete(5)), new Range(5, 15))
         expectEqual(range.applyChange(new Delta().retain(5).delete(6)), new Range(5, 14))
         expectEqual(range.applyChange(new Delta().retain(5).delete(15)), new Range(5, 5)) // delete all
@@ -54,6 +98,10 @@ describe('Range', () => {
         expectEqual(range.applyChangeOpen(new Delta().retain(11).delete(5)), new Range(10, 15)) // internal delete
         expectEqual(range.applyChangeOpen(new Delta().retain(11).delete(9)), new Range(10, 11))
         expectEqual(range.applyChangeOpen(new Delta().retain(11).delete(10)), new Range(10, 11))
+    })
+
+    it('insert shifts range to the right', () => {
+        const range = new Range(10, 20)
 
         expectEqual(range.applyChange(new Delta().insert('123')), new Range(13, 23))
         expectEqual(range.applyChange(new Delta().insert('12345')), new Range(15, 25))
@@ -95,7 +143,24 @@ describe('Range', () => {
         )
     })
 
-    it('applyChanges', () => {
+    it('applyChange regression', () => {
+        const range = new Range(1, 3)
+
+        const changes = [
+            {ops: [
+                {retain:3}, {insert: {x: "1"}, attributes: {y:"2"}}, {insert: {x: "3"}, attributes: {y:"4"}}, {insert: "a"}, {insert: {x: "5"}, attributes: {y:"6"}}
+            ]}
+        ]
+
+        expectEqual(range.applyChange(changes[0]),
+            new Range(1,3)
+        )
+    })
+})
+
+describe('Range::applyChanges', () => {
+
+    it('applyChanges is equivalent to sequentially executed multiple applyChange', () => {
         const range = new Range(10, 20)
         const changes = [new Delta().delete(11), new Delta().insert('123'), new Delta().retain(10).insert('12345')]
         expectEqual(
@@ -106,6 +171,19 @@ describe('Range', () => {
             range.applyChanges(changes),
         )
     })
+
+    it('applyChanges is equivalent to sequentially executed multiple applyChange (as property)', () => {
+        forAll((changes:Delta[], range:Range) => {
+            let appliedRange = range
+            for(let change of changes) {
+                appliedRange = appliedRange.applyChange(change)
+            }
+            expectEqual(range.applyChanges(changes), appliedRange)
+        }, ArrayGen(DeltaGen(), 0, 10) , RangeGen(0, 10, 0, 10))
+    })
+})
+
+describe('Range::cropDelta', () => {
 
     it('cropDelta', () => {
         const range = new Range(10, 20)
@@ -379,21 +457,9 @@ describe('Range', () => {
             {ops: []}
         )
     })
+})
 
-    it('applyChange regression', () => {
-        const range = new Range(1, 3)
-
-        const changes = [
-            {ops: [
-                {retain:3}, {insert: {x: "1"}, attributes: {y:"2"}}, {insert: {x: "3"}, attributes: {y:"4"}}, {insert: "a"}, {insert: {x: "5"}, attributes: {y:"6"}}
-            ]}
-        ]
-
-        expectEqual(range.applyChange(changes[0]),
-            new Range(1,3)
-        )
-    })
-
+describe('Range::cropChanges', () => {
     it('cropChanges', () => {
         const range = new Range(10, 20)
 
@@ -418,16 +484,17 @@ describe('Range', () => {
     })
 })
 
-describe('property tests', () => {
+
+describe('Range property tests', () => {
     it('cropChanges and applyChanges',() => {
-        const deltaArb = DeltaGen(10)
-        const fromArb = interval(0, 20)
-        const lengthArb = interval(0, 20)
+        const deltaGen = DeltaGen(10)
+        const fromGen = interval(0, 20)
+        const lengthGen = interval(0, 20)
         let minDiff = 1000
 
-        const prop = new Property((delta:Delta, from:number, len:number) => {
+        const prop = new Property((delta:Delta, from:number, length:number) => {
             // const length = minContentLengthForChange(delta)
-            const range = new Range(from, from + len)
+            const range = new Range(from, from + length)
             const rangeLength = range.end - range.start
             const newRange = range.applyChanges([delta])
             const newRangeLength = newRange.end - newRange.start
@@ -458,6 +525,8 @@ describe('property tests', () => {
                     throw new Error('unexpected op')
             },0)
 
+            expect(rangeLength).toBeLessThan(newDeltaLength1)
+
             if(rangeLength < newDeltaLength1)
                 throw new Error(rangeLength.toString() + " < " + newDeltaLength1.toString())
             if(rangeLength - newDeltaLength1 < minDiff )
@@ -466,6 +535,6 @@ describe('property tests', () => {
             //     throw new Error(newRangeLength.toString() + " < " + newDeltaLength2.toString())
         })
 
-        prop.forAll(deltaArb, fromArb, lengthArb)
+        prop.forAll(deltaGen, fromGen, lengthGen)
     })
 })

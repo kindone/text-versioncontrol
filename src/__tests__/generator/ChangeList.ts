@@ -3,7 +3,7 @@ import { DeltaGen } from "./Delta";
 import { JSONStringify } from "../../core/util";
 import { Delta } from "../../core/Delta";
 import { contentLengthIncreased } from "../../core/primitive";
-import { Arbitrary, Generator, inRange, interval, just, oneOf, Random, Shrinkable, Stream, TupleGen } from "jsproptest";
+import { Generator, inRange, interval, just, oneOf, TupleGen } from "jsproptest";
 
 
 export interface ChangeList {
@@ -16,7 +16,7 @@ interface DeltaAndLength {
     length:number
 }
 
-export function ChangeListGen(initialLength = -1, numChanges = -1, withAttr = false):Generator<ChangeList> {
+export function ChangeListGen(initialLength = -1, numChanges = -1, withAttr = true):Generator<ChangeList> {
     const initialLengthGen = initialLength != -1 ? just(initialLength) : oneOf(inRange(0, 3), interval(3, 20))
     const numChangesGen = numChanges != -1 ? just(numChanges) : interval(1, 20)
 

@@ -3,9 +3,8 @@ import Op from "quill-delta/dist/Op";
 import * as _ from 'underscore'
 import { Delta } from "../../core/Delta";
 import { contentLengthIncreased, minContentLengthForChange } from "../../core/primitive";
-import { JSONStringify } from "../../core/util";
 import { ArraySplitsGen } from "./ArraySplit";
-import { AttributeMapArbitrary } from "./Attribute";
+import { AttributeMapGen } from "./Attribute";
 import { InsertGen } from "./Insert";
 
 interface Indexable {
@@ -20,7 +19,7 @@ function getSortedArrayFromSet<T>(set:Set<T>):Array<T>  {
     return arr.sort((a,b) => a > b ? 1 : (a == b ? 0 : -1))
 }
 
-export function OpsGen(baseLength = -1, withAttr = false):Generator<Op[]> {
+export function OpsGen(baseLength = -1, withAttr = true):Generator<Op[]> {
     const baseLengthGen:Generator<number> = baseLength == -1 ? oneOf(weightedGen(inRange(1, 3), 0.9), inRange(3, 20)) : just(baseLength)
 
     return baseLengthGen.flatMap(baseLength => {
@@ -33,7 +32,7 @@ export function OpsGen(baseLength = -1, withAttr = false):Generator<Op[]> {
                             if(withAttr)
                                 return booleanGen(0.2).flatMap(hasAttr => {
                                     if(hasAttr) {
-                                        return AttributeMapArbitrary().map<Op>(attr => {
+                                        return AttributeMapGen().map<Op>(attr => {
                                             return { retain: split.length, attributes: attr}
                                         })
                                     }

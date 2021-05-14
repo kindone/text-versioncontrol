@@ -7,7 +7,7 @@ import { elementOf, Generator, interval, just } from 'jsproptest';
 
 export const OpKeyGen = elementOf('retain', 'insert', 'delete')
 
-function OpGen(minLen = 1, maxLen = 100, withEmbed = false, withAttr = false) {
+function OpGen(minLen = 1, maxLen = 100, withEmbed = true, withAttr = true) {
     return interval(0, 2).map(kind => {
         if(kind === 0) {
             return RetainGen(minLen, maxLen, withAttr)
@@ -21,7 +21,7 @@ function OpGen(minLen = 1, maxLen = 100, withEmbed = false, withAttr = false) {
     })
 }
 
-export const FixedLengthOpGen = (key:string, length:number, withEmbed = false, withAttr = false):Generator<Op> => {
+export const FixedLengthOpGen = (key:string, length:number, withEmbed = true, withAttr = true):Generator<Op> => {
     if(key === 'retain') {
         return RetainGen(length, length, withAttr)
     }
@@ -33,7 +33,7 @@ export const FixedLengthOpGen = (key:string, length:number, withEmbed = false, w
     }
 }
 
-export const basicOpArbitrary = (minLen:number = 1, maxLen:number = 100) => OpGen(minLen, maxLen)
+export const basicOpArbitrary = (minLen:number = 1, maxLen:number = 100) => OpGen(minLen, maxLen, false, false)
 export const complexOpArbitrary = (minLen:number = 1, maxLen:number = 100) => OpGen(maxLen, maxLen, true, true)
 
 // tweak to generate Arbitrary<Op[]> with empty op generator

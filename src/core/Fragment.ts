@@ -87,24 +87,12 @@ export class Fragment {
         return new Fragment(this.val.slice(begin, end), this.attrs, this.mod.insertedBy, newDeletedBy)
     }
 
-    public isDeletedBy(branch: string) {
-        return this.mod.isDeletedBy(branch)
-    }
-
-    // public isInsertedBy(branch: string) {
-    //     return this.mod.isInsertedBy(branch)
-    // }
-
-    public isInsertedByOther(branch: string) {
-        return this.mod.isInsertedByOther(branch)
+    public isInsertedByNonWildcardOther(branch: string) {
+        return this.mod.isInsertedByNonWildcardOther(branch)
     }
 
     public isVisibleTo(branch: string) {
         return this.mod.isVisibleTo(branch)
-    }
-
-    public isVisible() {
-        return this.mod.isVisible()
     }
 
     public shouldAdvanceForTiebreak(branch: string) {
@@ -120,8 +108,8 @@ export class Fragment {
         return this.mod.isDeleted()
     }
 
-    public isDeletedByOther(branch: string) {
-        return this.mod.isDeletedByOther(branch)
+    public isDeletedByNonWildcardOther(branch: string) {
+        return this.mod.isDeletedByNonWildcardOther(branch)
     }
 
     public equals(cs: Fragment) {
@@ -226,12 +214,17 @@ export class Fragment {
     public getAttributes(): AttributeMap {
         if (!this.attrs) return {}
 
-        if (!this.attrs.mod) {
-            return this.attrValWithoutNullFields()
-        }
-        // take branches in reverse order to let a branch with higher priority overrides others
         const projected: AttributeMap = this.attrValWithoutNullFields()
-        const branches = _.keys(this.attrs.mod)
+        if (!this.attrs.mod) {
+            return projected
+        }
+
+        const sortFunc = (a:string, b:string) => {
+            if(a === '*' || a === '_')
+            (a > b) ? 1 : (a === b) ? 0 : -1
+        }
+
+        // take branches in reverse order to let a branch with higher priority overrides others
         for (const branch of Object.keys(this.attrs.mod).sort()) {
             // set or unset fields by mod
             const mod = this.attrs.mod[branch]

@@ -11,8 +11,8 @@ import { ContentChangeList, ContentChangeListGen } from "../../__tests__/generat
 
 describe('reverse function', () =>{
     it('basic', () => {
-        const contentGen = ContentGen(-1, true)
-        const changeGen = DeltaGen(-1, true)
+        const contentGen = ContentGen(-1, true, true)
+        const changeGen = DeltaGen(-1, true, true)
         forAll((content:IDelta, change:Delta) => {
                 change.ops = normalizeOps(change.ops)
                 if(contentLength(content) < minContentLengthForChange(change))
@@ -105,7 +105,7 @@ describe('filterChanges', () =>{
     })
 
     it('one', () => {
-        const contentChangeGen = ContentChangeListGen(-1, 2)
+        const contentChangeGen = ContentChangeListGen(-1, 2, true, true)
 
         forAll((contentChangeList:ContentChangeList) => {
                 const content = contentChangeList.content
@@ -130,7 +130,7 @@ describe('filterChanges', () =>{
             }, contentChangeGen)
     })
     it('basic', () => {
-        const contentChangeGen = ContentChangeListGen(-1, 1)
+        const contentChangeGen = ContentChangeListGen(-1, 1, true, true)
 
         forAll((contentChangeList:ContentChangeList) => {
                 const content = contentChangeList.content

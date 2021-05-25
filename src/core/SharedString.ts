@@ -137,6 +137,8 @@ export class SharedString {
         )
     }
 
+    // flatten changes applied (including insert, delete), regardless of branches
+    // parts with no changes are represented as retain
     public toFlattenedDelta(): IDelta {
         const ops = _.map(
             this.fragments,
@@ -153,8 +155,10 @@ export class SharedString {
             this.fragments,
             (result: Op[], fragment) => {
                 const op = fragment.toOp()
+                // original content that was not deleted
                 if (typeof branch === 'undefined' && (!fragment.isDeleted() && op.insert !== ''))
                     return result.concat(fragment.toOp())
+                // inserted content
                 else if(typeof branch === 'string' && (fragment.isVisibleTo(branch) && op.insert !== ''))
                     return result.concat(fragment.toOp())
                 else

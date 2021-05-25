@@ -21,59 +21,67 @@ export class Modification {
         return this.isDeleted() ? Status.DELETED : Status.INITIAL
     }
 
-    public isDeletedBy(branch: string) {
-        return this.deletedBy.has(branch)
-    }
-
-    // public isInsertedBy(branch: string) {
-    //     return this.insertedBy && this.insertedBy === branch
+    // public isVisible() {
+    //     return !this.isDeleted()
     // }
 
-    public isInsertedByOther(branch: string) {
-        return this.insertedBy !== undefined && this.insertedBy !== branch
-    }
-
-    // public isInsertedThenDeletedBy(branch: string) {
-    //     return this.isInsertedBy(branch) && this.isDeletedBy(branch)
-    // }
-
-    public isVisibleTo(branch: string) {
+    public isVisibleTo(branch: string):boolean {
+        // wildcard can see any change unless it's deleted
         if(branch === '*' || branch === '_')
             return !this.isDeleted()
-        else
-            return !this.isDeletedBy(branch) && !this.isInsertedByOther(branch)
-    }
 
-    public isVisible() {
-        return !this.isDeleted()
-    }
-
-    public shouldAdvanceForTiebreak(branch: string) {
-        // use tiebreaking string comparison on inserted branch
-        if(branch === '*' || branch === '_')
+        // if deleted by myself or a wildcard, then it's not visible
+        if(this.isDeletedBy(branch) || this.isDeletedByWildcard())
             return false
-        else
-            return this.insertedBy !== undefined && this.insertedBy < branch && this.insertedBy  !== '*'
+        // if inserted by other but not a wildcard, then it's not visible
+        if(this.isInsertedByNonWildcardOther(branch))
+            return false
+
+        return true
     }
 
-    public isInserted() {
+    public shouldAdvanceForTiebreak(branch: string):boolean {
+        // use tiebreaking string comparison on inserted branch
+        return this.insertedBy !== undefined && this.insertedBy < branch
+    }
+
+    public isInserted():boolean {
         return this.insertedBy !== undefined
     }
 
-    public isDeleted() {
+    public isInsertedByOther(branch: string):boolean {
+        return this.insertedBy !== undefined && this.insertedBy !== branch
+    }
+
+    public isInsertedByNonWildcardOther(branch: string):boolean {
+        return this.isInsertedByOther(branch) && !this.isInsertedByWildcard()
+    }
+
+    private isInsertedByWildcard():boolean {
+        return (this.insertedBy === '*')
+    }
+
+    public isDeleted():boolean {
         return this.deletedBy.size > 0
     }
 
-    public isDeletedByOther(branch: string) {
+    private isDeletedBy(branch: string):boolean {
+        return this.deletedBy.has(branch)
+    }
+
+    public isDeletedByOther(branch: string):boolean {
         return this.isDeleted() && !this.deletedBy.has(branch)
     }
 
-    // public setDeletedBy(branch: string) {
-    //     this.deletedBy.add(branch)
-    //     return this.deletedBy.size === 1
-    // }
+    private isDeletedByWildcard():boolean {
+        return this.isDeleted() && (this.deletedBy.has('*'))
+    }
 
-    public equals(md: Modification) {
+    public isDeletedByNonWildcardOther(branch:string):boolean {
+        return this.isDeletedByOther(branch) && !this.isDeletedByWildcard()
+    }
+
+    public equals(md: Modification):boolean {
         if (this.deletedBy.size !== md.deletedBy.size) {
             return false
         }

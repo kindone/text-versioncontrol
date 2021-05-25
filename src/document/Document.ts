@@ -213,7 +213,7 @@ export class Document {
                 ss.applyChange(originalChange, sourceBranchName)
             }
             else {
-                ss.applyChange(localChange, "_")
+                ss.applyChange(localChange, '_')
             }
         }
 

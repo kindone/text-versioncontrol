@@ -1,5 +1,5 @@
 import { forAll, interval, Property, Random } from "jsproptest"
-import { contentLengthIncreased, minContentLengthForChange } from "../core/primitive"
+import { contentLengthChanged, minContentLengthForChange } from "../core/primitive"
 import { JSONStringify } from "../core/util"
 import { ArraySplitsGen, ArraySplit } from "./generator/ArraySplit"
 import { ChangeList, ChangeListGen } from "./generator/ChangeList"
@@ -37,7 +37,7 @@ describe('generate', () => {
             const minLength = minContentLengthForChange(delta)
             if(minLength != initialLength)
                 throw new Error(`${initialLength},${minLength},${JSONStringify(delta)}`)
-            const newLength = contentLengthIncreased(initialLength, delta)
+            const newLength = contentLengthChanged(initialLength, delta)
             if(newLength < 0)
                 throw new Error(`${initialLength},${newLength},${JSONStringify(delta)}`)
         })
@@ -46,7 +46,7 @@ describe('generate', () => {
 
     it('Delta bug', () => {
         const random = new Random('65')
-        expect(contentLengthIncreased(11, DeltaGen(11).generate(random).value)).toBeGreaterThanOrEqual(0)
+        expect(contentLengthChanged(11, DeltaGen(11).generate(random).value)).toBeGreaterThanOrEqual(0)
     })
 
     it('generate ChangeList', () => {

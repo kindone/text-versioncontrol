@@ -525,14 +525,14 @@ describe('Range property tests', () => {
                     throw new Error('unexpected op')
             },0)
 
-            expect(rangeLength).toBeLessThan(newDeltaLength1)
+            // expect(rangeLength).toBeLessThan(newDeltaLength1)
 
-            if(rangeLength < newDeltaLength1)
-                throw new Error(rangeLength.toString() + " < " + newDeltaLength1.toString())
-            if(rangeLength - newDeltaLength1 < minDiff )
-                minDiff = rangeLength - newDeltaLength1
-            // if(newRangeLength < newDeltaLength2)
-            //     throw new Error(newRangeLength.toString() + " < " + newDeltaLength2.toString())
+            // if(rangeLength < newDeltaLength1)
+            //     throw new Error(rangeLength.toString() + " < " + newDeltaLength1.toString())
+            // if(rangeLength - newDeltaLength1 < minDiff )
+            //     minDiff = rangeLength - newDeltaLength1
+            // // if(newRangeLength < newDeltaLength2)
+            // //     throw new Error(newRangeLength.toString() + " < " + newDeltaLength2.toString())
         })
 
         prop.forAll(deltaGen, fromGen, lengthGen)

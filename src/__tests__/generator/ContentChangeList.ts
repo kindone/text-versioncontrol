@@ -8,9 +8,9 @@ export interface ContentChangeList {
     changeList:ChangeList
 }
 
-export function ContentChangeListGen(baseLength = -1, numChanges = -1, withAttr = false) {
-    return ContentGen(baseLength, true/*withEmbed*/, withAttr).flatMap(content => {
+export function ContentChangeListGen(baseLength = -1, numChanges = -1, withEmbed = true, withAttr = true) {
+    return ContentGen(baseLength, withEmbed, withAttr).flatMap(content => {
         const initialLength = contentLength(content)
-        return ChangeListGen(initialLength, numChanges).map(changeList => { return { content, changeList} })
+        return ChangeListGen(initialLength, numChanges, withEmbed, withAttr).map(changeList => { return { content, changeList} })
     })
 }

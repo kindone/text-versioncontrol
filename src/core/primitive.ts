@@ -53,7 +53,7 @@ export function minContentLengthForChange(change: IDelta): number {
     )
 }
 
-export function contentLengthIncreased(initialLength:number, change:IDelta):number {
+export function contentLengthChanged(initialLength:number, change:IDelta):number {
     return _.reduce(
         change.ops,
         (len, op) => {

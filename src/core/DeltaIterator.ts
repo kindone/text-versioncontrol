@@ -9,8 +9,9 @@ interface OpsWithDiff {
     diff: number
 }
 
-function shadowedAttributes(base: AttributeMap, mod: { [branch: string]: AttributeMap }, branches: string[]) {
+function shadowedAttributes(base: AttributeMap, mod: { [branch: string]: AttributeMap }, branches: string[]):AttributeMap {
     const projected: AttributeMap = { ...base }
+    // higher branch can overwrite lower branch's modification
     for (const branch of branches.sort()) {
         const branchMod = mod[branch]
         for (const field of Object.keys(branchMod)) {
@@ -34,17 +35,19 @@ function calculateAttributeDelta(
     let compared: AttributeMap = {}
     if (attrFragment.mod) {
         const groups: { [higher: string]: string[] } = _.groupBy(Object.keys(attrFragment.mod), br => {
+            if(branch === '*' || branch === '_')
+                return 'F'
             return br > branch ? 'T' : 'F'
         })
         const higherBranches: string[] = groups.T ? groups.T : []
-        const lowerBranches: string[] = groups.F ? groups.F : []
+        const lowerOrEqualBranches: string[] = groups.F ? groups.F : []
         shadowed = shadowedAttributes({}, attrFragment.mod, higherBranches)
-        compared = shadowedAttributes(attrFragment.val ? attrFragment.val : {}, attrFragment.mod, lowerBranches)
+        compared = shadowedAttributes(attrFragment.val ? attrFragment.val : {}, attrFragment.mod, lowerOrEqualBranches)
     }
 
     for (const field of Object.keys(attr)) {
         // 1. check if the field is not shadowed by branch with higher priority
-        // 1. check if the field is different from  mods by a branch with lower and equal priority
+        // 2. check if the field is different from mods by a branch with lower or equal priority
         if (!shadowed.hasOwnProperty(field) && (!compared.hasOwnProperty(field) || compared[field] !== attr[field])) {
             attrDelta[field] = attr[field]
         }
@@ -111,7 +114,7 @@ export class DeltaIterator {
         // deleted by other + deleted by me
         while (this.hasNext() && !this.current().isVisibleTo(this.branch)) {
             // inserted by other, retain added
-            if (this.current().isInsertedByOther(this.branch) && !this.current().isDeleted()) {
+            if (this.current().isInsertedByNonWildcardOther(this.branch) && !this.current().isDeleted()) {
                 ops.push({ retain: this.current().size() - this.offsetAtFragment })
             }
             // else: deleted by me: do nothing
@@ -136,14 +139,14 @@ export class DeltaIterator {
             const remaining = this.current().size() - (this.offsetAtFragment + amount)
             if (remaining > 0) {
                 // take some of current and finish
-                if (!this.current().isDeletedByOther(this.branch)) {
+                if (!this.current().isDeletedByNonWildcardOther(this.branch)) {
                     ops.push(opGen(amount, this.current().attrs))
                 }
                 this.offsetAtFragment += amount
                 return { ops, diff: 0 }
             } else if (remaining === 0) {
                 // take rest of current and finish
-                if (!this.current().isDeletedByOther(this.branch)) {
+                if (!this.current().isDeletedByNonWildcardOther(this.branch)) {
                     ops.push(opGen(this.current().size() - this.offsetAtFragment, this.current().attrs))
                 }
                 this.nextFragment()
@@ -152,7 +155,9 @@ export class DeltaIterator {
                 // overwhelms current fragment
                 // first take rest of current
                 const takeAmount = this.current().size() - this.offsetAtFragment
-                if (!this.current().isDeletedByOther(this.branch)) ops.push(opGen(takeAmount, this.current().attrs))
+                if (!this.current().isDeletedByNonWildcardOther(this.branch)) {
+                    ops.push(opGen(takeAmount, this.current().attrs))
+                }
                 // adjust amount
                 amount -= takeAmount // > 0 by condition
                 this.nextFragment()

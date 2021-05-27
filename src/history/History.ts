@@ -1,12 +1,11 @@
 import * as _ from 'underscore'
 import { IDelta } from '../core/IDelta'
-import { asDelta } from '../core/primitive';
+import { asDelta } from '../core/primitive'
 import { SharedString } from '../core/SharedString'
 import { expectEqual } from '../core/util'
 import { Savepoint } from './Savepoint'
 import { SyncRequest } from './SyncRequest'
 import { MergeResult } from './SyncResponse'
-
 
 export interface IHistory {
     readonly name: string
@@ -29,7 +28,7 @@ export interface IHistory {
     merge(mergeRequest: SyncRequest): MergeResult
     rebase(rebaseRequest: SyncRequest): MergeResult
 
-    clone():IHistory
+    clone(): IHistory
 }
 
 export class History implements IHistory {
@@ -42,7 +41,7 @@ export class History implements IHistory {
         this.doSavepoint(initialRev, asDelta(initialContent))
     }
 
-    public clone():History {
+    public clone(): History {
         const cloned = new History(this.name, '', this.initialRev)
         cloned.savepoints = this.savepoints.concat()
         cloned.changes = this.changes.concat()
@@ -140,13 +139,22 @@ export class History implements IHistory {
     }
 
     public getChangeAt(rev: number): IDelta {
-        if(!(0 <= rev - this.initialRev && rev - this.initialRev < this.changes.length  ))
-            throw new Error('invalid argument: ' + 'rev='+rev + ' not in [' + this.initialRev + ',' + (this.changes.length + this.initialRev) + ')')
+        if (!(0 <= rev - this.initialRev && rev - this.initialRev < this.changes.length))
+            throw new Error(
+                'invalid argument: ' +
+                    'rev=' +
+                    rev +
+                    ' not in [' +
+                    this.initialRev +
+                    ',' +
+                    (this.changes.length + this.initialRev) +
+                    ')',
+            )
         return this.changes[rev - this.initialRev]
     }
 
     public getChangeFor(rev: number): IDelta {
-        return this.getChangeAt(rev-1)
+        return this.getChangeAt(rev - 1)
     }
 
     public getChangesFrom(fromRev: number): IDelta[] {
@@ -213,7 +221,7 @@ export class History implements IHistory {
         }
     }
 
-    private invalidateSavepoints(baseRev:number) {
+    private invalidateSavepoints(baseRev: number) {
         this.savepoints = this.savepoints.filter(savepoint => savepoint.rev <= baseRev)
     }
 

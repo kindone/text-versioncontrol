@@ -1,50 +1,47 @@
-import { expectEqual, JSONStringify } from "../util";
-import { Range } from "../Range";
-import Delta = require("quill-delta");
+import { expectEqual, JSONStringify } from '../util'
+import { Range } from '../Range'
+import Delta = require('quill-delta')
 import * as _ from 'underscore'
-import { normalizeDeltas } from "../primitive";
-import { DeltaGen } from "../../__tests__/generator/Delta";
-import { ArrayGen, forAll, interval, Property } from "jsproptest";
-import { RangeGen } from "../../__tests__/generator/Range";
-import { Insert, InsertGen } from "../../__tests__/generator/Insert";
-import { ContentGen } from "../../__tests__/generator/Content";
-import { IDelta } from "../IDelta";
-import { RetainGen } from "../../__tests__/generator/RetainDelete";
+import { normalizeDeltas } from '../primitive'
+import { DeltaGen } from '../../__tests__/generator/Delta'
+import { ArrayGen, forAll, interval, Property } from 'jsproptest'
+import { RangeGen } from '../../__tests__/generator/Range'
+import { Insert, InsertGen } from '../../__tests__/generator/Insert'
+import { ContentGen } from '../../__tests__/generator/Content'
+import { IDelta } from '../IDelta'
+import { RetainGen } from '../../__tests__/generator/RetainDelete'
 
 describe('Range::cropContent', () => {
     it('crop "a" by (0,1) will result in "a" ', () => {
         const range = new Range(0, 1)
-        expectEqual(range.cropContent({ops:[{insert:"a"}]}),
-            {ops: [{insert:"a"}]}
-        )
-
+        expectEqual(range.cropContent({ ops: [{ insert: 'a' }] }), { ops: [{ insert: 'a' }] })
     })
 
     it('crop "a" by (0,0) will result in empty', () => {
         const range = new Range(0, 0)
-        expectEqual(range.cropContent({ops:[{insert:"a"}]}),
-            {ops: []}
-        )
+        expectEqual(range.cropContent({ ops: [{ insert: 'a' }] }), { ops: [] })
     })
 
     it('cropped result of an empty is an empty', () => {
-        const empty = {ops: []}
+        const empty = { ops: [] }
         const range = new Range(0, 0)
         expectEqual(range.cropContent(empty), empty)
     })
 
-    it('crop any content by (0,1)',() => {
+    it('crop any content by (0,1)', () => {
         const range = new Range(0, 1)
-        forAll((content:IDelta) => {
+        forAll((content: IDelta) => {
             const croppedContent = range.cropContent(content)
-            if(content.ops.length > 1) {
+            if (content.ops.length > 1) {
                 const firstOp = content.ops[0]
                 // sliced
-                if(typeof firstOp.insert == 'string') {
-                    expectEqual(normalizeDeltas(croppedContent), normalizeDeltas({ops: [{insert: firstOp.insert[0], attributes: firstOp.attributes}]}))
-                }
-                else {
-                    expectEqual(normalizeDeltas(croppedContent), normalizeDeltas({ops: [firstOp]}))
+                if (typeof firstOp.insert == 'string') {
+                    expectEqual(
+                        normalizeDeltas(croppedContent),
+                        normalizeDeltas({ ops: [{ insert: firstOp.insert[0], attributes: firstOp.attributes }] }),
+                    )
+                } else {
+                    expectEqual(normalizeDeltas(croppedContent), normalizeDeltas({ ops: [firstOp] }))
                 }
             }
         }, ContentGen())
@@ -52,26 +49,22 @@ describe('Range::cropContent', () => {
 
     it('crop any content by (0,0) will result in empty', () => {
         const range = new Range(0, 0)
-        forAll((content:IDelta) => {
+        forAll((content: IDelta) => {
             expectEqual(normalizeDeltas(range.cropContent(content)), [])
         }, ContentGen())
     })
 
     it('crop empty content by any range will result in empty', () => {
         const emptyContent = new Delta()
-        forAll((range:Range) => {
+        forAll((range: Range) => {
             expectEqual(normalizeDeltas(range.cropContent(emptyContent)), [])
         }, RangeGen())
     })
 })
 
-
 describe('Range::applyChange', () => {
-
     it('retain does no effect on range', () => {
-        forAll((retain:IDelta) => {
-
-        }, RetainGen())
+        forAll((retain: IDelta) => {}, RetainGen())
     })
 
     it('delete shifts range to the left', () => {
@@ -147,19 +140,22 @@ describe('Range::applyChange', () => {
         const range = new Range(1, 3)
 
         const changes = [
-            {ops: [
-                {retain:3}, {insert: {x: "1"}, attributes: {y:"2"}}, {insert: {x: "3"}, attributes: {y:"4"}}, {insert: "a"}, {insert: {x: "5"}, attributes: {y:"6"}}
-            ]}
+            {
+                ops: [
+                    { retain: 3 },
+                    { insert: { x: '1' }, attributes: { y: '2' } },
+                    { insert: { x: '3' }, attributes: { y: '4' } },
+                    { insert: 'a' },
+                    { insert: { x: '5' }, attributes: { y: '6' } },
+                ],
+            },
         ]
 
-        expectEqual(range.applyChange(changes[0]),
-            new Range(1,3)
-        )
+        expectEqual(range.applyChange(changes[0]), new Range(1, 3))
     })
 })
 
 describe('Range::applyChanges', () => {
-
     it('applyChanges is equivalent to sequentially executed multiple applyChange', () => {
         const range = new Range(10, 20)
         const changes = [new Delta().delete(11), new Delta().insert('123'), new Delta().retain(10).insert('12345')]
@@ -173,18 +169,21 @@ describe('Range::applyChanges', () => {
     })
 
     it('applyChanges is equivalent to sequentially executed multiple applyChange (as property)', () => {
-        forAll((changes:Delta[], range:Range) => {
-            let appliedRange = range
-            for(let change of changes) {
-                appliedRange = appliedRange.applyChange(change)
-            }
-            expectEqual(range.applyChanges(changes), appliedRange)
-        }, ArrayGen(DeltaGen(), 0, 10) , RangeGen(0, 10, 0, 10))
+        forAll(
+            (changes: Delta[], range: Range) => {
+                let appliedRange = range
+                for (let change of changes) {
+                    appliedRange = appliedRange.applyChange(change)
+                }
+                expectEqual(range.applyChanges(changes), appliedRange)
+            },
+            ArrayGen(DeltaGen(), 0, 10),
+            RangeGen(0, 10, 0, 10),
+        )
     })
 })
 
 describe('Range::cropDelta', () => {
-
     it('cropDelta', () => {
         const range = new Range(10, 20)
         expectEqual(range.cropDelta(new Delta().retain(10)), new Delta()) // no-op
@@ -448,14 +447,18 @@ describe('Range::cropDelta', () => {
         const range = new Range(1, 3)
 
         const changes = [
-            {ops: [
-                {retain:3}, {insert: {x: "1"}, attributes: {y:"2"}}, {insert: {x: "3"}, attributes: {y:"4"}}, {insert: "a"}, {insert: {x: "5"}, attributes: {y:"6"}}
-            ]}
+            {
+                ops: [
+                    { retain: 3 },
+                    { insert: { x: '1' }, attributes: { y: '2' } },
+                    { insert: { x: '3' }, attributes: { y: '4' } },
+                    { insert: 'a' },
+                    { insert: { x: '5' }, attributes: { y: '6' } },
+                ],
+            },
         ]
 
-        expectEqual(range.cropDelta(changes[0]),
-            {ops: []}
-        )
+        expectEqual(range.cropDelta(changes[0]), { ops: [] })
     })
 })
 
@@ -473,7 +476,10 @@ describe('Range::cropChanges', () => {
         changes.push(new Delta().delete(2))
         expectEqual(normalizeDeltas(...range.cropChanges(changes)), [new Delta().retain(1).insert('123')]) // left bounded: only range changes
         changes.push(new Delta().retain(8).delete(1))
-        expectEqual(normalizeDeltas(...range.cropChanges(changes)), [new Delta().retain(1).insert('123'), new Delta().delete(1)])
+        expectEqual(normalizeDeltas(...range.cropChanges(changes)), [
+            new Delta().retain(1).insert('123'),
+            new Delta().delete(1),
+        ])
 
         changes.push(new Delta().retain(9).insert('456'))
         expectEqual(normalizeDeltas(...range.cropChanges(changes)), [
@@ -484,46 +490,43 @@ describe('Range::cropChanges', () => {
     })
 })
 
-
 describe('Range property tests', () => {
-    it('cropChanges and applyChanges',() => {
+    it('cropChanges and applyChanges', () => {
         const deltaGen = DeltaGen(10)
         const fromGen = interval(0, 20)
         const lengthGen = interval(0, 20)
         let minDiff = 1000
 
-        const prop = new Property((delta:Delta, from:number, length:number) => {
+        const prop = new Property((delta: Delta, from: number, length: number) => {
             // const length = minContentLengthForChange(delta)
             const range = new Range(from, from + length)
             const rangeLength = range.end - range.start
             const newRange = range.applyChanges([delta])
             const newRangeLength = newRange.end - newRange.start
             const newDelta = range.cropDelta(delta)
-            const newDeltaLength1 = _.reduce(newDelta.ops, (len, op) => {
-                if(typeof op.insert === 'string')
-                    return len
-                else if(op.insert)
-                    return len
-                else if(op.retain)
-                    return len + op.retain
-                else if(op.delete)
-                    return len + op.delete
-                else
-                    throw new Error('unexpected op')
-            },0)
+            const newDeltaLength1 = _.reduce(
+                newDelta.ops,
+                (len, op) => {
+                    if (typeof op.insert === 'string') return len
+                    else if (op.insert) return len
+                    else if (op.retain) return len + op.retain
+                    else if (op.delete) return len + op.delete
+                    else throw new Error('unexpected op')
+                },
+                0,
+            )
 
-            const newDeltaLength2 = _.reduce(newDelta.ops, (len, op) => {
-                if(typeof op.insert === 'string')
-                    return len + op.insert.length
-                else if(op.insert)
-                    return len + 1
-                else if(op.retain)
-                    return len + op.retain
-                else if(op.delete)
-                    return len + op.delete
-                else
-                    throw new Error('unexpected op')
-            },0)
+            const newDeltaLength2 = _.reduce(
+                newDelta.ops,
+                (len, op) => {
+                    if (typeof op.insert === 'string') return len + op.insert.length
+                    else if (op.insert) return len + 1
+                    else if (op.retain) return len + op.retain
+                    else if (op.delete) return len + op.delete
+                    else throw new Error('unexpected op')
+                },
+                0,
+            )
 
             // expect(rangeLength).toBeLessThan(newDeltaLength1)
 

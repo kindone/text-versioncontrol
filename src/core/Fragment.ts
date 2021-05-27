@@ -3,7 +3,7 @@ import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
 import { Embedded } from './Embedded'
 import { Modification, Status } from './Modification'
-import { JSONStringify } from './util';
+import { JSONStringify } from './util'
 
 export interface AttributeFragment {
     val?: AttributeMap
@@ -11,13 +11,13 @@ export interface AttributeFragment {
 }
 
 export interface JSONEmbed {
-    type:'embed'
-    value:object
+    type: 'embed'
+    value: object
 }
 
 export interface JSONStyle {
-    type: 'initial'|'inserted'|'deleted'|'unknown'
-    value: string|JSONEmbed
+    type: 'initial' | 'inserted' | 'deleted' | 'unknown'
+    value: string | JSONEmbed
     attributes?: AttributeMap
 }
 
@@ -163,7 +163,8 @@ export class Fragment {
 
     public toHtml(includeBranches = true): string {
         // TODO: attributes
-        const valueStr = typeof this.val === 'string' ? this.val : `<span class='fragment-embed'>${JSONStringify(this.val)}</span>`
+        const valueStr =
+            typeof this.val === 'string' ? this.val : `<span class='fragment-embed'>${JSONStringify(this.val)}</span>`
         switch (this.mod.status) {
             case Status.INITIAL:
                 return `<span class='fragment-initial'>${valueStr}</span>`
@@ -171,44 +172,38 @@ export class Fragment {
                 const Bclasses = _.map(Array.from(this.mod.deletedBy), key => {
                     return 'B' + key
                 })
-                if(includeBranches)
-                    return `<span class='fragment-deleted ${Bclasses}'>${valueStr}</span>`
-                else
-                    return `<span class='fragment-deleted'>${valueStr}</span>`
+                if (includeBranches) return `<span class='fragment-deleted ${Bclasses}'>${valueStr}</span>`
+                else return `<span class='fragment-deleted'>${valueStr}</span>`
             }
             case Status.INSERTED:
-                if(includeBranches)
-                    return `<span class='fragment-inserted B${this.mod.insertedBy}'>${valueStr}</span>`
-                else
-                    return `<span class='fragment-inserted'>${valueStr}</span>`
+                if (includeBranches) return `<span class='fragment-inserted B${this.mod.insertedBy}'>${valueStr}</span>`
+                else return `<span class='fragment-inserted'>${valueStr}</span>`
             case Status.INSERTED_THEN_DELETED:
-                if(includeBranches)
+                if (includeBranches)
                     return `<span class='fragment-inserted fragment-deleted B${this.mod.insertedBy}'>${valueStr}</span>`
-                else
-                    return `<span class='fragment-inserted fragment-deleted'>${valueStr}</span>`
+                else return `<span class='fragment-inserted fragment-deleted'>${valueStr}</span>`
             default:
                 return ''
         }
     }
 
-    public toStyledJSON():JSONStyle {
+    public toStyledJSON(): JSONStyle {
         const attributes = this.getAttributes()
-        const valueStr:string|JSONEmbed = (typeof this.val === 'string' ? this.val : {type: 'embed', value: this.val.value})
+        const valueStr: string | JSONEmbed =
+            typeof this.val === 'string' ? this.val : { type: 'embed', value: this.val.value }
         switch (this.mod.status) {
             case Status.INITIAL:
-                return {'type': 'initial', 'value': valueStr, attributes}
+                return { type: 'initial', value: valueStr, attributes }
             case Status.INSERTED_THEN_DELETED:
             case Status.DELETED: {
-                 return {'type': 'deleted', 'value': valueStr, attributes}
+                return { type: 'deleted', value: valueStr, attributes }
             }
             case Status.INSERTED:
-                return {'type': 'inserted', 'value': valueStr, attributes}
+                return { type: 'inserted', value: valueStr, attributes }
             default:
-                return {'type': 'unknown', 'value': valueStr, attributes}
+                return { type: 'unknown', value: valueStr, attributes }
         }
     }
-
-
 
     // flattened attributes
     public getAttributes(): AttributeMap {
@@ -217,11 +212,6 @@ export class Fragment {
         const projected: AttributeMap = this.attrValWithoutNullFields()
         if (!this.attrs.mod) {
             return projected
-        }
-
-        const sortFunc = (a:string, b:string) => {
-            if(a === '*' || a === '_')
-            (a > b) ? 1 : (a === b) ? 0 : -1
         }
 
         // take branches in reverse order to let a branch with higher priority overrides others

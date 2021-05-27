@@ -4,9 +4,9 @@ import { Range } from '../core/Range'
 import { SharedString } from '../core/SharedString'
 import { expectEqual, JSONStringify } from '../core/util'
 import { randomString, randomInt } from './random'
-import { IDelta } from '../core/IDelta';
-import { Delta } from '../core/Delta';
-import { flattenDeltas } from '../core/primitive';
+import { IDelta } from '../core/IDelta'
+import { Delta } from '../core/Delta'
+import { flattenDeltas } from '../core/primitive'
 
 describe('text spec regression', () => {
     it('case 1', () => {

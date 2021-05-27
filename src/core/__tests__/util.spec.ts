@@ -1,28 +1,17 @@
 import Delta = require('quill-delta')
 import * as _ from 'underscore'
 import { contentLength, normalizeOps, lastRetainsRemoved, emptyOpsRemoved } from '../primitive'
-import Op from 'quill-delta/dist/Op';
-import { ExcerptUtil } from '../../excerpt';
-import { expectEqual } from '../util';
+import Op from 'quill-delta/dist/Op'
+import { ExcerptUtil } from '../../excerpt'
+import { expectEqual } from '../util'
 
 describe('Normalize', () => {
     it('lastRetainRemoved', () => {
-        const nothing:Op[] = []
-        const one:Op[] = [
-            {retain: 5}
-        ]
-        const two:Op[] = [
-            {retain: 5},
-            {retain: 7}
-        ]
+        const nothing: Op[] = []
+        const one: Op[] = [{ retain: 5 }]
+        const two: Op[] = [{ retain: 5 }, { retain: 7 }]
 
-        const nothingToRemove = [
-            { delete: 4 },
-            { retain: 3 },
-            { insert: 'first' },
-            { retain: 2 },
-            { delete: 6 },
-        ]
+        const nothingToRemove = [{ delete: 4 }, { retain: 3 }, { insert: 'first' }, { retain: 2 }, { delete: 6 }]
 
         const oneRetain = [
             { delete: 4 },
@@ -30,7 +19,7 @@ describe('Normalize', () => {
             { insert: 'first' },
             { retain: 2 },
             { delete: 6 },
-            { retain: 2 }
+            { retain: 2 },
         ]
 
         const twoRetains = [
@@ -40,7 +29,7 @@ describe('Normalize', () => {
             { retain: 2 },
             { delete: 6 },
             { retain: 2 },
-            { retain: 5 }
+            { retain: 5 },
         ]
 
         const twoRetainsWithAttr = [
@@ -49,8 +38,8 @@ describe('Normalize', () => {
             { insert: 'first' },
             { retain: 2 },
             { delete: 6 },
-            { retain: 2, attributes: {'x': 5} },
-            { retain: 5, attributes: {'x': 5} }
+            { retain: 2, attributes: { x: 5 } },
+            { retain: 5, attributes: { x: 5 } },
         ]
 
         const twoRetainsWithAndWithoutAttr = [
@@ -59,8 +48,8 @@ describe('Normalize', () => {
             { insert: 'first' },
             { retain: 2 },
             { delete: 6 },
-            { retain: 2, attributes: {'x': 5} },
-            { retain: 5}
+            { retain: 2, attributes: { x: 5 } },
+            { retain: 5 },
         ]
 
         const twoRetainsWithAndWithAttr2 = [
@@ -70,7 +59,7 @@ describe('Normalize', () => {
             { retain: 2 },
             { delete: 6 },
             { retain: 2 },
-            { retain: 5, attributes: {'x': 5} }
+            { retain: 5, attributes: { x: 5 } },
         ]
 
         expectEqual(lastRetainsRemoved(nothing), nothing)
@@ -83,7 +72,6 @@ describe('Normalize', () => {
         expectEqual(lastRetainsRemoved(twoRetainsWithAndWithoutAttr), twoRetainsWithAndWithoutAttr.slice(0, -1))
         expectEqual(lastRetainsRemoved(twoRetainsWithAndWithAttr2), twoRetainsWithAndWithAttr2)
     })
-
 
     it('scenario 1', () => {
         expectEqual(
@@ -125,12 +113,12 @@ describe('Normalize', () => {
 describe('Misc', () => {
     it('isExcerptMarker', () => {
         const ops = [
-            {insert: 'a'},
-            {retain: 6},
-            {delete: 3},
+            { insert: 'a' },
+            { retain: 6 },
+            { delete: 3 },
             ExcerptUtil.makeExcerptMarker('left', 'c', 1, 0, 3, 'd', 1, 2),
-            {retain: 5, attributes: {x: 65}},
-            ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 3, 'b', 2, 3)
+            { retain: 5, attributes: { x: 65 } },
+            ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 3, 'b', 2, 3),
         ]
 
         // temp test
@@ -139,54 +127,52 @@ describe('Misc', () => {
         const toBoolean = ops.map(op => ExcerptUtil.isExcerptMarker(op))
         expectEqual(toBoolean, [false, false, false, true, false, true])
     }),
+        it('setExcerptMarkersAsCopied', () => {
+            const ops = [
+                { insert: 'a' },
+                { retain: 6 },
+                { delete: 3 },
+                ExcerptUtil.makeExcerptMarker('left', 'c', 1, 1, 3, 'd', 1, 2),
+                { retain: 5, attributes: { x: 65 } },
+                { ...{ attributes: { x: 1 } }, ...ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 4, 'b', 2, 3) }, // not realistic to have attributes in excerpt marker but...
+            ]
 
-    it('setExcerptMarkersAsCopied', () => {
-        const ops = [
-            {insert: 'a'},
-            {retain: 6},
-            {delete: 3},
-            ExcerptUtil.makeExcerptMarker('left', 'c', 1, 1, 3, 'd', 1, 2),
-            {retain: 5, attributes: {x: 65}},
-            { ...{attributes: {x:1}}, ...ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 4, 'b', 2, 3)} // not realistic to have attributes in excerpt marker but...
-        ]
+            const marker3: Op = { ...ExcerptUtil.makeExcerptMarker('left', 'c', 1, 1, 3, 'd', 1, 2) }
+            marker3.attributes!.copied = 'true'
+            const marker5: Op = { ...ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 4, 'b', 2, 3) }
+            marker5.attributes!.copied = 'true'
 
-        const marker3:Op = {...ExcerptUtil.makeExcerptMarker('left', 'c', 1, 1, 3, 'd', 1, 2)}
-        marker3.attributes!.copied = "true"
-        const marker5:Op = {...ExcerptUtil.makeExcerptMarker('right', 'a', 1, 2, 4, 'b', 2, 3)}
-        marker5.attributes!.copied = "true"
-
-        const copiedOps = [
-            {insert: 'a'},
-            {retain: 6},
-            {delete: 3},
-            marker3,
-            {retain: 5, attributes: {x: 65}},
-            marker5
-        ]
-        console.log(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
-        expectEqual(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
-    })
+            const copiedOps = [
+                { insert: 'a' },
+                { retain: 6 },
+                { delete: 3 },
+                marker3,
+                { retain: 5, attributes: { x: 65 } },
+                marker5,
+            ]
+            console.log(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
+            expectEqual(ExcerptUtil.setExcerptMarkersAsCopied(ops), copiedOps)
+        })
 })
 
 describe('contentLength', () => {
     it('0', () => {
-        expectEqual(contentLength({ops:[]}), 0)
+        expectEqual(contentLength({ ops: [] }), 0)
     })
 })
 
 describe('emptyOpsRemoved', () => {
     const ops1 = [
-        {insert:''},
-        {delete: 1},
-        {delete: 0},
-        {retain: 1},
-        {retain: 0},
-        {insert: 'a'},
-        {insert: {'x': 'b'}},
-        {retain: 0},
-        {retain: 0}
+        { insert: '' },
+        { delete: 1 },
+        { delete: 0 },
+        { retain: 1 },
+        { retain: 0 },
+        { insert: 'a' },
+        { insert: { x: 'b' } },
+        { retain: 0 },
+        { retain: 0 },
     ]
 
-    expectEqual(emptyOpsRemoved(ops1),
-        [{delete:1}, {retain:1}, {insert: 'a'},{insert: {'x': 'b'}}])
+    expectEqual(emptyOpsRemoved(ops1), [{ delete: 1 }, { retain: 1 }, { insert: 'a' }, { insert: { x: 'b' } }])
 })

@@ -19,9 +19,7 @@ export class SharedString {
                     fragments.push(Fragment.initial(op.insert, op.attributes))
                 } else if (op.insert) {
                     fragments.push(Fragment.initialEmbedded(op.insert, op.attributes))
-                }
-                else
-                    throw new Error('invalid content, should contain only inserts')
+                } else throw new Error('invalid content, should contain only inserts')
                 return fragments
             },
             [],
@@ -107,10 +105,8 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        if(change.contexts)
-            return {ops: normalizeOps(newOps), contexts: change.contexts}
-        else
-            return {ops: normalizeOps(newOps)}
+        if (change.contexts) return { ops: normalizeOps(newOps), contexts: change.contexts }
+        else return { ops: normalizeOps(newOps) }
     }
 
     public clone() {
@@ -147,7 +143,7 @@ export class SharedString {
             },
             [],
         )
-        return {ops}
+        return { ops }
     }
 
     public toDelta(branch?: string): IDelta {
@@ -156,33 +152,40 @@ export class SharedString {
             (result: Op[], fragment) => {
                 const op = fragment.toOp()
                 // original content that was not deleted
-                if (typeof branch === 'undefined' && (!fragment.isDeleted() && op.insert !== ''))
+                if (typeof branch === 'undefined' && !fragment.isDeleted() && op.insert !== '')
                     return result.concat(fragment.toOp())
                 // inserted content
-                else if(typeof branch === 'string' && (fragment.isVisibleTo(branch) && op.insert !== ''))
+                else if (typeof branch === 'string' && fragment.isVisibleTo(branch) && op.insert !== '')
                     return result.concat(fragment.toOp())
-                else
-                    return result
+                else return result
             },
             [],
         )
-        return {ops: normalizeOps(ops)}
+        return { ops: normalizeOps(ops) }
     }
 
     public toHtml(includeBranches = true) {
-        return _.reduce(this.fragments, (result: string, fragment) => {
-            return result + (fragment.toHtml(includeBranches))
-        }, '')
+        return _.reduce(
+            this.fragments,
+            (result: string, fragment) => {
+                return result + fragment.toHtml(includeBranches)
+            },
+            '',
+        )
     }
 
     public toStyledJSON() {
-        return _.reduce(this.fragments, (result: JSONStyle[], fragment) => {
-            return result.concat(fragment.toStyledJSON())
-        }, [])
+        return _.reduce(
+            this.fragments,
+            (result: JSONStyle[], fragment) => {
+                return result.concat(fragment.toStyledJSON())
+            },
+            [],
+        )
     }
 
     public toString() {
-        return {fragments: this.fragments}
+        return { fragments: this.fragments }
     }
 
     public getFragmentAtIdx(idx: number, branch: string): Fragment | null {

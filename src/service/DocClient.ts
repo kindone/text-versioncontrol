@@ -2,7 +2,6 @@ import { IDelta } from '../core/IDelta'
 import { History, IHistory } from '../history/History'
 import { SyncResponse } from '../history/SyncResponse'
 
-
 export class DocClient {
     private history: IHistory
     private synchedRev: number = 0

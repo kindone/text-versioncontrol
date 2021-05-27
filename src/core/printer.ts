@@ -1,79 +1,68 @@
 import * as chalk from 'chalk'
-import { IDelta } from "./IDelta"
-import { SharedString } from './SharedString';
-import { JSONStringify } from './util';
+import { IDelta } from './IDelta'
+import { SharedString } from './SharedString'
+import { JSONStringify } from './util'
 
 const excerptSource = chalk.default.cyan
 const excerptTarget = chalk.default.red
 
-const initial = (text:string) => text // black
+const initial = (text: string) => text // black
 const initialObj = chalk.default.whiteBright
 const insert = chalk.default.green
 const insertObj = chalk.default.greenBright
-const fill = (char:string, size:number) => {
+const fill = (char: string, size: number) => {
     let str = ''
-    for(let i = 0; i < size; i++)
-        str += char
+    for (let i = 0; i < size; i++) str += char
     return str
 }
-const retain = (size:number) => chalk.default.underline.gray(fill('?', size))
-const retainAttr = (size:number) => chalk.default.underline.yellow(fill('?', size))
-const del = (size:number) => chalk.default.strikethrough.redBright(fill('X', size))
-const delContent = (text:string) => {
+const retain = (size: number) => chalk.default.underline.gray(fill('?', size))
+const retainAttr = (size: number) => chalk.default.underline.yellow(fill('?', size))
+const del = (size: number) => chalk.default.strikethrough.redBright(fill('X', size))
+const delContent = (text: string) => {
     text = text.replace(/ /g, '_')
     return chalk.default.strikethrough.redBright(text)
 }
 const meta = chalk.default.magentaBright
 
-export function printContent(delta:IDelta):string {
+export function printContent(delta: IDelta): string {
     let str = ''
-    for(const op of delta.ops)
-    {
-        if(typeof op.insert === 'string') {
+    for (const op of delta.ops) {
+        if (typeof op.insert === 'string') {
             str += initial(op.insert)
-        }
-        else if(op.insert) {
-            str += initialObj(JSON.stringify(op.insert) + (op.attributes ? ":" + JSONStringify(op.attributes) : ""))
-        }
-        else if(op.retain && op.attributes) {
+        } else if (op.insert) {
+            str += initialObj(JSON.stringify(op.insert) + (op.attributes ? ':' + JSONStringify(op.attributes) : ''))
+        } else if (op.retain && op.attributes) {
             str += retainAttr(op.retain)
-        }
-        else if(op.retain)  {
+        } else if (op.retain) {
             str += retain(op.retain)
-        }
-        else if(op.delete) {
+        } else if (op.delete) {
             str += del(op.delete)
         }
     }
     return str
 }
 
-export function printDelta(delta:IDelta):string {
+export function printDelta(delta: IDelta): string {
     let str = ''
-    for(const op of delta.ops)
-    {
-        if(typeof op.insert === 'string') {
+    for (const op of delta.ops) {
+        if (typeof op.insert === 'string') {
             str += insert(op.insert)
-        }
-        else if(op.insert) {
+        } else if (op.insert) {
             str += insertObj(JSON.stringify(op.insert))
-        }
-        else if(op.retain && op.attributes) {
+        } else if (op.retain && op.attributes) {
             str += retainAttr(op.retain)
-        }
-        else if(op.retain)  {
+        } else if (op.retain) {
             str += retain(op.retain)
-        }
-        else if(op.delete) {
+        } else if (op.delete) {
             str += del(op.delete)
         }
     }
     return str
 }
 
-export function printDeltas(deltas:IDelta[]) {
+export function printDeltas(deltas: IDelta[]) {
     let str = meta('[ ')
-    for(const change of deltas) {
+    for (const change of deltas) {
         str += printDelta(change)
         str += meta(', ')
     }
@@ -81,38 +70,31 @@ export function printDeltas(deltas:IDelta[]) {
     return str
 }
 
-export function printChangedContent(content:IDelta, changes:IDelta[]):string {
+export function printChangedContent(content: IDelta, changes: IDelta[]): string {
     let ss = SharedString.fromDelta(content)
     let str = meta('[ ')
-    for(const change of changes)
-    {
+    for (const change of changes) {
         ss.applyChange(change, '_')
 
         const styledJSON = ss.toStyledJSON()
 
-        for(const obj of styledJSON)
-        {
-            if(obj.type === 'initial') {
-                if(typeof obj.value === 'string') {
+        for (const obj of styledJSON) {
+            if (obj.type === 'initial') {
+                if (typeof obj.value === 'string') {
                     str += initial(obj.value)
-                }
-                else if(obj.value.type === 'embed') {
+                } else if (obj.value.type === 'embed') {
                     str += initialObj(JSONStringify(obj.value.value))
                 }
-            }
-            else if(obj.type === 'inserted') {
-                if(typeof obj.value === 'string') {
+            } else if (obj.type === 'inserted') {
+                if (typeof obj.value === 'string') {
                     str += insert(obj.value)
-                }
-                else if(obj.value.type === 'embed') {
+                } else if (obj.value.type === 'embed') {
                     str += insertObj(JSONStringify(obj.value.value))
                 }
-            }
-            else if(obj.type === 'deleted') {
-                if(typeof obj.value === 'string') {
+            } else if (obj.type === 'deleted') {
+                if (typeof obj.value === 'string') {
                     str += delContent(obj.value)
-                }
-                else if(obj.value.type === 'embed') {
+                } else if (obj.value.type === 'embed') {
                     str += delContent(JSONStringify(obj.value.value))
                 }
             }
@@ -124,7 +106,6 @@ export function printChangedContent(content:IDelta, changes:IDelta[]):string {
     }
 
     str += meta(' ]')
-
 
     return str
 }

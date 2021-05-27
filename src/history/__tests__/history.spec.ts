@@ -1,18 +1,18 @@
 // import {StringWithState, Operation} from '../../app/utils/Text'
 import * as _ from 'underscore'
 import { History } from '../History'
-import {  expectEqual, JSONStringify } from '../../core/util'
+import { expectEqual, JSONStringify } from '../../core/util'
 import { DocClient } from '../../service/DocClient'
 import { DocServer } from '../../service/DocServer'
 import { randomChanges } from '../../__tests__/random'
-import { Delta } from '../../core/Delta';
-import { contentLength } from '../../core/primitive';
+import { Delta } from '../../core/Delta'
+import { contentLength } from '../../core/primitive'
 
 describe('interface', () => {
     it('basic', () => {
         const initialContent = 'initial'
         const history = new History('A', initialContent)
-        expectEqual(history.getContentAt(0).ops, [{insert:'initial'}])
+        expectEqual(history.getContentAt(0).ops, [{ insert: 'initial' }])
         expect(() => history.getChangeAt(0)).toThrow()
         const change = new Delta().insert('hello')
         history.append([change])

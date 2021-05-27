@@ -4,7 +4,6 @@ import { IDelta } from './IDelta'
 import { normalizeOps, contentLength } from './primitive'
 import { SharedString } from './SharedString'
 
-
 export interface RangedTransforms {
     range: Range
     deltas: IDelta[]
@@ -22,17 +21,15 @@ export class Range {
         return range
     }
 
-    public mapChanges(changes:IDelta[], open = false): Range[] {
+    public mapChanges(changes: IDelta[], open = false): Range[] {
         let range: Range = this
-        const ranges:Range[] = []
+        const ranges: Range[] = []
         for (const change of changes) {
             range = open ? range.applyChangeOpen(change) : range.applyChange(change)
             ranges.push(range)
         }
         return ranges
     }
-
-
 
     // immutable
     public applyChange(change: IDelta): Range {
@@ -154,10 +151,8 @@ export class Range {
                 if (cursor <= start) {
                     start += amount
                 } else {
-                    if(op.attributes)
-                        ops.push({ insert: op.insert, attributes: op.attributes })
-                    else
-                        ops.push({ insert: op.insert })
+                    if (op.attributes) ops.push({ insert: op.insert, attributes: op.attributes })
+                    else ops.push({ insert: op.insert })
                 }
                 end += amount
                 cursor += amount
@@ -171,10 +166,8 @@ export class Range {
                 if (cursor <= start) {
                     start += 1
                 } else {
-                    if(op.attributes)
-                        ops.push({ insert: op.insert, attributes: op.attributes })
-                    else
-                        ops.push({ insert: op.insert })
+                    if (op.attributes) ops.push({ insert: op.insert, attributes: op.attributes })
+                    else ops.push({ insert: op.insert })
                 }
                 end += 1
                 cursor += 1
@@ -201,10 +194,8 @@ export class Range {
             if (cursor >= end) break
         }
 
-        if(delta.contexts)
-            return new Delta(normalizeOps(ops), delta.contexts)
-        else
-            return new Delta(normalizeOps(ops))
+        if (delta.contexts) return new Delta(normalizeOps(ops), delta.contexts)
+        else return new Delta(normalizeOps(ops))
     }
 
     public cropDeltaOpen(delta: IDelta, debug = false): IDelta {
@@ -230,10 +221,8 @@ export class Range {
                 if (cursor < start) {
                     start += amount
                 } else {
-                    if(op.attributes)
-                        ops.push({ insert: op.insert, attributes: op.attributes })
-                    else
-                        ops.push({ insert: op.insert })
+                    if (op.attributes) ops.push({ insert: op.insert, attributes: op.attributes })
+                    else ops.push({ insert: op.insert })
                 }
                 end += amount
                 cursor += amount
@@ -244,10 +233,8 @@ export class Range {
                 if (cursor < start) {
                     start += 1
                 } else {
-                    if(op.attributes)
-                        ops.push({ insert: op.insert, attributes: op.attributes })
-                    else
-                        ops.push({ insert: op.insert })
+                    if (op.attributes) ops.push({ insert: op.insert, attributes: op.attributes })
+                    else ops.push({ insert: op.insert })
                 }
 
                 end += 1
@@ -275,9 +262,7 @@ export class Range {
             if (cursor > end) break
         }
 
-        if(delta.contexts)
-            return new Delta(normalizeOps(ops), delta.contexts)
-        else
-            return new Delta(normalizeOps(ops))
+        if (delta.contexts) return new Delta(normalizeOps(ops), delta.contexts)
+        else return new Delta(normalizeOps(ops))
     }
 }

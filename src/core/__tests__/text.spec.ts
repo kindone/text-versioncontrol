@@ -3,8 +3,8 @@ import * as _ from 'underscore'
 import { SharedString } from '../SharedString'
 import { expectEqual, JSONStringify } from '../util'
 import { randomInt, randomSharedString, randomChanges } from '../../__tests__/random'
-import { IDelta } from '../IDelta';
-import { flattenDeltas } from '../primitive';
+import { IDelta } from '../IDelta'
+import { flattenDeltas } from '../primitive'
 
 describe('hand-made scenarios', () => {
     it('scenario 1', () => {
@@ -185,7 +185,7 @@ describe('commutativity', () => {
         for (let j = 0; j < 50; j++) {
             const ss = randomSharedString()
             const user1Deltas = randomChanges(ss.toText().length, 2)
-            const user2Deltas:IDelta[] = []
+            const user2Deltas: IDelta[] = []
 
             for (let i = 0; i < 60; i++) {
                 testCombination(ss, user1Deltas, user2Deltas)

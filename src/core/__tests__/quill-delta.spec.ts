@@ -1,17 +1,16 @@
 import * as _ from 'underscore'
-import QDelta = require("quill-delta");
+import QDelta = require('quill-delta')
 import { expectEqual } from '../util'
-import { Delta as Delta } from '../Delta';
-import { flattenDeltas, cropContent, transformDeltas } from '../primitive';
+import { Delta } from '../Delta'
+import { flattenDeltas, cropContent, transformDeltas } from '../primitive'
 
 describe('Delta methods', () => {
     it('take', () => {
-        expectEqual(new Delta().insert('hello').take(1,2), new Delta().insert('e'))
+        expectEqual(new Delta().insert('hello').take(1, 2), new Delta().insert('e'))
     })
 })
 
 describe('Quill Delta basic operations', () => {
-
     it('negative value ignored', () => {
         expectEqual(new QDelta().delete(-1), new QDelta())
         expectEqual(new QDelta().retain(-1), new QDelta())
@@ -85,10 +84,13 @@ describe('Quill Delta basic operations', () => {
                 .delete(1)
             expectEqual(initial.compose(delta), delta)
             expectEqual(initial, new QDelta())
-            expectEqual(delta, new QDelta()
-                .retain(1)
-                .insert('x')
-                .delete(1))
+            expectEqual(
+                delta,
+                new QDelta()
+                    .retain(1)
+                    .insert('x')
+                    .delete(1),
+            )
             expectEqual(flattenDeltas(initial, delta), delta)
         }
 
@@ -100,13 +102,15 @@ describe('Quill Delta basic operations', () => {
                 .delete(1)
             expectEqual(initial.compose(delta), delta)
             expectEqual(initial, new Delta())
-            expectEqual(delta, new Delta()
-                .retain(1)
-                .insert('x')
-                .delete(1))
+            expectEqual(
+                delta,
+                new Delta()
+                    .retain(1)
+                    .insert('x')
+                    .delete(1),
+            )
             expectEqual(flattenDeltas(initial, delta), delta)
         }
-
     })
 
     it('compose1', () => {
@@ -266,35 +270,41 @@ describe('Quill Delta basic operations', () => {
 
     it('crop by compose', () => {
         // delete reordered to back of all inserts
-        const delta = new QDelta([{ insert: 'ab' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
-        const target = new QDelta([{ delete: 1 }, {retain:3}, {delete: 2}])
+        const delta = new QDelta([{ insert: 'ab' }, { insert: 'cd', attributes: { x: 'ef' } }, { insert: 'gh' }])
+        const target = new QDelta([{ delete: 1 }, { retain: 3 }, { delete: 2 }])
         // expectEqual(delta.compose(target).ops, [{ insert: '71nw' }, { delete: 1 }])
-        expectEqual(flattenDeltas(delta, target).ops, [{ insert: 'b' }, { insert: 'cd', attributes:{x: "ef"} }])
+        expectEqual(flattenDeltas(delta, target).ops, [{ insert: 'b' }, { insert: 'cd', attributes: { x: 'ef' } }])
     })
 
     it('crop by offset and length', () => {
-        const delta = new QDelta([{ insert: 'ab' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
+        const delta = new QDelta([{ insert: 'ab' }, { insert: 'cd', attributes: { x: 'ef' } }, { insert: 'gh' }])
         expectEqual(cropContent(delta, 0, 6), delta)
-        expectEqual(cropContent(delta, 1, 6).ops, [{ insert: 'b' }, { insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
-        expectEqual(cropContent(delta, 2, 6).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'gh' }])
-        expectEqual(cropContent(delta, 2, 5).ops, [{ insert: 'cd', attributes:{x: "ef"} }, { insert: 'g' }])
-        expectEqual(cropContent(delta, 2, 4).ops, [{ insert: 'cd', attributes:{x: "ef"} }])
-        expectEqual(cropContent(delta, 2, 3).ops, [{ insert: 'c', attributes:{x: "ef"} }])
+        expectEqual(cropContent(delta, 1, 6).ops, [
+            { insert: 'b' },
+            { insert: 'cd', attributes: { x: 'ef' } },
+            { insert: 'gh' },
+        ])
+        expectEqual(cropContent(delta, 2, 6).ops, [{ insert: 'cd', attributes: { x: 'ef' } }, { insert: 'gh' }])
+        expectEqual(cropContent(delta, 2, 5).ops, [{ insert: 'cd', attributes: { x: 'ef' } }, { insert: 'g' }])
+        expectEqual(cropContent(delta, 2, 4).ops, [{ insert: 'cd', attributes: { x: 'ef' } }])
+        expectEqual(cropContent(delta, 2, 3).ops, [{ insert: 'c', attributes: { x: 'ef' } }])
     })
-
 
     it('transform on empty delta', () => {
         const qDelta = new QDelta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
         expectEqual(transformDeltas(new QDelta(), qDelta, true), qDelta)
-        expectEqual(transformDeltas(new QDelta(), qDelta, true).ops, [{"insert":"71"},{"delete":1},{"insert":"nw"}])
+        expectEqual(transformDeltas(new QDelta(), qDelta, true).ops, [
+            { insert: '71' },
+            { delete: 1 },
+            { insert: 'nw' },
+        ])
         // note that delta.transform will reorder delete and insert
-        expectEqual(new QDelta().transform(qDelta, true).ops, [{"insert":"71nw"},{"delete":1}])
+        expectEqual(new QDelta().transform(qDelta, true).ops, [{ insert: '71nw' }, { delete: 1 }])
 
         const delta = new Delta([{ insert: '71' }, { delete: 1 }, { insert: 'nw' }])
         expectEqual(transformDeltas(new Delta(), delta, true), delta)
         expectEqual(new Delta().transform(delta, true), delta)
     })
-
 
     it('immutability of transformation', () => {
         const qDelta = new QDelta()

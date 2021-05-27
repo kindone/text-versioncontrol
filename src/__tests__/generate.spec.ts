@@ -1,45 +1,46 @@
-import { forAll, interval, Property, Random } from "jsproptest"
-import { contentLengthChanged, minContentLengthForChange } from "../core/primitive"
-import { JSONStringify } from "../core/util"
-import { ArraySplitsGen, ArraySplit } from "./generator/ArraySplit"
-import { ChangeList, ChangeListGen } from "./generator/ChangeList"
-import { DeltaGen } from "./generator/Delta"
+import { forAll, interval, Property, Random } from 'jsproptest'
+import { contentLengthChanged, minContentLengthForChange } from '../core/primitive'
+import { JSONStringify } from '../core/util'
+import { ArraySplitsGen, ArraySplit } from './generator/ArraySplit'
+import { ChangeList, ChangeListGen } from './generator/ChangeList'
+import { DeltaGen } from './generator/Delta'
 
 describe('generate', () => {
-
-    it('attributeMap', () => {
-    })
+    it('attributeMap', () => {})
 
     it('ArraySplit', () => {
         const minLength = 1
         const maxLength = 30
-        const tupleGen = interval(minLength, maxLength).chain(length => interval(minLength, length)).chain(lenthAndMinSplits => interval(lenthAndMinSplits[1], lenthAndMinSplits[0])).map(tup => [tup[0][0], tup[0][1], tup[1]])
-        const prop = new Property((tup:[number, number, number]) => {
+        const tupleGen = interval(minLength, maxLength)
+            .chain(length => interval(minLength, length))
+            .chain(lenthAndMinSplits => interval(lenthAndMinSplits[1], lenthAndMinSplits[0]))
+            .map(tup => [tup[0][0], tup[0][1], tup[1]])
+        const prop = new Property((tup: [number, number, number]) => {
             const [length, minSplits, maxSplits] = tup
             const arraySplitsGen = ArraySplitsGen(length, minSplits, maxSplits)
             expect(length).toBeGreaterThanOrEqual(minSplits)
             expect(length).toBeGreaterThanOrEqual(maxSplits)
             expect(minSplits).toBeLessThanOrEqual(maxSplits)
 
-            forAll((arraySplits:ArraySplit[]) => {
-                expect(arraySplits[arraySplits.length-1].from + arraySplits[arraySplits.length-1].length).toBe(length)
+            forAll((arraySplits: ArraySplit[]) => {
+                expect(arraySplits[arraySplits.length - 1].from + arraySplits[arraySplits.length - 1].length).toBe(
+                    length,
+                )
 
-                return (arraySplits.length >= minSplits && arraySplits.length <= maxSplits)
+                return arraySplits.length >= minSplits && arraySplits.length <= maxSplits
             }, arraySplitsGen)
         })
         prop.setNumRuns(100).forAll(tupleGen)
     })
 
     it('generate Delta', () => {
-        const prop = new Property((initialLength:number, seed:number):void => {
+        const prop = new Property((initialLength: number, seed: number): void => {
             const random = new Random(seed.toString())
             const delta = DeltaGen(initialLength).generate(random).value
             const minLength = minContentLengthForChange(delta)
-            if(minLength != initialLength)
-                throw new Error(`${initialLength},${minLength},${JSONStringify(delta)}`)
+            if (minLength != initialLength) throw new Error(`${initialLength},${minLength},${JSONStringify(delta)}`)
             const newLength = contentLengthChanged(initialLength, delta)
-            if(newLength < 0)
-                throw new Error(`${initialLength},${newLength},${JSONStringify(delta)}`)
+            if (newLength < 0) throw new Error(`${initialLength},${newLength},${JSONStringify(delta)}`)
         })
         prop.setNumRuns(10000).forAll(interval(0, 30), interval(0, 100))
     })
@@ -57,7 +58,6 @@ describe('generate', () => {
         // const random = new Random()
         // for(let i = 0; i < 1000; i++)
         //     console.log(JSONStringify(ChangeListGen().generate(random).value))
-        forAll((_changeList:ChangeList):void => {
-        }, ChangeListGen(10, 50))
+        forAll((_changeList: ChangeList): void => {}, ChangeListGen(10, 50))
     })
 })

@@ -40,5 +40,4 @@ export class RepoClient {
         }
         return repoSyncRequest
     }
-
 }

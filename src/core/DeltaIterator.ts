@@ -9,7 +9,11 @@ interface OpsWithDiff {
     diff: number
 }
 
-function shadowedAttributes(base: AttributeMap, mod: { [branch: string]: AttributeMap }, branches: string[]):AttributeMap {
+function shadowedAttributes(
+    base: AttributeMap,
+    mod: { [branch: string]: AttributeMap },
+    branches: string[],
+): AttributeMap {
     const projected: AttributeMap = { ...base }
     // higher branch can overwrite lower branch's modification
     for (const branch of branches.sort()) {
@@ -35,8 +39,7 @@ function calculateAttributeDelta(
     let compared: AttributeMap = {}
     if (attrFragment.mod) {
         const groups: { [higher: string]: string[] } = _.groupBy(Object.keys(attrFragment.mod), br => {
-            if(branch === '*' || branch === '_')
-                return 'F'
+            if (branch === '*' || branch === '_') return 'F'
             return br > branch ? 'T' : 'F'
         })
         const higherBranches: string[] = groups.T ? groups.T : []
@@ -124,10 +127,7 @@ export class DeltaIterator {
         return ops
     }
 
-    private mapCurrent(
-        opGen: (amount: number, attrFragment?: AttributeFragment) => Op,
-        amount: number
-    ): OpsWithDiff {
+    private mapCurrent(opGen: (amount: number, attrFragment?: AttributeFragment) => Op, amount: number): OpsWithDiff {
         let ops: Op[] = []
 
         do {

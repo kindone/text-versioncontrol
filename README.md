@@ -54,17 +54,18 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
   	{insert: "Hello", attributes: {"link": "http://github.com"}}
   	```
 
-* Adding attributes
+~~* Adding attributes~~
 
 	```js
 	{retain: 5, attributes: {"link": "http://github.com"}}
 	```
 
-* Removing attributes
+~~* Removing attributes~~
 
 	```js
 	{retain: 5, attributes: {"link": null}}
 	```
+* **Important Note:** Since v0.9.10, adding and removing attributes using `retain` is no longer supported, as it overly complicates the implementation. You can use combination of `delete` and `insert` for same effect.
 
 
 ### Constructing Delta

@@ -53,8 +53,8 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
   	```js
   	{insert: "Hello", attributes: {"link": "http://github.com"}}
   	```
-	
-* **Important Note:** Since v0.9.10, adding and removing attributes using `retain` is no longer supported, as it overly complicates the implementation. You can use combination of `delete` and `insert` for same effect.
+
+* **Important Note:** Since v0.9.10, adding and removing attributes using `retain` is no longer supported, as it overly complicates the implementation and led to inconsistence in design. You can use combination of `delete` and `insert` for same effect.
 
 
 ### Constructing Delta
@@ -147,14 +147,14 @@ new Delta(ops?:Op[])
 	```js
 	invert(baseContent:Delta):Delta
 	```
-	
-	* **Returns**: the inversion of a change when applied on `baseContent`. 
+
+	* **Returns**: the inversion of a change when applied on `baseContent`.
  	* In other words, it returns `D'` where `baseContent.apply(D).apply(D') == baseContent` holds for content `baseContent` and change `D`.
 	* Useful for generating an undo change.
 	* `baseContent` is required for correctly inverting addition/removal of attributes
 	* equivalent to `invertChange(baseConent, delta)`
 
-	
+
 ### Utility Functions
 Text-VersionControl provides utility functions to manipulate deltas
 

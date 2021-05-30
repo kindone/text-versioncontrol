@@ -63,7 +63,7 @@ const AppendGen = (docSet: Document[], _: ExcerptModel) =>
                     // in case excerpts are removed
                     model.setExcerpts(0, docSet[0].getFullExcerpts())
                     model.setExcerpts(1, docSet[1].getFullExcerpts())
-                }),
+                }, `Append(${JSONStringify(tuple)})`),
         )
 
 interface Take {
@@ -198,7 +198,7 @@ const TakeAndAppendExcerptGen = (docSet: Document[], _: ExcerptModel) => {
             model.contentLengths[paste.id] = contentLength(docSet[paste.id].getContent())
             model.setExcerpts(0, docSet[0].getFullExcerpts())
             model.setExcerpts(1, docSet[1].getFullExcerpts())
-        })
+        }, `TakeAndPaste(${JSONStringify(tuple)})`)
     })
 }
 
@@ -217,7 +217,7 @@ const UpdateMarkerGen = (docSet: Document[], _: ExcerptModel) =>
                 model.contentLengths[docId] = contentLength(docSet[docId].getContent())
                 model.setExcerpts(0, docSet[0].getFullExcerpts())
                 model.setExcerpts(1, docSet[1].getFullExcerpts())
-            }),
+            }, `UpdateMarker(${docId})`),
     )
 
 class MyDocumentSet implements DocumentSet {
@@ -293,7 +293,7 @@ const SyncExcerptGen = (docSet: Document[], _: ExcerptModel) =>
                 model.contentLengths[docId] = contentLength(docSet[docId].getContent())
                 model.setExcerpts(0, docSet[0].getFullExcerpts())
                 model.setExcerpts(1, docSet[1].getFullExcerpts())
-            })
+            }, `SyncExcerpt(${JSONStringify(tuple)})`)
         })
 
 describe('Excerpt properties', () => {

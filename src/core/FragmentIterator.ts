@@ -33,13 +33,6 @@ export class FragmentIterator {
         return this.mapCurrent((fragment, begin, end) => fragment.slice(begin, end), amount)
     }
 
-    public attribute(amount: number, attr: { [name: string]: any }): Fragment[] {
-        return this.mapCurrent(
-            (fragment, begin, end) => fragment.sliceWithAttribute(attr, this.branch, begin, end),
-            amount,
-        )
-    }
-
     public delete(amount: number): Fragment[] {
         return this.mapCurrent((fragment, begin, end) => fragment.sliceWithDelete(this.branch, begin, end), amount)
     }

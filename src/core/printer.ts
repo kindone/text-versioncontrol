@@ -16,7 +16,6 @@ const fill = (char: string, size: number) => {
     return str
 }
 const retain = (size: number) => chalk.default.underline.gray(fill('?', size))
-const retainAttr = (size: number) => chalk.default.underline.yellow(fill('?', size))
 const del = (size: number) => chalk.default.strikethrough.redBright(fill('X', size))
 const delContent = (text: string) => {
     text = text.replace(/ /g, '_')
@@ -31,8 +30,6 @@ export function printContent(delta: IDelta): string {
             str += initial(op.insert)
         } else if (op.insert) {
             str += initialObj(JSON.stringify(op.insert) + (op.attributes ? ':' + JSONStringify(op.attributes) : ''))
-        } else if (op.retain && op.attributes) {
-            str += retainAttr(op.retain)
         } else if (op.retain) {
             str += retain(op.retain)
         } else if (op.delete) {
@@ -49,8 +46,6 @@ export function printDelta(delta: IDelta): string {
             str += insert(op.insert)
         } else if (op.insert) {
             str += insertObj(JSON.stringify(op.insert))
-        } else if (op.retain && op.attributes) {
-            str += retainAttr(op.retain)
         } else if (op.retain) {
             str += retain(op.retain)
         } else if (op.delete) {

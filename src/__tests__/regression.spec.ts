@@ -12,13 +12,13 @@ describe('text spec regression', () => {
     it('case 1', () => {
         const initial = '02f'
         const client1 = SharedString.fromString(initial)
-        client1.applyChange(new Delta().retain(2).retain(1, { b: null, i: 1 }), 'user2')
+        client1.applyChange(new Delta().retain(2).delete(1).insert('f', { b: null, i: 1 }), 'user2')
         // console.log(JSONStringify(client1))
         client1.applyChange(
             new Delta()
-                .retain(1, { i: null })
+                .delete(1).insert('0', { i: null })
                 .retain(1)
-                .retain(1, { b: null, i: null }),
+                .delete(1).insert('f', { b: null, i: null }),
             'user1',
         )
         client1.applyChange(
@@ -34,9 +34,9 @@ describe('text spec regression', () => {
         const client2 = SharedString.fromString(initial)
         client2.applyChange(
             new Delta()
-                .retain(1, { i: null })
+                .delete(1).insert('0', { i: null })
                 .retain(1)
-                .retain(1, { b: null, i: null }),
+                .delete(1).insert('f', { b: null, i: null }),
             'user1',
         )
         client2.applyChange(
@@ -48,7 +48,7 @@ describe('text spec regression', () => {
             'user1',
         )
         // console.log(JSONStringify(client2))
-        client2.applyChange(new Delta().retain(2).retain(1, { b: null, i: 1 }), 'user2')
+        client2.applyChange(new Delta().retain(2).delete(1).insert('f', { b: null, i: 1 }), 'user2')
         // console.log(JSONStringify(client2))
 
         expectEqual(client1.toDelta(), client2.toDelta())

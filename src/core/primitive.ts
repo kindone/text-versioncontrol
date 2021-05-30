@@ -165,9 +165,6 @@ export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boole
     for (const op of delta2.ops) {
         if (!iter.hasNext()) {
             outOps.push(op)
-        } else if (op.retain && op.attributes) {
-            // attribute
-            outOps = outOps.concat(iter.attribute(op.retain, op.attributes))
         } else if (op.retain) {
             // retain
             outOps = outOps.concat(iter.retain(op.retain))
@@ -207,10 +204,7 @@ export function flattenDeltas(...deltas: IDelta[]): IDelta {
         let outOps: Op[] = []
         for (const op of delta2.ops) {
             if (!iter.hasNext()) outOps.push(op)
-            else if (op.retain && op.attributes) {
-                // attribute
-                outOps = outOps.concat(iter.attribute(op.retain, op.attributes))
-            } else if (op.retain) {
+            else if (op.retain) {
                 // retain
                 outOps = outOps.concat(iter.retain(op.retain))
             } else if (op.delete) {
@@ -256,39 +250,13 @@ export function sliceOp(op: Op, start: number, end?: number): Op {
         }
     } else if (op.retain) {
         end = end ? end : op.retain
-        if (op.attributes) return { retain: end - start, attributes: op.attributes }
-        else return { retain: end - start }
+        return { retain: end - start }
     } else if (op.delete) {
         end = end ? end : op.delete
         return { delete: end - start }
     }
 
     throw new Error('invalid op')
-}
-
-export function sliceOpWithAttributes(op: Op, attr: AttributeMap, start: number, end?: number): Op {
-    const newOp: Op = { ...op }
-    newOp.attributes = mergeAttributes(op.attributes, attr)
-    return sliceOp(newOp, start, end)
-}
-
-// precedence: attr2 > attr1
-export function mergeAttributes(attr1?: AttributeMap, attr2?: AttributeMap): AttributeMap | undefined {
-    if (!attr1 && !attr2) return undefined
-
-    if (!attr1) return attr2
-    if (!attr2) return attr1
-
-    const result: AttributeMap = {}
-    for (const key of Object.keys(attr1)) {
-        result[key] = attr1[key]
-    }
-
-    for (const key of Object.keys(attr2)) {
-        result[key] = attr2[key]
-    }
-
-    return result
 }
 
 export function cropContent(content: IDelta, start: number, end: number): IDelta {
@@ -306,34 +274,7 @@ export function invertChange(baseContent: IDelta, change: IDelta): IDelta {
     let offset = 0
     let reversedOps: Op[] = []
     for (const changeOp of change.ops) {
-        if (changeOp.retain && changeOp.attributes) {
-            const cropped = cropContent(baseContent, offset, offset + changeOp.retain).ops
-
-            for (const contentOp of cropped) {
-                const newAttrs: AttributeMap = {}
-                for (const key in changeOp.attributes) {
-                    if (changeOp.attributes[key] === null) {
-                        if (contentOp.attributes && contentOp.attributes[key]) {
-                            newAttrs[key] = contentOp.attributes[key]
-                        }
-                    } else if (typeof changeOp.attributes[key] === 'string') {
-                        if (contentOp.attributes && contentOp.attributes[key]) {
-                            newAttrs[key] = contentOp.attributes[key]
-                        } else {
-                            newAttrs[key] = null
-                        }
-                    }
-                }
-                // fill in newAttrs
-                if (typeof contentOp.insert === 'string') {
-                    reversedOps.push({ retain: contentOp.insert.length, attributes: newAttrs })
-                } else if (contentOp.insert) {
-                    reversedOps.push({ retain: 1, attributes: newAttrs })
-                }
-            }
-
-            offset += changeOp.retain
-        } else if (changeOp.retain) {
+        if (changeOp.retain) {
             reversedOps.push({ retain: changeOp.retain })
             offset += changeOp.retain
         } else if (typeof changeOp.insert === 'string') {

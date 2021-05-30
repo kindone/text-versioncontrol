@@ -14,13 +14,6 @@ export class DeltaTransformer {
         }, amount)
     }
 
-    public attribute(amount: number, attributes: { [name: string]: any }): Op[] {
-        return this.mapCurrent((op, begin, end) => {
-            end = end ? end : opLength(op)
-            return [{ retain: end - begin, attributes }]
-        }, amount)
-    }
-
     public delete(amount: number): Op[] {
         return this.mapCurrent((op, begin, end) => {
             end = end ? end : opLength(op)

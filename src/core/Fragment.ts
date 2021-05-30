@@ -7,7 +7,6 @@ import { JSONStringify } from './util'
 
 export interface AttributeFragment {
     val?: AttributeMap
-    mod?: { [branch: string]: AttributeMap }
 }
 
 export interface JSONEmbed {
@@ -75,11 +74,6 @@ export class Fragment {
 
     public slice(begin: number, end?: number): Fragment {
         return new Fragment(this.val.slice(begin, end), this.attrs, this.mod.insertedBy, new Set(this.mod.deletedBy))
-    }
-
-    public sliceWithAttribute(attr: AttributeMap, branch: string, begin: number, end?: number): Fragment {
-        const newAttrs = this.applyAttributes(attr, branch)
-        return new Fragment(this.val.slice(begin, end), newAttrs, this.mod.insertedBy, new Set(this.mod.deletedBy))
     }
 
     public sliceWithDelete(branch: string, begin: number, end?: number): Fragment {
@@ -209,24 +203,7 @@ export class Fragment {
     public getAttributes(): AttributeMap {
         if (!this.attrs) return {}
 
-        const projected: AttributeMap = this.attrValWithoutNullFields()
-        if (!this.attrs.mod) {
-            return projected
-        }
-
-        // take branches in reverse order to let a branch with higher priority overrides others
-        for (const branch of Object.keys(this.attrs.mod).sort()) {
-            // set or unset fields by mod
-            const mod = this.attrs.mod[branch]
-            for (const field in mod) {
-                if (mod[field] === null) {
-                    delete projected[field]
-                } else {
-                    projected[field] = mod[field]
-                }
-            }
-        }
-        return projected
+        return this.attrValWithoutNullFields()
     }
 
     private attrValWithoutNullFields(): AttributeMap {
@@ -239,24 +216,5 @@ export class Fragment {
             }
         }
         return result
-    }
-
-    private applyAttributes(attrToApply: AttributeMap, branch: string): AttributeFragment {
-        if (!this.attrs) return { mod: { [branch]: attrToApply } }
-
-        if (!this.attrs.mod) {
-            return { val: this.attrs.val, mod: { [branch]: attrToApply } }
-        }
-
-        const branchAttr: AttributeMap = {
-            ...this.attrs.mod[branch],
-            ...attrToApply,
-        }
-
-        if (this.attrs.val) {
-            return { val: this.attrs.val, mod: { ...this.attrs.mod, [branch]: branchAttr } }
-        } else {
-            return { mod: { ...this.attrs.mod, [branch]: branchAttr } }
-        }
     }
 }

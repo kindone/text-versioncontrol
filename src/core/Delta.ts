@@ -26,11 +26,10 @@ export class Delta implements IDelta {
     }
 
     /* changes the object */
-    public retain(count: number, attributes?: AttributeMap): Delta {
+    public retain(count: number): Delta {
         if (count <= 0) return this
 
-        if (attributes) this.ops.push({ retain: count, attributes })
-        else this.ops.push({ retain: count })
+        this.ops.push({ retain: count })
         return this
     }
 

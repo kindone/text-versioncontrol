@@ -1,5 +1,5 @@
 import Op from 'quill-delta/dist/Op'
-import { sliceOp, sliceOpWithAttributes, opLength } from './primitive'
+import { sliceOp, opLength } from './primitive'
 
 export class DeltaComposer {
     private idx = 0
@@ -9,12 +9,6 @@ export class DeltaComposer {
 
     public retain(amount: number): Op[] {
         return this.mapCurrent((op, begin, end) => [sliceOp(op, begin, end)], amount)
-    }
-
-    public attribute(amount: number, attr: { [name: string]: any }): Op[] {
-        return this.mapCurrent((op, begin, end) => {
-            return [sliceOpWithAttributes(op, attr, begin, end)]
-        }, amount)
     }
 
     public delete(amount: number): Op[] {

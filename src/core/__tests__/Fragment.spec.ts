@@ -55,25 +55,25 @@ describe('hand-made scenarios', () => {
         ])
     })
 
-    it('fragment attribute set', () => {
-        const fragment = Fragment.initial('hello')
-        const iter = new FragmentIterator('me', [fragment])
-        expectEqual(iter.retain(1), [{ val: 'h', mod: { deletedBy: [] } }])
-        expectEqual(iter.insert('x'), [{ val: 'x', mod: { insertedBy: 'me', deletedBy: [] } }])
-        expectEqual(iter.attribute(2, { bold: true }), [
-            { val: 'el', attrs: { mod: { me: { bold: true } } }, mod: { deletedBy: [] } },
-        ])
-    })
+    // it('fragment attribute set', () => {
+    //     const fragment = Fragment.initial('hello')
+    //     const iter = new FragmentIterator('me', [fragment])
+    //     expectEqual(iter.retain(1), [{ val: 'h', mod: { deletedBy: [] } }])
+    //     expectEqual(iter.insert('x'), [{ val: 'x', mod: { insertedBy: 'me', deletedBy: [] } }])
+    //     expectEqual(iter.attribute(2, { bold: true }), [
+    //         { val: 'el', attrs: { mod: { me: { bold: true } } }, mod: { deletedBy: [] } },
+    //     ])
+    // })
 
-    it('fragment attribute unset', () => {
-        const fragment = Fragment.initial('hello', { bold: true })
-        const iter = new FragmentIterator('me', [fragment])
-        expectEqual(iter.retain(1), [{ val: 'h', attrs: { val: { bold: true } }, mod: { deletedBy: [] } }])
-        expectEqual(iter.insert('x'), [{ val: 'x', mod: { insertedBy: 'me', deletedBy: [] } }])
-        const fragments = iter.attribute(2, { bold: null })
-        expectEqual(fragments, [
-            { val: 'el', attrs: { val: { bold: true }, mod: { me: { bold: null } } }, mod: { deletedBy: [] } },
-        ])
-        expectEqual(fragments[0].getAttributes(), {})
-    })
+    // it('fragment attribute unset', () => {
+    //     const fragment = Fragment.initial('hello', { bold: true })
+    //     const iter = new FragmentIterator('me', [fragment])
+    //     expectEqual(iter.retain(1), [{ val: 'h', attrs: { val: { bold: true } }, mod: { deletedBy: [] } }])
+    //     expectEqual(iter.insert('x'), [{ val: 'x', mod: { insertedBy: 'me', deletedBy: [] } }])
+    //     const fragments = iter.attribute(2, { bold: null })
+    //     expectEqual(fragments, [
+    //         { val: 'el', attrs: { val: { bold: true }, mod: { me: { bold: null } } }, mod: { deletedBy: [] } },
+    //     ])
+    //     expectEqual(fragments[0].getAttributes(), {})
+    // })
 })

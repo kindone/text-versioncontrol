@@ -9,56 +9,6 @@ interface OpsWithDiff {
     diff: number
 }
 
-function shadowedAttributes(
-    base: AttributeMap,
-    mod: { [branch: string]: AttributeMap },
-    branches: string[],
-): AttributeMap {
-    const projected: AttributeMap = { ...base }
-    // higher branch can overwrite lower branch's modification
-    for (const branch of branches.sort()) {
-        const branchMod = mod[branch]
-        for (const field of Object.keys(branchMod)) {
-            projected[field] = branchMod[field]
-        }
-    }
-    return projected
-}
-
-function calculateAttributeDelta(
-    attr: AttributeMap,
-    branch: string,
-    attrFragment?: AttributeFragment,
-): AttributeMap | undefined {
-    if (!attrFragment) return attr
-
-    const attrDelta: AttributeMap = {}
-
-    // filtered by branches with higher priority
-    let shadowed: AttributeMap = {}
-    let compared: AttributeMap = {}
-    if (attrFragment.mod) {
-        const groups: { [higher: string]: string[] } = _.groupBy(Object.keys(attrFragment.mod), br => {
-            if (branch === '*' || branch === '_') return 'F'
-            return br > branch ? 'T' : 'F'
-        })
-        const higherBranches: string[] = groups.T ? groups.T : []
-        const lowerOrEqualBranches: string[] = groups.F ? groups.F : []
-        shadowed = shadowedAttributes({}, attrFragment.mod, higherBranches)
-        compared = shadowedAttributes(attrFragment.val ? attrFragment.val : {}, attrFragment.mod, lowerOrEqualBranches)
-    }
-
-    for (const field of Object.keys(attr)) {
-        // 1. check if the field is not shadowed by branch with higher priority
-        // 2. check if the field is different from mods by a branch with lower or equal priority
-        if (!shadowed.hasOwnProperty(field) && (!compared.hasOwnProperty(field) || compared[field] !== attr[field])) {
-            attrDelta[field] = attr[field]
-        }
-    }
-
-    return _.isEmpty(attrDelta) ? undefined : attrDelta
-}
-
 export class DeltaIterator {
     private fragmentIdx = 0
     private offsetAtFragment = 0
@@ -67,14 +17,6 @@ export class DeltaIterator {
 
     public retain(amount: number): OpsWithDiff {
         return this.mapCurrent(amnt => ({ retain: amnt }), amount)
-    }
-
-    public attribute(amount: number, attr: object): OpsWithDiff {
-        // priority of attribute setting by branch name
-        return this.mapCurrent((amnt, attrFragment) => {
-            const attrDelta = calculateAttributeDelta(attr, this.branch, attrFragment)
-            return attrDelta ? { retain: amnt, attributes: attrDelta } : { retain: amnt }
-        }, amount)
     }
 
     public delete(amount: number): OpsWithDiff {

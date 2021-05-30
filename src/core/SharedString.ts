@@ -43,22 +43,8 @@ export class SharedString {
         let diff = 0 // always <= 0
 
         for (const op of change.ops) {
-            // update attributes
-            if (op.retain && op.attributes) {
-                const fragments = fragmentIter.attribute(op.retain, op.attributes)
-                newFragments = newFragments.concat(fragments)
-
-                const retain = op.retain + diff
-                if (retain > 0) {
-                    const opsWithDiff = deltaIter.attribute(retain, op.attributes)
-                    newOps = newOps.concat(opsWithDiff.ops)
-                    diff = opsWithDiff.diff
-                } else {
-                    diff = retain
-                }
-            }
-            // retain
-            else if (op.retain) {
+            // ratain
+            if (op.retain) {
                 newFragments = newFragments.concat(fragmentIter.retain(op.retain))
 
                 const retain = op.retain + diff

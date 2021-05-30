@@ -191,66 +191,66 @@ describe('Quill Delta basic operations', () => {
         ])
     })
 
-    it('compose null retain', () => {
-        // flatten
-        const delta = new QDelta([{ retain: 16 }, { insert: ' beautiful ' }, { delete: 1 }])
-        const target = new QDelta([{ retain: 1, attributes: { a: null, b: null } }])
-        expectEqual(delta.compose(target).ops, [
-            { retain: 1, attributes: { a: null, b: null } },
-            { retain: 15 },
-            { insert: ' beautiful ' },
-            { delete: 1 },
-        ])
-        expectEqual(flattenDeltas(delta, target).ops, [
-            { retain: 1, attributes: { a: null, b: null } },
-            { retain: 15 },
-            { insert: ' beautiful ' },
-            { delete: 1 },
-        ])
-    })
+    // it('compose null retain', () => {
+    //     // flatten
+    //     const delta = new QDelta([{ retain: 16 }, { insert: ' beautiful ' }, { delete: 1 }])
+    //     const target = new QDelta([{ retain: 1, attributes: { a: null, b: null } }])
+    //     expectEqual(delta.compose(target).ops, [
+    //         { retain: 1, attributes: { a: null, b: null } },
+    //         { retain: 15 },
+    //         { insert: ' beautiful ' },
+    //         { delete: 1 },
+    //     ])
+    //     expectEqual(flattenDeltas(delta, target).ops, [
+    //         { retain: 1, attributes: { a: null, b: null } },
+    //         { retain: 15 },
+    //         { insert: ' beautiful ' },
+    //         { delete: 1 },
+    //     ])
+    // })
 
-    it('compose null retain ignores original content', () => {
-        // flatten
-        const delta = new QDelta([{ insert: ' beautiful ' }, { delete: 1 }])
-        const target = new QDelta([{ retain: 1, attributes: { a: null, b: null } }])
-        expectEqual(delta.compose(target).ops, [{ insert: ' beautiful ' }, { delete: 1 }])
-        expectEqual(flattenDeltas(delta, target).ops, [
-            { insert: ' ', attributes: { a: null, b: null } },
-            { insert: 'beautiful ' },
-            { delete: 1 },
-        ])
-    })
+    // it('compose null retain ignores original content', () => {
+    //     // flatten
+    //     const delta = new QDelta([{ insert: ' beautiful ' }, { delete: 1 }])
+    //     const target = new QDelta([{ retain: 1, attributes: { a: null, b: null } }])
+    //     expectEqual(delta.compose(target).ops, [{ insert: ' beautiful ' }, { delete: 1 }])
+    //     expectEqual(flattenDeltas(delta, target).ops, [
+    //         { insert: ' ', attributes: { a: null, b: null } },
+    //         { insert: 'beautiful ' },
+    //         { delete: 1 },
+    //     ])
+    // })
 
-    it('compose actual null retain', () => {
-        // flatten
-        const delta = new QDelta([
-            { insert: { y: 'wt' }, attributes: { b: null } },
-            { retain: 1, attributes: { i: 1 } },
-            { delete: 1 },
-        ])
-        const target = new QDelta([
-            { insert: 'lt' },
-            { retain: 1, attributes: { b: null, i: null } },
-            { insert: { y: 'tb' }, attributes: { b: 1, i: 1 } },
-            { delete: 1 },
-            { insert: '9e' },
-        ])
-        expectEqual(delta.compose(target).ops, [
-            { insert: 'lt' },
-            { insert: { y: 'wt' } },
-            { attributes: { b: 1, i: 1 }, insert: { y: 'tb' } },
-            { insert: '9e' },
-            { delete: 2 },
-        ])
-        expectEqual(flattenDeltas(delta, target).ops, [
-            { insert: 'lt' },
-            { insert: { y: 'wt' }, attributes: { b: null, i: null } },
-            { insert: { y: 'tb' }, attributes: { b: 1, i: 1 } },
-            { delete: 1 },
-            { insert: '9e' },
-            { delete: 1 },
-        ])
-    })
+    // it('compose actual null retain', () => {
+    //     // flatten
+    //     const delta = new QDelta([
+    //         { insert: { y: 'wt' }, attributes: { b: null } },
+    //         { retain: 1, attributes: { i: 1 } },
+    //         { delete: 1 },
+    //     ])
+    //     const target = new QDelta([
+    //         { insert: 'lt' },
+    //         { retain: 1, attributes: { b: null, i: null } },
+    //         { insert: { y: 'tb' }, attributes: { b: 1, i: 1 } },
+    //         { delete: 1 },
+    //         { insert: '9e' },
+    //     ])
+    //     expectEqual(delta.compose(target).ops, [
+    //         { insert: 'lt' },
+    //         { insert: { y: 'wt' } },
+    //         { attributes: { b: 1, i: 1 }, insert: { y: 'tb' } },
+    //         { insert: '9e' },
+    //         { delete: 2 },
+    //     ])
+    //     expectEqual(flattenDeltas(delta, target).ops, [
+    //         { insert: 'lt' },
+    //         { insert: { y: 'wt' }, attributes: { b: null, i: null } },
+    //         { insert: { y: 'tb' }, attributes: { b: 1, i: 1 } },
+    //         { delete: 1 },
+    //         { insert: '9e' },
+    //         { delete: 1 },
+    //     ])
+    // })
 
     it('compose actual deletes', () => {
         //

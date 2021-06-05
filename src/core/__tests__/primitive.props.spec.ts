@@ -17,6 +17,33 @@ import { forAll } from 'jsproptest'
 import { Delta } from '../Delta'
 import { ContentChangeList, ContentChangeListGen } from '../../__tests__/generator/ContentChangeList'
 
+describe('primitive.ts', () => {
+    it('asDelta', () => {
+
+    })
+
+    it('opLength, deltaLength, contentLength, minContentLengthForChange, contentLengthChanged', () => {
+
+    })
+
+    //normalizeTwoOps
+    //lastRetainsRemoved
+    //emptyOpsRemoved
+    //normalizeOps
+    //normalizeDeltas
+    //hasNoEffect
+    //transformDeltas
+    //applyChanges
+    //flattenDeltas
+    //flattenTransformedDelta
+    //sliceOp
+    //cropContent
+    //invertChange
+    //filterChanges
+    //filterOutChangesByIndice
+    //toQuillStyleOrder
+})
+
 describe('inverse function property', () => {
     it('basic', () => {
         const contentGen = ContentGen(-1, true, true)

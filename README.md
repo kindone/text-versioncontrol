@@ -54,7 +54,7 @@ Text-VersionControl utilizes [Quill](https://quilljs.com)'s [Delta representatio
   	{insert: "Hello", attributes: {"link": "http://github.com"}}
   	```
 
-* **Important Note:** Since v0.9.10, adding and removing attributes using `retain` is no longer supported, as it overly complicates the implementation and led to inconsistence in design. You can use combination of `delete` and `insert` for same effect.
+* **Important Note:** Since v0.9.10, adding and removing attributes using `retain` is no longer supported, as it overly complicates the implementation and led to inconsistence in design. You can use combination of `delete` and `insert` for same effect, if base content is available.
 
 
 ### Constructing Delta
@@ -309,7 +309,7 @@ new History(name:string, initialContent: Delta | string)
 
 ##### Notes on similarity and difference to Quill's Delta
 
-Text-VersionControl borrows Quill Delta's representation and many of method names but does not behave the same in a few cases. For example, many of the methods of Quill's Delta reorder adjacent delete and insert (which in most cases does not change the effect), but Text-VersionControl's equivalent methods preserve it. See the following examples:
+Text-VersionControl borrows Quill Delta's representation and many of its method names but does not behave the same in a few cases. For example, many of the methods of Quill's Delta reorder adjacent delete and insert (which in most cases does not change the effect), but Text-VersionControl's equivalent methods preserve it. See the following examples:
 
 *  Result of `new Delta().retain(2).delete(2).insert('Hello')`
 
@@ -324,3 +324,15 @@ Text-VersionControl borrows Quill Delta's representation and many of method name
 	[{insert: 'abcd'}, {delete: 1}] // Quill
 	[{insert: 'ab'}, {delete: 1}, {insert: 'cd'}] // Text-VersionControl
 	```
+
+Also, since v0.9.10, Text-VersionControl no longer supports Quill's `retain` with attributes, which acts as modifying attributes with base content intact.
+
+     ```js
+	[{retain: 1, attributes: {"b": "true"}}] // Quill's retain with attributes. Base content is unspecified
+	[{delete: 1}, {insert: "<base content>", attributes: {"b" : "true"}}] // Equivalent delta with Text-VersionControl. Base content should be specified
+	```
+
+This decision was made because concurrent `modification` did not fit well with Text-VersionControl's CRDT model.
+
+* Priority of application: If multiple users modify an attribute at the same time, which one should prevail? Modeling this increases the implementation complexity a lot while the benefit is small.
+* Undoing a `retain` with attributes is not a reversible operation

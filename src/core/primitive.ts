@@ -20,7 +20,7 @@ export function asDelta(content: string | IDelta): IDelta {
 }
 
 /**
- * Length of an Op, counting the numbers in the operation
+ * Length of an Op, summing up the numbers in the operation
  */
 export function opLength(op: Op): number {
     if (typeof op.insert === 'string') return op.insert.length
@@ -32,13 +32,13 @@ export function opLength(op: Op): number {
 }
 
 /**
- * Length of an IDelta, counting the numbers ({delete: x} or retain also adds up n) in the operations
+ * Length of an IDelta, summing up the numbers ({delete: n} or retain also adds up n) in the operations
  */
 export function deltaLength(delta: IDelta): number {
     return _.reduce(delta.ops, (len, op) => len + opLength(op), 0)
 }
 
-/** Length of a content in IDelta, counting the string lengths */
+/** Length of a content in IDelta, counting the string lengths. content should consists of inserts only */
 export function contentLength(content: IDelta): number {
     return _.reduce(
         content.ops,
@@ -51,7 +51,9 @@ export function contentLength(content: IDelta): number {
     )
 }
 
-/** Get the minimum content length required to apply a change (too many delete cannot be applied if the content is too short) */
+/** Get the minimum content length required to apply a change (e.g. too many delete cannot be applied if the content is too short) 
+* idea: insert don't require length, as it adds up content, but retain or delete consumes content
+*/
 export function minContentLengthForChange(change: IDelta): number {
     return _.reduce(
         change.ops,
@@ -66,7 +68,7 @@ export function minContentLengthForChange(change: IDelta): number {
 }
 
 /** Get the positive or negative length to be added to a content if a change is applied 
- * (Delete adds negative length and insert adds positive length)
+ * (Delete adds negative length and insert adds positive length. retain has no effect)
 */
 export function contentLengthChanged(initialLength: number, change: IDelta): number {
     return _.reduce(
@@ -181,7 +183,7 @@ export function hasNoEffect(delta: IDelta): boolean {
 }
 
 /**
- * Transforms second delta as if first delta has preceded the second delta
+ * Transforms second delta as if first delta preceded the second delta
  * @param delta1 Preceding delta
  * @param delta2 Succeeding delta
  * @param firstWins tie-breaking scheme. Use true for first delta takes precedes second. Use false otherwise.

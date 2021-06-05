@@ -420,7 +420,7 @@ describe('Quill Delta basic operations', () => {
         ])
     })
 
-    it('transformation of delta8 reordered', () => {
+    it('transformation of delta reordered', () => {
         const delta = new QDelta([{ delete: 2 }, { retain: 4 }, { insert: 'first' }]) // .delete(2).retain(4).insert('first')
         const target = new QDelta([{ delete: 4 }, { insert: 'second' }, { delete: 6 }]) // .delete(4).insert('second').delete(6)
         expectEqual(delta.transform(target, false).ops, [

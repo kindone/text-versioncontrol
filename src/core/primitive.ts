@@ -8,12 +8,20 @@ import { IDelta } from './IDelta'
 import { SharedString } from './SharedString'
 import { JSONStringify } from './util'
 
+/**
+ * Coerces string or Delta as Delta
+ * @param content content as string or insert-only IDelta
+ * @returns A Delta in IDelta type
+ */
 export function asDelta(content: string | IDelta): IDelta {
     if (content === '') return new Delta([])
     else if (typeof content === 'string') return new Delta([{ insert: content }])
     else return content as IDelta
 }
 
+/**
+ * Length of an Op, counting the numbers in the operation
+ */
 export function opLength(op: Op): number {
     if (typeof op.insert === 'string') return op.insert.length
     else if (op.insert) return 1
@@ -23,10 +31,14 @@ export function opLength(op: Op): number {
     throw new Error('invalid op')
 }
 
+/**
+ * Length of an IDelta, counting the numbers ({delete: x} or retain also adds up n) in the operations
+ */
 export function deltaLength(delta: IDelta): number {
     return _.reduce(delta.ops, (len, op) => len + opLength(op), 0)
 }
 
+/** Length of a content in IDelta, counting the string lengths */
 export function contentLength(content: IDelta): number {
     return _.reduce(
         content.ops,
@@ -39,6 +51,7 @@ export function contentLength(content: IDelta): number {
     )
 }
 
+/** Get the minimum content length required to apply a change (too many delete cannot be applied if the content is too short) */
 export function minContentLengthForChange(change: IDelta): number {
     return _.reduce(
         change.ops,
@@ -52,6 +65,9 @@ export function minContentLengthForChange(change: IDelta): number {
     )
 }
 
+/** Get the positive or negative length to be added to a content if a change is applied 
+ * (Delete adds negative length and insert adds positive length)
+*/
 export function contentLengthChanged(initialLength: number, change: IDelta): number {
     return _.reduce(
         change.ops,
@@ -66,6 +82,8 @@ export function contentLengthChanged(initialLength: number, change: IDelta): num
     )
 }
 
+/** Compacts two ops into equivalent one, by combining operators of same type
+ */
 export function normalizeTwoOps(op1: Op, op2: Op): Op[] {
     // concatenate two strings with no attributes
     if (typeof op1.insert === 'string' && typeof op2.insert === 'string' && !op1.attributes && !op2.attributes) {
@@ -90,6 +108,7 @@ export function normalizeTwoOps(op1: Op, op2: Op): Op[] {
     return [op1, op2]
 }
 
+/** We can remove retains in the rear, as they have no effect */
 export function lastRetainsRemoved(ops: Op[]): Op[] {
     let newOps = ops.concat()
 
@@ -100,6 +119,7 @@ export function lastRetainsRemoved(ops: Op[]): Op[] {
     return newOps
 }
 
+/** We can remove empty ops, as they have no effect */
 export function emptyOpsRemoved(ops: Op[]): Op[] {
     const newOps = ops.concat()
 
@@ -111,6 +131,7 @@ export function emptyOpsRemoved(ops: Op[]): Op[] {
     })
 }
 
+/** Compact Ops by combining ops and removing ops with no effects */
 export function normalizeOps(ops: Op[]): Op[] {
     if (ops.length === 0) return ops
 
@@ -132,7 +153,7 @@ export function normalizeOps(ops: Op[]): Op[] {
     return lastRetainsRemoved(newOps)
 }
 
-// remove all retain-only deltas in array
+/** remove all retain-only deltas in array */
 export function normalizeDeltas(...deltas: IDelta[]): IDelta[] {
     return _.reduce(
         deltas,
@@ -149,6 +170,7 @@ export function normalizeDeltas(...deltas: IDelta[]): IDelta[] {
     )
 }
 
+/** Check if a delta has no non-zero lengthed insert or delete */
 export function hasNoEffect(delta: IDelta): boolean {
     for (const op of delta.ops) {
         if (op.insert || op.delete) {
@@ -158,6 +180,13 @@ export function hasNoEffect(delta: IDelta): boolean {
     return true
 }
 
+/**
+ * Transforms second delta as if first delta has preceded the second delta
+ * @param delta1 Preceding delta
+ * @param delta2 Succeeding delta
+ * @param firstWins tie-breaking scheme. Use true for first delta takes precedes second. Use false otherwise.
+ * @returns  transformed delta2 as if delta1 has preceded it
+ */
 export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boolean): IDelta {
     const iter = new DeltaTransformer(delta1.ops, firstWins)
     let outOps: Op[] = []
@@ -190,10 +219,12 @@ export function transformDeltas(delta1: IDelta, delta2: IDelta, firstWins: boole
     return new Delta(normalizeOps(outOps))
 }
 
+/** Apply changes on a content */
 export function applyChanges(content: IDelta, changes: IDelta[]) {
     return flattenDeltas(content, ...changes)
 }
 
+/** Flatten multiple deltas as single equivalent delta */
 export function flattenDeltas(...deltas: IDelta[]): IDelta {
     if (deltas.length === 0) return new Delta()
 
@@ -234,13 +265,15 @@ export function flattenDeltas(...deltas: IDelta[]): IDelta {
     return new Delta(normalizeOps(flattened.ops))
 }
 
+/** FIXME: unused and untested */
 export function flattenTransformedDelta(delta1: IDelta, delta2: IDelta, firstWins = false): IDelta {
     return flattenDeltas(delta1, transformDeltas(delta1, delta2, firstWins))
 }
 
+/** slice single op. if offset exceeds the op length, it returns empty operation */
 export function sliceOp(op: Op, start: number, end?: number): Op {
     if (typeof op.insert === 'string') {
-        if (op.attributes) return { insert: op.insert.slice(start, end), attributes: op.attributes }
+        if (op.attributes && start < op.insert.length) return { insert: op.insert.slice(start, end), attributes: op.attributes }
         else return { insert: op.insert.slice(start, end) }
     } else if (op.insert) {
         if (start > 0) return { insert: '' }
@@ -270,6 +303,12 @@ export function cropContent(content: IDelta, start: number, end: number): IDelta
     else return flattenDeltas(content, new Delta([{ delete: start }, { retain: length }, { delete: fullLength - end }]))
 }
 
+/**
+ * Get an undo change. Undo change would cancel out the forward change if applied together
+ * @param baseContent Base content on which the change will be applied (required to calculate undo)
+ * @param change forward change
+ * @returns undo change
+ */
 export function invertChange(baseContent: IDelta, change: IDelta): IDelta {
     let offset = 0
     let reversedOps: Op[] = []
@@ -289,6 +328,14 @@ export function invertChange(baseContent: IDelta, change: IDelta): IDelta {
     return { ...change, ops: normalizeOps(reversedOps) }
 }
 
+/**
+ * Filters Filters changes that are fulfilling criteria given a base content and sequence of changes.
+ * Useful to rule out certain changes while keeping (the effect of) rest of changes intact
+ * @param baseContent Base content on which the changes will be applied (required to calculate undo)
+ * @param changes Original changes
+ * @param criteria Function that receives index and target change and returns boolean indicating whether the change should be included or not
+ * @returns Altered changes
+ */
 export function filterChanges(
     baseContent: IDelta,
     changes: IDelta[],
@@ -299,6 +346,7 @@ export function filterChanges(
         throw new Error('invalid content - change:' + JSONStringify(baseContent) + ' - ' + JSONStringify(changes))
 
     const filtered: IDelta[] = []
+    // initialize altered as original changes
     const altered = changes.concat()
 
     const ss = SharedString.fromDelta(baseContent)
@@ -325,6 +373,27 @@ export function filterChanges(
     return filtered
 }
 
+/**
+ * Filters Filters out some changes indicated by indices, given a base content and sequence of changes.
+ * Useful to rule out certain changes while keeping (the effect of) rest of changes intact
+ * @param baseContent Base content on which the changes will be applied (required to calculate undo)
+ * @param changes Original changes
+ * @param indicesToRemove indices to filter out
+ * @returns Altered changes
+ */
 export function filterOutChangesByIndice(baseContent: IDelta, changes: IDelta[], indicesToRemove: number[]): IDelta[] {
     return filterChanges(baseContent, changes, (idx, change) => !_.contains(indicesToRemove, idx))
+}
+
+/** Reorder delete+insert pair as Quill would have generated them */
+export function toQuillStyleOrder(delta:IDelta):IDelta {
+    const altered = new Delta(delta.ops.concat())
+    for(let i = 0; i < delta.ops.length-1; i++) {
+        if(altered.ops[i].delete && altered.ops[i+1].insert) {
+            const temp = altered.ops[i]
+            altered.ops[i] = altered.ops[i+1]
+            altered.ops[i+1] = temp
+        }
+    }
+    return altered
 }

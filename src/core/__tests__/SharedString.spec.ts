@@ -2,7 +2,7 @@ import { SharedString } from '../SharedString'
 import { contentLength, normalizeOps } from '../primitive'
 import { expectEqual, JSONStringify } from '../util'
 import { ContentGen } from '../../__tests__/generator/Content'
-import { ContentChangeListGen } from '../../__tests__/generator/ContentChangeList'
+import { ContentChangeList, ContentChangeListGen } from '../../__tests__/generator/ContentChangeList'
 import { forAll } from 'jsproptest'
 import { IDelta } from '../../core/IDelta'
 import Op from 'quill-delta/dist/Op'
@@ -10,12 +10,6 @@ import { ChangeList } from '../../__tests__/generator/ChangeList'
 import { DeltaGen } from '../../__tests__/generator/Delta'
 import { Delta } from '../Delta'
 
-type ContentAndChangeList = {
-    content: {
-        ops: Op[]
-    }
-    changeList: ChangeList
-}
 
 describe('SharedString', () => {
     it('fromDelta', () => {
@@ -43,7 +37,7 @@ describe('SharedString', () => {
         const contentChangeGen = ContentChangeListGen()
 
         // same inverse function property. This time SharedString.toDelta() is the content
-        forAll((contentAndChangeList: ContentAndChangeList) => {
+        forAll((contentAndChangeList: ContentChangeList) => {
             const content = contentAndChangeList.content
             const changes = contentAndChangeList.changeList.deltas
             const ss = SharedString.fromDelta(content)
@@ -68,7 +62,7 @@ describe('SharedString', () => {
         const contentChangeGen = ContentChangeListGen()
 
         // sharedstring with changes applied should emit the correct delta
-        forAll((contentAndChangeList: ContentAndChangeList) => {
+        forAll((contentAndChangeList: ContentChangeList) => {
             const content = contentAndChangeList.content
             const changes = contentAndChangeList.changeList.deltas
             const ss = SharedString.fromDelta(content)
@@ -175,7 +169,7 @@ describe('SharedString', () => {
     it('applyChanges wildcard: * or _ change behaves the same as other branches when no other change is present', () => {
         const contentChangeGen = ContentChangeListGen()
 
-        forAll((contentAndChangeList: ContentAndChangeList) => {
+        forAll((contentAndChangeList: ContentChangeList) => {
             const content = contentAndChangeList.content
             const changes = contentAndChangeList.changeList.deltas
             const ss1 = SharedString.fromDelta(content)

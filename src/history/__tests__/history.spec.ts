@@ -5,8 +5,11 @@ import { expectEqual, JSONStringify } from '../../core/util'
 import { DocClient } from '../../service/DocClient'
 import { DocServer } from '../../service/DocServer'
 import { randomChanges } from '../../__tests__/random'
+import { ContentChangeList, ContentChangeListGen } from '../../__tests__/generator/ContentChangeList'
 import { Delta } from '../../core/Delta'
-import { contentLength } from '../../core/primitive'
+import { IDelta } from '../../core/IDelta'
+import { contentLength, normalizeOps } from '../../core/primitive'
+import { forAll } from 'jsproptest'
 
 describe('History interface', () => {
     it('revision convention', () => {
@@ -23,6 +26,38 @@ describe('History interface', () => {
         expectEqual(history.getCurrentRev(), 1)
         expectEqual(history.getContent(), history.getContentAt(history.getCurrentRev()))
         expect(() => history.getChangeAt(1)).toThrow()
+    })
+
+    it('revision convention 2', () => {
+        const contentChangeListGen = ContentChangeListGen()
+        forAll((contentAndChangeList:ContentChangeList) => {
+            const {content, changeList} = contentAndChangeList
+            const deltas = changeList.deltas
+            const history = new History('A', content)
+            // initial state
+            expectEqual(history.getContentAt(0).ops, normalizeOps(content.ops))
+            expectEqual(history.getCurrentRev(), 0)
+            expect(() => history.getChangeAt(0)).toThrow()
+            expect(() => history.getChangeFor(0)).toThrow()
+
+            // applied change list
+            history.append(deltas)
+            const rev = history.getCurrentRev()
+            expectEqual(rev, deltas.length)
+            expectEqual(history.getContent(), history.getContentAt(history.getCurrentRev()))
+            expect(() => history.getChangeAt(rev+1)).toThrow()
+            expect(() => history.getChangeFor(rev+1)).toThrow()
+
+            for(let i = 0; i < rev; i++) {
+                const delta:IDelta = new Delta(normalizeOps(deltas[i].ops))
+                expectEqual(history.getChangeAt(i), delta)
+                if(i > 0) {
+                    const prevdelta = new Delta(normalizeOps(deltas[i-1].ops))
+                    expectEqual(history.getChangeFor(i), prevdelta)
+                }
+            }
+                   
+        }, contentChangeListGen)
     })
 })
 

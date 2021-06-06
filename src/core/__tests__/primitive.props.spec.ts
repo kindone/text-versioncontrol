@@ -7,6 +7,8 @@ import {
     filterOutChangesByIndice,
     filterChanges,
     applyChanges,
+    deltaLength,
+    opLength,
 } from '../primitive'
 import { SharedString } from '../SharedString'
 import { IDelta } from '../IDelta'
@@ -23,7 +25,10 @@ describe('primitive.ts', () => {
     })
 
     it('opLength, deltaLength, contentLength, minContentLengthForChange, contentLengthChanged', () => {
-
+        const contentGen = ContentGen()
+        forAll((content:IDelta) => {
+            expectEqual(contentLength(content), deltaLength(content))
+        }, contentGen)
     })
 
     //normalizeTwoOps

@@ -16,7 +16,7 @@ import { JSONStringify } from './util'
 export function asDelta(content: string | IDelta): IDelta {
     if (content === '') return new Delta([])
     else if (typeof content === 'string') return new Delta([{ insert: content }])
-    else return content as IDelta
+    else return Delta.clone(content)
 }
 
 /**
@@ -67,7 +67,7 @@ export function minContentLengthForChange(change: IDelta): number {
     )
 }
 
-/** Get the positive or negative length to be added to a content if a change is applied 
+/** Get the positive or negative length to be added to a content if a change is applied
  * (Delete adds negative length and insert adds positive length. retain has no effect)
 */
 export function contentLengthChanged(initialLength: number, change: IDelta): number {
@@ -294,6 +294,11 @@ export function sliceOp(op: Op, start: number, end?: number): Op {
     throw new Error('invalid op')
 }
 
+/**
+ * Crop content by range [start, end)
+ * @param start starting indice, inclusive
+ * @param end ending indice, content at end indice is not inclusive
+ */
 export function cropContent(content: IDelta, start: number, end: number): IDelta {
     const fullLength = contentLength(content)
     const length = end - start

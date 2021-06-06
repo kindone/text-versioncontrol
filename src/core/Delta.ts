@@ -17,6 +17,10 @@ import {
 export class Delta implements IDelta {
     constructor(public ops: Op[] = [], public contexts?: DeltaContext[]) {}
 
+    static clone(delta:IDelta) {
+        return new Delta(delta.ops.concat(), delta.contexts?.concat())
+    }
+
     /* changes the object */
     public delete(count: number): Delta {
         if (count <= 0) return this
@@ -58,15 +62,15 @@ export class Delta implements IDelta {
     }
 
     public take(start: number, end: number): Delta {
-        return new Delta(cropContent(this, start, end).ops, this.contexts ? this.contexts.concat() : undefined)
+        return new Delta(cropContent(this, start, end).ops, this.contexts)
     }
 
     public normalize(): Delta {
-        return new Delta(normalizeOps(this.ops), this.contexts ? this.contexts.concat() : undefined)
+        return new Delta(normalizeOps(this.ops), this.contexts)
     }
 
     public compose(other: IDelta): Delta {
-        return new Delta(flattenDeltas(this, other).ops)
+        return new Delta(flattenDeltas(this, other).ops, this.contexts)
     }
 
     public apply(other: IDelta): Delta {
@@ -74,10 +78,10 @@ export class Delta implements IDelta {
     }
 
     public transform(other: IDelta, priority = false): Delta {
-        return new Delta(transformDeltas(this, other, priority).ops)
+        return new Delta(transformDeltas(this, other, priority).ops, this.contexts)
     }
 
     public invert(baseContent: IDelta): IDelta {
-        return new Delta(invertChange(baseContent, this).ops, this.contexts ? this.contexts.concat() : undefined)
+        return new Delta(invertChange(baseContent, this).ops, this.contexts)
     }
 }

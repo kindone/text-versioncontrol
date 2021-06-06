@@ -157,16 +157,34 @@ export class Document {
         return this.composeSyncs(uri, excerptSource.rev, safeCroppedÇhanges, rangesTransformed)
     }
 
-    public syncExcerpt(excerpt: Excerpt, documentSet: DocumentSet, check = true, revive = false) /*: ExcerptTarget*/ {
+    public syncExcerpt(excerpt: Excerpt, documentSet: DocumentSet, check = true, revive = false):number {
+        if (excerpt.target.uri !== this.name) throw new Error('invalid argument (target uri mismatches): ' + JSONStringify(excerpt))
+
         const source = excerpt.source
         const target = excerpt.target
-        if (target.uri !== this.name) throw new Error('invalid argument: ' + JSONStringify(excerpt))
+
         const sourceDoc = documentSet.getDocument(source.uri)
         const syncs = sourceDoc.getSyncSinceExcerpted(source)
 
-        if (syncs.length === 0) return excerpt.target
+        if (syncs.length === 0) return 0
 
-        // prepend context info and shift change
+        const tiebreaker = source.uri === target.uri ? source.rev > target.rev : source.uri > target.uri
+        const sourceBranchName = tiebreaker ? 'S' : 's'
+
+        const beforeContent = this.getContentAt(target.rev)
+        const pasteChange = this.getChangeAt(target.rev)
+
+        if(!(pasteChange.contexts && pasteChange.contexts[0].type ==='paste'))
+            throw new Error('invalid argument (target revision must be a paste change): ' + JSONStringify(excerpt))
+
+        const baseContent = this.getContentAt(target.rev + 1)
+
+        const ss = SharedString.fromDelta(beforeContent)
+        ss.applyChange(pasteChange, sourceBranchName)
+
+        const localChanges = this.getChangesFrom(target.rev + 1)
+
+        // sourceChanges: prepend context info and shift change from syncs
         let sourceChanges = syncs
             .map(sync => {
                 const change = sync.change
@@ -182,22 +200,11 @@ export class Document {
             })
             .map(change => this.changeShifted(change, target.start + 1))
 
-        const tiebreaker = source.uri === target.uri ? source.rev > target.rev : source.uri > target.uri
-        const sourceBranchName = tiebreaker ? 'S' : 's'
-
-        const beforeContent = this.getContentAt(target.rev)
-        const pasteChange = this.getChangeAt(target.rev)
-        const baseContent = this.getContentAt(target.rev + 1)
         if (syncs.length > 0 && contentLength(baseContent) < minContentLengthForChange(sourceChanges[0]))
-            throw new Error('invalid sync change')
+            throw new Error('invalid sync change. content too short')
 
-        const ss = SharedString.fromDelta(beforeContent)
-        ss.applyChange(pasteChange, sourceBranchName)
-
-        const localChanges = this.getChangesFrom(target.rev + 1)
-
-        // filter already applied changes
-        sourceChanges = filterChanges(baseContent, sourceChanges, (i, change) => {
+        // filter out already applied changes
+        sourceChanges = filterChanges(baseContent, sourceChanges, (_i, change) => {
             if (change.contexts)
                 for (const context of change.contexts.slice(1)) {
                     // if the change originated here and old
@@ -237,6 +244,7 @@ export class Document {
 
         // add new sync records
         this.append(newLocalChanges)
+        return newLocalChanges.length
     }
 
     /** private methods */
@@ -248,14 +256,14 @@ export class Document {
         // utilize first retain if it exists
         if (shiftedChange.ops.length > 0 && shiftedChange.ops[0].retain) {
             shiftedChange.ops[0] = { ...shiftedChange.ops[0], retain: shiftedChange.ops[0].retain! + shiftAmount }
-            // otherwise just append new retain
         } else {
+            // otherwise just prepend new retain
             shiftedChange.ops.unshift({ retain: shiftAmount })
         }
         return shiftedChange
     }
 
-    private composeSyncs(uri: string, firstRev: number, changes: IDelta[], ranges: Range[]) {
+    private composeSyncs(uri: string, firstRev: number, changes: IDelta[], ranges: Range[]):ExcerptSync[] {
         if (changes.length !== ranges.length)
             throw new Error(
                 'Unexpected error in composeSyncs: ' + JSONStringify(changes) + ', ' + JSONStringify(ranges),

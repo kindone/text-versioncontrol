@@ -8,15 +8,20 @@ import { randomChanges } from '../../__tests__/random'
 import { Delta } from '../../core/Delta'
 import { contentLength } from '../../core/primitive'
 
-describe('interface', () => {
-    it('basic', () => {
+describe('History interface', () => {
+    it('revision convention', () => {
         const initialContent = 'initial'
         const history = new History('A', initialContent)
         expectEqual(history.getContentAt(0).ops, [{ insert: 'initial' }])
+        expectEqual(history.getCurrentRev(), 0)
         expect(() => history.getChangeAt(0)).toThrow()
+        expect(() => history.getChangeFor(0)).toThrow()
         const change = new Delta().insert('hello')
         history.append([change])
         expectEqual(history.getChangeAt(0), change)
+        expectEqual(history.getChangeFor(1), change)
+        expectEqual(history.getCurrentRev(), 1)
+        expectEqual(history.getContent(), history.getContentAt(history.getCurrentRev()))
         expect(() => history.getChangeAt(1)).toThrow()
     })
 })

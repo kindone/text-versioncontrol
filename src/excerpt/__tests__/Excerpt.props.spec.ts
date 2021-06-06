@@ -17,10 +17,11 @@ import {
     statefulProperty,
     actionGenOf,
     Random,
+    stringGen,
 } from 'jsproptest'
 import { Excerpt } from '../Excerpt'
 
-const DocumentInitialGen = (name: string) => PrintableASCIIStringGen(0, 20).map(content => new Document(name, content))
+const DocumentInitialGen = (name: string) => stringGen(0, 2, interval(65, 68)).map(content => new Document(name, content))
 
 class ExcerptModel {
     public contentLengths: number[] = []
@@ -43,8 +44,8 @@ class ExcerptModel {
 }
 
 const AppendGen = (docSet: Document[], _: ExcerptModel) =>
-    TupleGen(integers(0, docSet.length), interval(1, 3))
-        .chain(pair => ChangeListGen(contentLength(docSet[pair[0]].getContent()), pair[1]))
+    TupleGen(integers(0, docSet.length), interval(1, 2))
+        .chain(pair => ChangeListGen(contentLength(docSet[pair[0]].getContent()), pair[1], false, false))
         .map(
             tuple =>
                 new Action((docSet: Document[], model: ExcerptModel) => {
@@ -280,8 +281,9 @@ const SyncExcerptGen = (docSet: Document[], _: ExcerptModel) =>
                 // check: number of excerpts shoudn't change
                 if (!isEqual(excerpts.length, newExcerpts.length))
                     throw new Error(
+                        "FROM: " + excerpts.length + " != TO: " + newExcerpts.length + " BEFORE: " +
                         JSONStringify(beforeContent) +
-                            ' VS ' +
+                            ' VS AFTER: ' +
                             JSONStringify(afterContent) +
                             ' SYNCS: ' +
                             JSONStringify(syncs) +
@@ -298,7 +300,7 @@ const SyncExcerptGen = (docSet: Document[], _: ExcerptModel) =>
 
 describe('Excerpt properties', () => {
     it('Document excerpt', () => {
-        const rand = new Random('65')
+        // const rand = new Random('65')
         // append + take/paste excerpt
 
         // generator for initial document
@@ -307,7 +309,7 @@ describe('Excerpt properties', () => {
         const docSetGen = TupleGen(doc1Gen, doc2Gen)
         const actionGen = actionGenOf(AppendGen, UpdateMarkerGen, TakeAndAppendExcerptGen, SyncExcerptGen)
         const prop = statefulProperty(docSetGen, docSet => new ExcerptModel(docSet), actionGen)
-        prop.setNumRuns(200)
+        prop.setNumRuns(1000)
             .setMaxActions(50)
             .go()
     })

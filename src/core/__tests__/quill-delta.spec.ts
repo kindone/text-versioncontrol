@@ -4,12 +4,6 @@ import { expectEqual } from '../util'
 import { Delta } from '../Delta'
 import { flattenDeltas, cropContent, transformDeltas } from '../primitive'
 
-describe('Delta methods', () => {
-    it('take', () => {
-        expectEqual(new Delta().insert('hello').take(1, 2), new Delta().insert('e'))
-    })
-})
-
 describe('Quill Delta basic operations', () => {
     it('negative value ignored', () => {
         expectEqual(new QDelta().delete(-1), new QDelta())

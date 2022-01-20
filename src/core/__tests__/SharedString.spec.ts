@@ -3,10 +3,10 @@ import { contentLength, normalizeOps } from '../primitive'
 import { expectEqual, JSONStringify } from '../util'
 import { ContentGen } from '../../__tests__/generator/Content'
 import { ContentChangeList, ContentChangeListGen } from '../../__tests__/generator/ContentChangeList'
-import { forAll } from 'jsproptest'
+import { forAll, TupleGen } from 'jsproptest'
 import { IDelta } from '../../core/IDelta'
 import Op from 'quill-delta/dist/Op'
-import { ChangeList } from '../../__tests__/generator/ChangeList'
+import { ChangeList, ChangeListGen } from '../../__tests__/generator/ChangeList'
 import { DeltaGen } from '../../__tests__/generator/Delta'
 import { Delta } from '../Delta'
 
@@ -80,12 +80,12 @@ describe('SharedString', () => {
         // all changes are properly flattened
     })
 
-    it('applyChanges', () => {
+    it('applyChange', () => {
         // TODO:
     })
 
     // wildcard must see all changes as if it's been flattened
-    it('applyChanges wildcard 1 (* < b)', () => {
+    it('applyChange wildcard 1 (* < b)', () => {
         const ss = SharedString.fromString('123456')
         ss.applyChange({ ops: [{ delete: 1 }] }, 'a')
         ss.applyChange({ ops: [{ delete: 1 }] }, '*') // should be aware of delete of '1' of a
@@ -101,7 +101,7 @@ describe('SharedString', () => {
     })
 
     // wildcard should not affect other branches later on
-    it('applyChanges wildcard 1 (_ < b)', () => {
+    it('applyChange wildcard 1 (_ < b)', () => {
         const ss = SharedString.fromString('123456')
         ss.applyChange({ ops: [{ delete: 1 }] }, 'a')
         ss.applyChange({ ops: [{ delete: 1 }] }, '_') // should be aware of delete of '1' of a
@@ -116,7 +116,7 @@ describe('SharedString', () => {
         expectEqual(ss.toDelta().ops, [{ insert: 'bxc3456' }]) // order should be kept
     })
 
-    it('applyChanges wildcard 1 (% < *)', () => {
+    it('applyChange wildcard 1 (% < *)', () => {
         const ss = SharedString.fromString('123456')
         ss.applyChange({ ops: [{ delete: 1 }] }, 'a')
         ss.applyChange({ ops: [{ delete: 1 }] }, '*') // should be aware of delete of '1'
@@ -132,7 +132,7 @@ describe('SharedString', () => {
     })
 
     // wildcard should not affect other branches later on
-    it('applyChanges wildcard 1 (% < _)', () => {
+    it('applyChange wildcard 1 (% < _)', () => {
         const ss = SharedString.fromString('123456')
         ss.applyChange({ ops: [{ delete: 1 }] }, 'a')
         ss.applyChange({ ops: [{ delete: 1 }] }, '_') // should be aware of delete of '1' of a
@@ -147,7 +147,7 @@ describe('SharedString', () => {
         expectEqual(ss.toDelta().ops, [{ insert: 'bxc3456' }]) // order should be kept
     })
 
-    it('applyChanges wildcard 2', () => {
+    it('applyChange wildcard 2', () => {
         const content = { ops: [{ insert: 'cc' }] }
         const changes = [
             { ops: [{ insert: 'pddq' }, { delete: 2 }] },
@@ -166,7 +166,7 @@ describe('SharedString', () => {
         expectEqual(ss1.toDelta(), ss2.toDelta())
     })
 
-    it('applyChanges wildcard: * or _ change behaves the same as other branches when no other change is present', () => {
+    it('applyChange wildcard: * or _ change behaves the same as other branches when no other change is present', () => {
         const contentChangeGen = ContentChangeListGen()
 
         forAll((contentAndChangeList: ContentChangeList) => {
@@ -194,7 +194,7 @@ describe('SharedString', () => {
         }, contentChangeGen)
     })
 
-    const contentChangeGen = ContentChangeListGen(1, 2, true, false)
+    const contentChangeGen = ContentChangeListGen(1, 3, true, false)
 
     // generate initial shared string
     const sharedStringGen = contentChangeGen.map(contentAndChangeList => {
@@ -212,7 +212,7 @@ describe('SharedString', () => {
         return deltaGen
     })
 
-    it('applyChanges change applies as if it were applied to a flattened delta', () => {
+    it('applyChange change applies as if it were applied to a flattened delta', () => {
         forAll((ssAndDelta: [SharedString, Delta]) => {
             const [ss, delta] = ssAndDelta
             const ss2 = ss.clone()
@@ -244,7 +244,7 @@ describe('SharedString', () => {
         }, ssAndDeltaGen)
     })
 
-    it('applyChanges wildcard change applies as if it was applied to a flattened delta', () => {
+    it('applyChange wildcard change applies as if it was applied to a flattened delta', () => {
         forAll((ssAndDelta: [SharedString, Delta]) => {
             const [ss, delta] = ssAndDelta
             const ss2 = ss.clone()
@@ -272,6 +272,54 @@ describe('SharedString', () => {
         }, ssAndDeltaGen)
     })
 
+    const ssAnd2ChangeListsGen = sharedStringGen.chain(ss => {
+        const len = contentLength(ss.toDelta())
+        const changeListGen = ChangeListGen(len, 2, true, true)
+        return TupleGen(changeListGen, changeListGen)
+    })
+
+    it('applyChange results on different branches can be used as if they were applied serially on a single branch', () => {
+        forAll((ssAndDoubleDelta: [SharedString, [ChangeList,ChangeList]]) => {
+            const [ss, [changeList1,changeList2]] = ssAndDoubleDelta
+            const ss2 = ss.clone()
+            const ss3 = SharedString.fromDelta(ss.toDelta())
+            // apply change individually
+            const altered:IDelta[] = []
+            for(const delta of changeList1.deltas) {
+                altered.push(ss2.applyChange(delta, 'A'))
+            }
+            for(const delta of changeList2.deltas) {
+                altered.push(ss2.applyChange(delta, 'B'))
+            }
+
+            // apply change altered serially
+            for(const delta of altered) {
+                ss3.applyChange(delta, 'C')
+            }
+
+            // must be identical
+            expectEqual(
+                normalizeOps(ss2.toDelta().ops),
+                normalizeOps(ss3.toDelta().ops),
+                'ss2: ' +
+                    JSONStringify(ss.clone()) +
+                    ' -> ' +
+                    JSONStringify(ss2) +
+                    '\n vs ss3: ' +
+                    JSONStringify(SharedString.fromDelta(ss.toDelta())) +
+                    ' -> ' +
+                    JSONStringify(ss3) +
+                    '\n, ss: ' +
+                    JSONStringify(ss.toDelta()) +
+                    '\n, delta1: ' +
+                    JSONStringify(changeList1) +
+                    '\n, delta2: ' +
+                    JSONStringify(changeList2),
+            )
+        }, ssAnd2ChangeListsGen)
+    })
+
+    // TODO:
     const ssAndDeltaDeltaGen = ssAndDeltaGen.chainAsTuple((ssAndDelta: [SharedString, Delta]) => {
         const [ss, delta] = ssAndDelta
         ss.applyChange(delta, '*')

@@ -1,27 +1,26 @@
 import * as _ from 'underscore'
 import { Document } from '../../document/Document'
 import { JSONStringify, expectEqual, isEqual } from '../../core/util'
-import { ChangeList, ChangeListGen } from '../../__tests__/generator/ChangeList'
+import { ChangeListGen } from '../../__tests__/generator/ChangeList'
 import { DocumentSet } from '../../document/DocumentSet'
 import { contentLength } from '../../core/primitive'
 import {
     Action,
     integers,
     interval,
-    just,
-    PrintableASCIIStringGen,
     TupleGen,
     chainTuple,
-    SetGen,
-    UniqueArrayGen,
     statefulProperty,
     actionGenOf,
-    Random,
     stringGen,
 } from 'jsproptest'
-import { Excerpt } from '../Excerpt'
 
-const DocumentInitialGen = (name: string) => stringGen(0, 2, interval(65, 68)).map(content => new Document(name, content))
+
+const MAX_TAKE_SIZE = 10
+
+
+
+const DocumentInitialGen = (name: string) => stringGen(0, 10, interval(65, 68)).map(content => new Document(name, content))
 
 class ExcerptModel {
     public contentLengths: number[] = []
@@ -86,23 +85,30 @@ interface Paste {
 const TakeAndAppendExcerptGen = (docSet: Document[], _: ExcerptModel) => {
     const takeDocArgGen = integers(0, docSet.length).chain(takeDocId => interval(0, docSet[takeDocId].getCurrentRev()))
 
-    const takeGen = chainTuple(takeDocArgGen, tuple => {
+    // from: [0, length)
+    const take1Gen = chainTuple(takeDocArgGen, tuple => {
         const [takeDocId, takeRev] = tuple
         const takeDoc = docSet[takeDocId]
-        const takeLen = contentLength(takeDoc.getContentAt(takeRev))
+        const takeDocLen = contentLength(takeDoc.getContentAt(takeRev))
         // takeFrom, takeTo
-        if (takeLen < 2) throw new Error('nothing to take excerpt from')
-        return UniqueArrayGen(integers(0, takeLen), 2, 2)
-    }).map<Take>(tuple => {
-        return { id: tuple[0], rev: tuple[1], from: tuple[2][0], to: tuple[2][1] }
+        if (takeDocLen < 1) throw new Error('nothing to take excerpt from')
+        return integers(0, takeDocLen)
+        // return UniqueArrayGen(integers(0, takeDocLen), 2, 2)
     })
 
-    const pasteDocArgGen = integers(0, docSet.length).chain(pasteDocId =>
-        interval(0, docSet[pasteDocId].getCurrentRev()),
-    )
+    // to: [from, MIN(from+10, length)]  (notice the closed interval. 'to' is exclusive according to API definition, so it's fine to reach length)
+    const takeGen = take1Gen.chainAsTuple((tuple:[number, number, number]) => {
+        const [takeDocId, takeRev, from] = tuple
+        const takeDoc = docSet[takeDocId]
+        const takeLen = contentLength(takeDoc.getContentAt(takeRev))
+        return interval(from, Math.min(from + MAX_TAKE_SIZE, takeLen)) // limit length to MAX_TAKE_SIZE
+    }).map<Take>(tuple => {
+        return { id: tuple[0], rev: tuple[1], from: tuple[2], to: tuple[3] }
+    })
 
-    const pasteGen = chainTuple(pasteDocArgGen, tuple => {
-        const pasteDocId = tuple[0]
+    const pasteDocArgGen = integers(0, docSet.length)
+
+    const pasteGen = pasteDocArgGen.chain(pasteDocId => {
         const pasteDoc = docSet[pasteDocId]
         const pasteLength = contentLength(pasteDoc.getContent())
         // pasteOffset
@@ -239,13 +245,14 @@ function findDocId(docSet: Document[], uri: string): number {
     return -1
 }
 
-const SyncExcerptGen = (docSet: Document[], _: ExcerptModel) =>
-    integers(0, docSet.length)
-        .chain(docId => integers(0, docSet[docId].getFullExcerpts().length))
-        .map(tuple => {
-            const docId = tuple[0]
-            const excerptId = tuple[1]
+const SyncExcerptGen = (docSetIn: Document[], _: ExcerptModel) =>
+    integers(0, docSetIn.length)
+        .chain(docId => integers(0, docSetIn[docId].getFullExcerpts().length))
+        .map(docIdAndExcerptId => {
+            const docId = docIdAndExcerptId[0]
+            const excerptId = docIdAndExcerptId[1]
             return new Action((docSet: Document[], model: ExcerptModel) => {
+                expectEqual(docSet, docSetIn)
                 // perform check and run
                 const targetDoc = docSet[docId]
                 const excerpts = targetDoc.getFullExcerpts()
@@ -257,6 +264,8 @@ const SyncExcerptGen = (docSet: Document[], _: ExcerptModel) =>
                 expectEqual(model.getExcerpts(0).length, docSet[0].getFullExcerpts().length)
                 expectEqual(model.getExcerpts(1).length, docSet[1].getFullExcerpts().length)
 
+                if(excerptId >= excerpts.length)
+                    throw new Error("invalid excerptId: " + excerptId + " >= " + excerpts.length + " docSetIn: " + docSetIn[docId].getFullExcerpts().length)
                 const excerpt = excerpts[excerptId].excerpt
                 // const excerpt = ExcerptUtil.decomposeMarker(excerptMarker)
                 const sourceDocId = findDocId(docSet, excerpt.source.uri)
@@ -279,10 +288,25 @@ const SyncExcerptGen = (docSet: Document[], _: ExcerptModel) =>
                 const newExcerpts = targetDoc.getFullExcerpts()
 
                 // check: number of excerpts shoudn't change
-                if (!isEqual(excerpts.length, newExcerpts.length))
+                if (!isEqual(excerpts.length, newExcerpts.length)) {
+                    let prefix = ""
+                    for(let rev = beforeTargetRev; rev < targetDoc.getCurrentRev(); rev++) {
+                        if(!isEqual(excerpts.length, targetDoc.getFullExcerptsAt(rev))) {
+                            const culprit = targetDoc.getChangeFor(rev)
+                            const sourceContent = culprit.contexts ? "N/A" : sourceDoc.getContentAt(culprit.contexts![0].sourceRev)
+                            const sourceChange = culprit.contexts ? "N/A" : sourceDoc.getChangeAt(culprit.contexts![0].sourceRev)
+                            prefix = "Rev: " + rev +
+                                " SourceContent: " + JSONStringify(sourceContent) +
+                                " SourceChange: " + JSONStringify(sourceChange) +
+                                " TargetChange: " + JSONStringify(culprit)
+                            break
+                        }
+                    }
                     throw new Error(
-                        "FROM: " + excerpts.length + " != TO: " + newExcerpts.length + " BEFORE: " +
-                        JSONStringify(beforeContent) +
+                        "FROM: " + excerpts.length + " != TO: " + newExcerpts.length + " " +
+                            prefix +
+                            " BEFORE: " +
+                            JSONStringify(beforeContent) +
                             ' VS AFTER: ' +
                             JSONStringify(afterContent) +
                             ' SYNCS: ' +
@@ -290,12 +314,13 @@ const SyncExcerptGen = (docSet: Document[], _: ExcerptModel) =>
                             ' TARGET: ' +
                             JSONStringify(targetDoc.getChangesFrom(beforeTargetRev)),
                     )
+                }
 
                 // update model
                 model.contentLengths[docId] = contentLength(docSet[docId].getContent())
                 model.setExcerpts(0, docSet[0].getFullExcerpts())
                 model.setExcerpts(1, docSet[1].getFullExcerpts())
-            }, `SyncExcerpt(${JSONStringify(tuple)})`)
+            }, `SyncExcerpt(${JSONStringify(docIdAndExcerptId)})`)
         })
 
 describe('Excerpt properties', () => {
@@ -307,9 +332,9 @@ describe('Excerpt properties', () => {
         const doc1Gen = DocumentInitialGen('doc0')
         const doc2Gen = DocumentInitialGen('doc1')
         const docSetGen = TupleGen(doc1Gen, doc2Gen)
-        const actionGen = actionGenOf(AppendGen, UpdateMarkerGen, TakeAndAppendExcerptGen, SyncExcerptGen)
+        const actionGen = actionGenOf(AppendGen, /*UpdateMarkerGen,*/ TakeAndAppendExcerptGen, SyncExcerptGen)
         const prop = statefulProperty(docSetGen, docSet => new ExcerptModel(docSet), actionGen)
-        prop.setNumRuns(1000)
+        prop.setNumRuns(10000)
             .setMaxActions(50)
             .go()
     })

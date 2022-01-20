@@ -1,5 +1,6 @@
 import Op from 'quill-delta/dist/Op'
 import * as _ from 'underscore'
+import { Delta } from './Delta'
 import { DeltaIterator } from './DeltaIterator'
 import { Fragment, JSONStyle } from './Fragment'
 import { FragmentIterator } from './FragmentIterator'
@@ -91,8 +92,7 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        if (change.contexts) return { ops: normalizeOps(newOps), contexts: change.contexts }
-        else return { ops: normalizeOps(newOps) }
+        return new Delta(normalizeOps(newOps), change.contexts)
     }
 
     public clone() {

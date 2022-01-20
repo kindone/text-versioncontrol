@@ -21,10 +21,6 @@ export class Modification {
         return this.isDeleted() ? Status.DELETED : Status.INITIAL
     }
 
-    // public isVisible() {
-    //     return !this.isDeleted()
-    // }
-
     public isVisibleTo(branch: string): boolean {
         // wildcard can see any change unless it's deleted
         if (branch === '*' || branch === '_') return !this.isDeleted()

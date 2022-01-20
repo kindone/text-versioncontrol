@@ -59,13 +59,21 @@ export class Document {
         return this.history.getChangeAt(rev)
     }
 
-    public getChangesFromTo(fromRev: number, toRev: number): IDelta[] {
-        return this.history.getChangesFromTo(fromRev, toRev)
+    public getChangeFor(rev: number): IDelta {
+        return this.history.getChangeFor(rev)
+    }
+
+    public getChangesInRange(fromRev: number, toRev: number): IDelta[] {
+        return this.history.getChangesInRange(fromRev, toRev)
     }
 
     // returns {offset, excerpt}
     public getFullExcerpts(): Array<{ offset: number; excerpt: Excerpt }> {
         return ExcerptUtil.getFullExcerpts(this.getContent())
+    }
+
+    public getFullExcerptsAt(rev:number): Array<{ offset: number; excerpt: Excerpt }> {
+        return ExcerptUtil.getFullExcerpts(this.getContentAt(rev))
     }
 
     // returns {offset, insert, attributes}
@@ -158,7 +166,8 @@ export class Document {
     }
 
     public syncExcerpt(excerpt: Excerpt, documentSet: DocumentSet, check = true, revive = false):number {
-        if (excerpt.target.uri !== this.name) throw new Error('invalid argument (target uri mismatches): ' + JSONStringify(excerpt))
+        if (excerpt.target.uri !== this.name)
+            throw new Error('invalid argument (target uri mismatches): ' + JSONStringify(excerpt))
 
         const source = excerpt.source
         const target = excerpt.target
@@ -166,7 +175,8 @@ export class Document {
         const sourceDoc = documentSet.getDocument(source.uri)
         const syncs = sourceDoc.getSyncSinceExcerpted(source)
 
-        if (syncs.length === 0) return 0
+        if (syncs.length === 0)
+            return 0
 
         const tiebreaker = source.uri === target.uri ? source.rev > target.rev : source.uri > target.uri
         const sourceBranchName = tiebreaker ? 'S' : 's'

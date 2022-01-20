@@ -56,7 +56,6 @@ describe('History interface', () => {
                     expectEqual(history.getChangeFor(i), prevdelta)
                 }
             }
-                   
         }, contentChangeListGen)
     })
 })

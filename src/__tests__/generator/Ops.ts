@@ -3,7 +3,6 @@ import {
     booleanGen,
     Generator,
     inRange,
-    integers,
     interval,
     just,
     oneOf,
@@ -16,12 +15,8 @@ import * as _ from 'underscore'
 import { Delta } from '../../core/Delta'
 import { contentLengthChanged, minContentLengthForChange } from '../../core/primitive'
 import { ArraySplitsGen } from './ArraySplit'
-import { AttributeMapGen } from './Attribute'
 import { InsertGen } from './Insert'
 
-interface Indexable {
-    [key: string]: any
-}
 
 function getSortedArrayFromSet<T>(set: Set<T>): Array<T> {
     const arr = new Array<T>()
@@ -44,20 +39,6 @@ export function OpsGen(baseLength = -1, withEmbed = true, withAttr = true): Gene
                         booleanGen(0.5).flatMap<Op>(isRetain => {
                             // retain
                             if (isRetain) {
-                                // with attribute
-                                // if(withAttr)
-                                //     return booleanGen(0.2).flatMap(hasAttr => {
-                                //         if(hasAttr) {
-                                //             return AttributeMapGen().map<Op>(attr => {
-                                //                 return { retain: split.length, attributes: attr}
-                                //             })
-                                //         }
-                                //         else {
-                                //             return just<Op>({ retain: split.length })
-                                //         }
-
-                                //     })
-                                // else
                                 return just<Op>({ retain: split.length })
                             } else {
                                 return just<Op>({ delete: split.length })
@@ -69,7 +50,11 @@ export function OpsGen(baseLength = -1, withEmbed = true, withAttr = true): Gene
             return baseOpsGen.flatMap(baseOps => {
                 expect(contentLengthChanged(baseLength, new Delta(baseOps))).toBeGreaterThanOrEqual(0)
 
-                return interval(0, baseOps.length + 1).flatMap(numInserts => {
+                const numInsertsGen = baseOps.length+1 > 3 ? oneOf(weightedGen(just(0), 0.7), weightedGen(inRange(1, 2), 0.2), inRange(3, baseOps.length+1))
+                    : interval(0, baseOps.length + 1)
+
+                // interval(0, baseOps.length + 1)
+                return numInsertsGen.flatMap(numInserts => {
                     const insertPositionsGen = SetGen(interval(0, baseOps.length), numInserts, numInserts).map(set =>
                         getSortedArrayFromSet(set),
                     )

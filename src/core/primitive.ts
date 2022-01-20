@@ -369,7 +369,7 @@ export function filterChanges(
             let ss2 = ss.clone()
             ss2.applyChange(targetChange, 'O')
             ss2 = SharedString.fromDelta(ss2.toDelta())
-            ss2.applyChange(undoChange, 'X')
+            ss2.applyChange(undoChange, '_')
 
             // update rest
             for (let j = i + 1; j < changes.length; j++) {

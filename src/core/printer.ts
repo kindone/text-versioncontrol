@@ -3,9 +3,6 @@ import { IDelta } from './IDelta'
 import { SharedString } from './SharedString'
 import { JSONStringify } from './util'
 
-const excerptSource = chalk.default.cyan
-const excerptTarget = chalk.default.red
-
 const initial = (text: string) => text // black
 const initialObj = chalk.default.whiteBright
 const insert = chalk.default.green

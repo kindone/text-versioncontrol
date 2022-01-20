@@ -1,12 +1,25 @@
 import * as _ from 'underscore'
 import { IDelta } from '../core/IDelta'
-import { asDelta } from '../core/primitive'
+import { asDelta, normalizeDeltas, normalizeOps } from '../core/primitive'
 import { SharedString } from '../core/SharedString'
 import { expectEqual } from '../core/util'
-import { Savepoint } from './Savepoint'
 import { SyncRequest } from './SyncRequest'
 import { MergeResult } from './SyncResponse'
 
+
+class Savepoint {
+    constructor(public rev: number, public content: IDelta) {}
+}
+
+
+/**
+ * History
+ *   Revision convention:
+ *      0: initial content
+ *      getContentAt(getCurrentRev()) => current (latest) content
+ *      Content at n = content at (n-1) + change at (n-1)
+ *      Content at n = content at (n-1) + change for n
+ */
 export interface IHistory {
     readonly name: string
     getCurrentRev(): number
@@ -17,7 +30,13 @@ export interface IHistory {
     getChangeAt(rev: number): IDelta
     getChangeFor(rev: number): IDelta
     getChangesFrom(fromRev: number): IDelta[]
-    getChangesFromTo(fromRev: number, toRev: number): IDelta[]
+
+    /**
+     * changes in range [fromRev,toRev)
+     * @param fromRev  inclusive start
+     * @param toRev exclusive end
+     */
+    getChangesInRange(fromRev: number, toRev: number): IDelta[]
 
     simulateAppend(changes: IDelta[]): MergeResult
     simulateAppendAt(baseRev: number, changes: IDelta[]): MergeResult
@@ -32,13 +51,38 @@ export interface IHistory {
 }
 
 export class History implements IHistory {
-    public static readonly MIN_SAVEPOINT_RATE = 20
+    public static readonly DEFAULT_MIN_SAVEPOINT_RATE = 20
 
     private savepoints: Savepoint[] = []
     private changes: IDelta[] = []
 
-    constructor(public readonly name: string, initialContent: string | IDelta = '', private readonly initialRev = 0) {
+    constructor(private _name: string, initialContent: string | IDelta = '', private initialRev = 0, private minSavepointRate = History.DEFAULT_MIN_SAVEPOINT_RATE) {
         this.doSavepoint(initialRev, asDelta(initialContent))
+    }
+
+    public get name():string {
+        return this._name
+    }
+
+    public static create(name:string, initialContent:IDelta, changes:IDelta[], initialRev:number = 0, minSavepointRate = History.DEFAULT_MIN_SAVEPOINT_RATE, savepoints?:Savepoint[]):History {
+        const history = new History(name, initialContent, initialRev, minSavepointRate)
+        history.changes = changes
+        if(savepoints)
+            history.savepoints = savepoints
+        else
+            history.rebuildSavepoints(initialContent)
+
+        return history
+    }
+
+    public getObject() {
+        return {
+            name: this._name.concat(),
+            changes: this.changes.concat(),
+            initialRev: this.initialRev,
+            minSavepointRate: this.minSavepointRate,
+            savepoints: this.savepoints.concat()
+        }
     }
 
     public clone(): History {
@@ -71,7 +115,7 @@ export class History implements IHistory {
         this.changes = this.changes.concat(result.resChanges)
 
         this.invalidateSavepoints(baseRev)
-        if (this.getLatestSavepointRev() + History.MIN_SAVEPOINT_RATE <= this.getCurrentRev()) {
+        if (this.getLatestSavepointRev() + this.minSavepointRate <= this.getCurrentRev()) {
             this.doSavepoint(this.getCurrentRev(), result.content)
             this.checkSavepoints()
         }
@@ -161,9 +205,8 @@ export class History implements IHistory {
         return this.changes.slice(fromRev - this.initialRev)
     }
 
-    public getChangesFromTo(fromRev: number, toRev: number): IDelta[] {
-        if (toRev >= 0) return this.changes.slice(fromRev - this.initialRev, toRev + 1 - this.initialRev)
-        else return this.getChangesFrom(fromRev)
+    public getChangesInRange(fromRev: number, toRev: number): IDelta[] {
+        return this.changes.slice(fromRev - this.initialRev, toRev - this.initialRev)
     }
 
     private mergeAt(baseRev: number, changes: IDelta[], name?: string): MergeResult {
@@ -171,7 +214,7 @@ export class History implements IHistory {
 
         this.changes = this.changes.concat(result.reqChanges)
 
-        if (this.getLatestSavepointRev() + History.MIN_SAVEPOINT_RATE < this.getCurrentRev()) {
+        if (this.getLatestSavepointRev() + this.minSavepointRate <= this.getCurrentRev()) {
             this.doSavepoint(this.getCurrentRev(), result.content)
             this.checkSavepoints()
         }
@@ -200,6 +243,23 @@ export class History implements IHistory {
         }
     }
 
+    private rebuildSavepoints(initialContent:IDelta): void {
+        this.savepoints = [
+            new Savepoint(this.initialRev, initialContent)
+        ]
+
+        const initial = this.savepoints[0]
+        const ss = SharedString.fromDelta(initial.content)
+        for (let rev = this.initialRev; rev < this.getCurrentRev(); rev++) {
+            ss.applyChange(this.getChangeAt(rev), '_')
+            if((rev + 1 - this.initialRev) % this.minSavepointRate == 0) {
+                this.doSavepoint(rev+1, ss.toDelta())
+            }
+        }
+
+        this.checkSavepoints()
+    }
+
     private checkSavepoints(): void {
         const initial = this.savepoints[0]
         if (initial.rev !== this.initialRev) throw new Error('initial savepoint rev must be first rev')
@@ -211,8 +271,8 @@ export class History implements IHistory {
 
             if (rev === this.savepoints[j].rev) {
                 expectEqual(
-                    ss.toDelta(),
-                    this.savepoints[j].content,
+                    normalizeOps(ss.toDelta().ops),
+                    normalizeOps(this.savepoints[j].content.ops),
                     'savepoint is not correct at (' + rev + ',' + j + '):',
                 )
                 j++

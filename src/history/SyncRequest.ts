@@ -5,8 +5,3 @@ export interface SyncRequest {
     rev: number
     changes: IDelta[]
 }
-
-export interface AppendRequest {
-    branch: string
-    deltas: IDelta[]
-}

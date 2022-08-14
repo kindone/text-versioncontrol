@@ -33,6 +33,7 @@
     "jest-each": "^24.7.1",
     "jsproptest": "^0.3.8",
     "lodash": ">=4.17.21",
+    "npx": "^10.2.2",
     "prettier": "^1.14.2",
     "pure-rand": "^1.6.2",
     "ts-jest": "^23.1.4",

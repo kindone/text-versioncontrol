@@ -4,12 +4,20 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "Debug jest test specific",
             "type": "node",
             "request": "launch",
-            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.props.spec.ts"],
+            "runtimeArgs": [
+                "--inspect-brk",
+                "${workspaceRoot}/node_modules/.bin/jest",
+                "--runInBand",
+                "--coverage",
+                "false",
+                "--config",
+                "jestconfig.json",
+                "Excerpt.props.spec.ts"
+            ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "port": 9229
@@ -18,7 +26,16 @@
             "name": "Debug jest test Excerpt.spec",
             "type": "node",
             "request": "launch",
-            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.spec.ts"],
+            "runtimeArgs": [
+                "--inspect-brk",
+                "${workspaceRoot}/node_modules/.bin/jest",
+                "--runInBand",
+                "--coverage",
+                "false",
+                "--config",
+                "jestconfig.json",
+                "Excerpt.spec.ts"
+            ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "port": 9229
@@ -27,10 +44,40 @@
             "name": "Debug jest test",
             "type": "node",
             "request": "launch",
-            "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--coverage", "false", "--config", "jestconfig.json", "Excerpt.spec.ts", "-t", "TODO: Overlapping excerpt"],
+            "runtimeArgs": [
+                "--inspect-brk",
+                "${workspaceRoot}/node_modules/.bin/jest",
+                "--runInBand",
+                "--coverage",
+                "false",
+                "--config",
+                "jestconfig.json",
+                "--testNamePattern",
+                "${jest.testNamePattern}",
+                "--runTestsByPath",
+                "${jest.testFile}"
+            ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
             "port": 9229
+        },
+        {
+            "type": "node",
+            "name": "vscode-jest-tests",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "disableOptimisticBPs": true,
+            "program": "${workspaceFolder}/node_modules/.bin/npx",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "jest",
+                "--config",
+                "jestconfig.json",
+                "--verbose",
+                "--runInBand",
+                "--watchAll=false"
+            ]
         }
     ]
 }

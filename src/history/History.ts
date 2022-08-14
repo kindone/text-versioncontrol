@@ -38,11 +38,6 @@ export interface IHistory {
      */
     getChangesInRange(fromRev: number, toRev: number): IDelta[]
 
-    simulateAppend(changes: IDelta[]): MergeResult
-    simulateAppendAt(baseRev: number, changes: IDelta[]): MergeResult
-    simulateMergeAt(baseRev: number, changes: IDelta[], branchName: string): MergeResult
-    simulateRebaseAt(baseRev: number, changes: IDelta[], branchName: string): MergeResult
-
     append(changes: IDelta[]): number
     merge(mergeRequest: SyncRequest): MergeResult
     rebase(rebaseRequest: SyncRequest): MergeResult
@@ -92,78 +87,6 @@ export class History implements IHistory {
         return cloned
     }
 
-    public append(changes: IDelta[]): number {
-        this.mergeAt(this.getCurrentRev(), changes)
-        return this.getCurrentRev()
-    }
-
-    public merge(mergeRequest: SyncRequest): MergeResult {
-        return this.mergeAt(mergeRequest.rev, mergeRequest.changes, mergeRequest.branch)
-    }
-
-    // prioritize remote
-    public rebase(rebaseRequest: SyncRequest): MergeResult {
-        const baseRev = rebaseRequest.rev
-        const changes = rebaseRequest.changes
-        const branchName = rebaseRequest.branch
-
-        const result = this.simulateRebase(branchName ? branchName : this.name, changes, baseRev)
-
-        // old + rebased + transformed
-        this.changes = this.changes.slice(0, baseRev - this.initialRev)
-        this.changes = this.changes.concat(result.reqChanges)
-        this.changes = this.changes.concat(result.resChanges)
-
-        this.invalidateSavepoints(baseRev)
-        if (this.getLatestSavepointRev() + this.minSavepointRate <= this.getCurrentRev()) {
-            this.doSavepoint(this.getCurrentRev(), result.content)
-            this.checkSavepoints()
-        }
-        return result
-    }
-
-    public simulateAppend(changes: IDelta[]): MergeResult {
-        return this.simulateMergeAt(this.getCurrentRev(), changes, '$append$')
-    }
-
-    public simulateAppendAt(fromRev: number, changes: IDelta[]): MergeResult {
-        const baseRevText = this.getContentAt(fromRev)
-        const ss = SharedString.fromDelta(baseRevText)
-
-        let newChanges: IDelta[] = []
-        for (const change of changes) {
-            newChanges = newChanges.concat(ss.applyChange(change, '$append$'))
-        }
-
-        return { rev: fromRev + changes.length, reqChanges: newChanges, resChanges: [], content: ss.toDelta() }
-    }
-
-    public simulateMergeAt(baseRev: number, remoteChanges: IDelta[], branchName: string): MergeResult {
-        const baseRevText = this.getContentAt(baseRev)
-        const ss = SharedString.fromDelta(baseRevText)
-        const localChanges = this.getChangesFrom(baseRev)
-
-        for (const localChange of localChanges) {
-            ss.applyChange(localChange, this.name)
-        }
-
-        let newChanges: IDelta[] = []
-        for (const change of remoteChanges) {
-            newChanges = newChanges.concat(ss.applyChange(change, branchName))
-        }
-
-        return {
-            rev: baseRev + remoteChanges.length + localChanges.length,
-            reqChanges: newChanges,
-            resChanges: localChanges,
-            content: ss.toDelta(),
-        }
-    }
-
-    public simulateRebaseAt(baseRev: number, changes: IDelta[], branchName: string): MergeResult {
-        return this.simulateRebase(branchName, changes, baseRev)
-    }
-
     public getCurrentRev(): number {
         return this.changes.length + this.initialRev
     }
@@ -207,6 +130,58 @@ export class History implements IHistory {
 
     public getChangesInRange(fromRev: number, toRev: number): IDelta[] {
         return this.changes.slice(fromRev - this.initialRev, toRev - this.initialRev)
+    }
+
+    public append(changes: IDelta[]): number {
+        this.mergeAt(this.getCurrentRev(), changes)
+        return this.getCurrentRev()
+    }
+
+    public merge(mergeRequest: SyncRequest): MergeResult {
+        return this.mergeAt(mergeRequest.rev, mergeRequest.changes, mergeRequest.branch)
+    }
+
+    // prioritize remote
+    public rebase(rebaseRequest: SyncRequest): MergeResult {
+        const baseRev = rebaseRequest.rev
+        const changes = rebaseRequest.changes
+        const branchName = rebaseRequest.branch
+
+        const result = this.simulateRebase(branchName ? branchName : this.name, changes, baseRev)
+
+        // old + rebased + transformed
+        this.changes = this.changes.slice(0, baseRev - this.initialRev)
+        this.changes = this.changes.concat(result.reqChanges)
+        this.changes = this.changes.concat(result.resChanges)
+
+        this.invalidateSavepoints(baseRev)
+        if (this.getLatestSavepointRev() + this.minSavepointRate <= this.getCurrentRev()) {
+            this.doSavepoint(this.getCurrentRev(), result.content)
+            this.checkSavepoints()
+        }
+        return result
+    }
+
+    private simulateMergeAt(baseRev: number, remoteChanges: IDelta[], branchName: string): MergeResult {
+        const baseRevText = this.getContentAt(baseRev)
+        const ss = SharedString.fromDelta(baseRevText)
+        const localChanges = this.getChangesFrom(baseRev)
+
+        for (const localChange of localChanges) {
+            ss.applyChange(localChange, this.name)
+        }
+
+        let newChanges: IDelta[] = []
+        for (const change of remoteChanges) {
+            newChanges = newChanges.concat(ss.applyChange(change, branchName))
+        }
+
+        return {
+            rev: baseRev + remoteChanges.length + localChanges.length,
+            reqChanges: newChanges,
+            resChanges: localChanges,
+            content: ss.toDelta(),
+        }
     }
 
     private mergeAt(baseRev: number, changes: IDelta[], name?: string): MergeResult {

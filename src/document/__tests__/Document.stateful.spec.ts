@@ -13,7 +13,7 @@ import {
     TupleGen,
 } from 'jsproptest'
 
-const DocumentInitialGen = (name: string) => PrintableASCIIStringGen(0, 20).map(content => new Document(name, content))
+const InitialDocumentGen = (name: string) => PrintableASCIIStringGen(0, 20).map(content => new Document(name, content))
 
 class DocumentModel {
     constructor(public contentLength: number) {}
@@ -21,7 +21,7 @@ class DocumentModel {
 
 describe('Document', () => {
     it('clone', () => {
-        const docGen = DocumentInitialGen('doc')
+        const docGen = InitialDocumentGen('doc')
         const cloneActionGen = just(
             new Action((doc: Document, _: DocumentModel) => {
                 expectEqual(doc, doc.clone())
@@ -39,7 +39,7 @@ describe('Document', () => {
     })
 
     it('append', () => {
-        const docGen = DocumentInitialGen('doc')
+        const docGen = InitialDocumentGen('doc')
         const appendActionGen = TupleGen(interval(0, 100), interval(0, 20))
             .flatMap(tuple => ChangeListGen(tuple[0], tuple[1]))
             .map(
@@ -48,7 +48,7 @@ describe('Document', () => {
                         const version = doc.getCurrentRev()
                         const tempDoc = doc.clone()
                         expectEqual(doc, tempDoc.clone())
-                        // impact
+                        // apply
                         doc.append(changeList.deltas)
                         // check versions increase by the correct amount
                         expectEqual(changeList.deltas.length + version, doc.getCurrentRev())

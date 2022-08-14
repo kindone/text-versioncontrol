@@ -185,47 +185,6 @@ describe('Excerpt', () => {
         })
     })
 
-    // it('revive deleted left marker', () => {
-    //     const doc1 = new Document('doc1', 'aaaa')
-    //     const doc2 = new Document('doc2', 'bbbb')
-    //     const excerptSource = doc1.takeExcerpt(1, 3)
-    //     const excerpt = doc2.pasteExcerpt(1, excerptSource)
-    //     const deleteChange = {ops:[{retain:excerpt.target.start-1},{delete:3}]}
-
-    //     expectEqual(doc2.getFullExcerpts().length, 1)
-    //     expectEqual(doc2.getPartialExcerpts().length, 0)
-    //     doc2.append([deleteChange])
-    //     expectEqual(doc2.getFullExcerpts().length, 0)
-    //     expectEqual(doc2.getPartialExcerpts().length, 1)
-
-    //     const syncs =  doc1.getSyncSinceExcerpted(excerptSource) // nothing but...
-    //     doc2.syncExcerpt(excerpt, { getDocument: (uri:String) => uri === 'doc1' ? doc1 : doc2}, false, true)
-
-    //     expectEqual(doc2.getFullExcerpts().length, 1) // repaired
-    //     expectEqual(doc2.getPartialExcerpts().length, 0)
-    // })
-
-    // it('revive deleted right marker', () => {
-
-    //     const doc1 = new Document('doc1', 'aaaa')
-    //     const doc2 = new Document('doc2', 'bbbb')
-    //     const excerptSource = doc1.takeExcerpt(1, 3)
-    //     const excerpt = doc2.pasteExcerpt(1, excerptSource)
-    //     const deleteChange = {ops:[{retain:excerpt.target.end-1},{delete:3}]}
-
-    //     expectEqual(doc2.getFullExcerpts().length, 1)
-    //     expectEqual(doc2.getPartialExcerpts().length, 0)
-    //     doc2.append([deleteChange])
-    //     expectEqual(doc2.getFullExcerpts().length, 0)
-    //     expectEqual(doc2.getPartialExcerpts().length, 1)
-
-    //     const syncs =  doc1.getSyncSinceExcerpted(excerptSource) // nothing but...
-    //     doc2.syncExcerpt(excerpt, { getDocument: (uri:String) => uri === 'doc1' ? doc1 : doc2}, false, true)
-
-    //     expectEqual(doc2.getFullExcerpts().length, 1) // repaired
-    //     expectEqual(doc2.getPartialExcerpts().length    , 0)
-    // })
-
     it('TODO: Overlapping excerpt', () => {
         const doc1 = new Document('doc1', 'aaaa')
         const doc2 = new Document('doc2', 'bbbb')

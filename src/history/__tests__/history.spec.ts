@@ -69,27 +69,20 @@ describe('server-client scenarios', () => {
         client1.apply([new Delta().insert('client1 text')])
         client2.apply([new Delta().insert('Hello world')])
 
-        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
-
         let req = client1.getSyncRequest()
         let merged = server.merge(req)
-        // console.log(client1, req, merged)
-        client1.sync(merged)
 
-        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
+        client1.sync(merged)
 
         req = client2.getSyncRequest()
         merged = server.merge(req)
-        // console.log(client2, req, merged)
-        client2.sync(merged)
 
-        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
+        client2.sync(merged)
 
         req = client1.getSyncRequest()
         merged = server.merge(req)
-        // console.log(client1, req, merged)
+
         client1.sync(merged)
-        // console.log(server.getContent(), "-", client1.getContent(), "-", client2.getContent())
 
         expect(client1.getContent()).toEqual(client2.getContent())
         expect(client1.getContent()).toEqual(server.getContent())
@@ -176,14 +169,6 @@ describe('History hand-made scenarios', () => {
         })
 
         expect(c1History.getContent()).toEqual(serverHistory.getContent())
-
-        // const c2History = new TextWithHistory("client2", serverHistory.getContent())
-        // const server_rev = serverHistory.getCurrentRev()
-        // const client2_rev =
-
-        // const client2_set = [new Operation(7, 0, " rainbow"), new Operation(0, 0, "Colored ")]
-        // const server_set_for_client2 = serverHistory.merge({branchName: c2History.name, baseRev: c2Rev, operations: client2_set})
-        // c2History.merge({branchName: serverHistory.name, baseRev: c2Rev, operations: server_set_for_client2})
     })
 })
 
@@ -196,16 +181,6 @@ describe('generated scenarios', () => {
 
             let serverRev = serverHistory.getCurrentRev()
             let clientRev = clientHistory.getCurrentRev()
-
-            // const set1 = randomUserDeltas(initialText.length, 30)
-            // serverHistory.apply(set1)
-
-            // const set2 = randomUserDeltas(initialText.length, 30)
-            // clientHistory.apply(set2)
-
-            // // apply to both
-            // const set1ForClient = serverHistory.apply(set2)
-            // clientHistory.apply(set1ForClient)
 
             expectEqual(clientHistory.getContent(), serverHistory.getContent()) // , "<" + JSONStringify(set1) + " and " + JSONStringify(set2) + " and " + JSONStringify(set1ForClient) + ">")
 

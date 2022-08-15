@@ -293,8 +293,8 @@ const SyncExcerptGen = (docSetIn: Document[], _: ExcerptModel) =>
                     for(let rev = beforeTargetRev; rev < targetDoc.getCurrentRev(); rev++) {
                         if(!isEqual(excerpts.length, targetDoc.getFullExcerptsAt(rev))) {
                             const culprit = targetDoc.getChangeFor(rev)
-                            const sourceContent = culprit.contexts ? "N/A" : sourceDoc.getContentAt(culprit.contexts![0].sourceRev)
-                            const sourceChange = culprit.contexts ? "N/A" : sourceDoc.getChangeAt(culprit.contexts![0].sourceRev)
+                            const sourceContent = culprit.context ? "N/A" : sourceDoc.getContentAt(culprit.context!.sourceRev)
+                            const sourceChange = culprit.context ? "N/A" : sourceDoc.getChangeAt(culprit.context!.sourceRev)
                             prefix = "Rev: " + rev +
                                 " SourceContent: " + JSONStringify(sourceContent) +
                                 " SourceChange: " + JSONStringify(sourceChange) +
@@ -334,7 +334,7 @@ describe('Excerpt properties', () => {
         const docSetGen = TupleGen(doc1Gen, doc2Gen)
         const actionGen = actionGenOf(AppendGen, /*UpdateMarkerGen,*/ TakeAndAppendExcerptGen, SyncExcerptGen)
         const prop = statefulProperty(docSetGen, docSet => new ExcerptModel(docSet), actionGen)
-        prop.setNumRuns(10000)
+        prop.setNumRuns(200)
             .setMaxActions(50)
             .go()
     })

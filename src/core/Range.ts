@@ -114,7 +114,7 @@ export class Range {
             { delete: length - this.end },
         ])
         ss.applyChange(cropper, 'any')
-        return new Delta(ss.toDelta().ops, content.contexts?.concat())
+        return new Delta(ss.toDelta().ops, content.context?.concat())
     }
 
     public cropChanges(changes: IDelta[], open: boolean = false): IDelta[] {
@@ -194,7 +194,7 @@ export class Range {
             if (cursor >= end) break
         }
 
-        return new Delta(normalizeOps(ops), delta.contexts)
+        return new Delta(normalizeOps(ops), delta.context)
     }
 
     public cropDeltaOpen(delta: IDelta, debug = false): IDelta {
@@ -261,6 +261,6 @@ export class Range {
             if (cursor > end) break
         }
 
-        return new Delta(normalizeOps(ops), delta.contexts)
+        return new Delta(normalizeOps(ops), delta.context)
     }
 }

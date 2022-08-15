@@ -161,8 +161,8 @@ export function normalizeDeltas(...deltas: IDelta[]): IDelta[] {
         deltas,
         (newDeltas: IDelta[], delta) => {
             if (!hasNoEffect(delta)) {
-                const newDelta = delta.contexts
-                    ? new Delta(normalizeOps(delta.ops), delta.contexts)
+                const newDelta = delta.context
+                    ? new Delta(normalizeOps(delta.ops), delta.context)
                     : new Delta(normalizeOps(delta.ops))
                 newDeltas.push(newDelta)
                 return newDeltas

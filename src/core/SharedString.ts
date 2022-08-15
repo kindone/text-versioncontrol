@@ -92,7 +92,7 @@ export class SharedString {
         }
 
         this.fragments = newFragments.concat(fragmentIter.rest())
-        return new Delta(normalizeOps(newOps), change.contexts)
+        return new Delta(normalizeOps(newOps), change.context)
     }
 
     public clone() {

@@ -14,11 +14,14 @@ import { History, IHistory } from '../history/History'
 import { SyncResponse } from '../history/SyncResponse'
 import { DocumentSet } from './DocumentSet'
 
+
 export class Document {
     private history: IHistory
+    private externalChanges: Map<string,Set<number>>
 
     constructor(public readonly name: string, content: string | IDelta) {
         this.history = new History(name, asDelta(content))
+        this.externalChanges = new Map()
     }
 
     public getName(): string {
@@ -114,10 +117,7 @@ export class Document {
 
         const ops: Op[] = [{ retain: offset }]
 
-        const contexts: DeltaContext[] = [
-            { type: 'paste', sourceUri: source.uri, sourceRev: source.rev, targetUri: this.name, targetRev: rev },
-        ]
-        const change = new Delta(ops.concat(pasted.ops), contexts)
+        const change = new Delta(ops.concat(pasted.ops))
         this.history.append([change])
 
         // check
@@ -157,12 +157,24 @@ export class Document {
         const initialRange = new Range(excerptSource.start, excerptSource.end)
         const changes = this.getChangesFrom(excerptSource.rev)
         const croppedChanges = initialRange.cropChanges(changes)
+        const rangesTransformed = initialRange.mapChanges(changes)
 
-        const safeCroppedÇhanges = croppedChanges.map(croppedChange => {
+        // crop
+        const safeCroppedChanges = croppedChanges.map(croppedChange => {
             return { ...croppedChange, ops: ExcerptUtil.setExcerptMarkersAsCopied(croppedChange.ops) }
         })
-        const rangesTransformed = initialRange.mapChanges(changes)
-        return this.composeSyncs(uri, excerptSource.rev, safeCroppedÇhanges, rangesTransformed)
+
+        // add context to changes (only if none exist)
+        let rev = excerptSource.rev
+        const changesWithContext = safeCroppedChanges.reduce((acc:IDelta[], change:IDelta):IDelta[] => {
+            if(!change.context) {
+                change.context = {sourceUri: uri, sourceRev: (rev ++)}
+            }
+            acc.push(change)
+            return acc
+        }, [])
+
+        return this.composeSyncs(uri, excerptSource.rev, changesWithContext, rangesTransformed)
     }
 
     public syncExcerpt(excerpt: Excerpt, documentSet: DocumentSet, check = true, revive = false):number {
@@ -179,14 +191,12 @@ export class Document {
             return 0
 
         const tiebreaker = source.uri === target.uri ? source.rev > target.rev : source.uri > target.uri
-        const sourceBranchName = tiebreaker ? 'S' : 's'
+        const sourceBranchName = tiebreaker ? 'S' : 's' // S < _ < s
 
         const beforeContent = this.getContentAt(target.rev)
         const pasteChange = this.getChangeAt(target.rev)
 
-        if(!(pasteChange.contexts && pasteChange.contexts[0].type ==='paste'))
-            throw new Error('invalid argument (target revision must be a paste change): ' + JSONStringify(excerpt))
-
+        // starting from pasted state, combine what actually happened and synchronized
         const baseContent = this.getContentAt(target.rev + 1)
 
         const ss = SharedString.fromDelta(beforeContent)
@@ -194,61 +204,39 @@ export class Document {
 
         const localChanges = this.getChangesFrom(target.rev + 1)
 
-        // sourceChanges: prepend context info and shift change from syncs
-        let sourceChanges = syncs
-            .map(sync => {
-                const change = sync.change
-                const newContext: DeltaContext = {
-                    type: 'sync',
-                    sourceUri: source.uri,
-                    sourceRev: sync.rev,
-                    targetUri: target.uri,
-                    targetRev: target.rev,
-                }
-                const newContexts = change.contexts ? [newContext].concat(change.contexts) : [newContext]
-                return { ...change, contexts: newContexts }
-            })
-            .map(change => this.changeShifted(change, target.start + 1))
+        // adjust offsets of changes from syncs
+        let sourceChanges = syncs.map(sync => this.changeShifted(sync.change, target.start + 1))
 
         if (syncs.length > 0 && contentLength(baseContent) < minContentLengthForChange(sourceChanges[0]))
             throw new Error('invalid sync change. content too short')
 
         // filter out already applied changes
+        const externalChanges = this.externalChanges
         sourceChanges = filterChanges(baseContent, sourceChanges, (_i, change) => {
-            if (change.contexts)
-                for (const context of change.contexts.slice(1)) {
-                    // if the change originated here and old
-                    if (context.sourceUri === target.uri && context.sourceRev <= target.rev + 1) return false
+            const context = change.context
+            if(context) {
+                // current reference (current doc)
+                if(context.sourceUri === target.uri && context.sourceRev <= target.rev + 1)
+                    return false
+                // external reference
+                if(context.sourceUri != target.uri) {
+                    const alreadyApplied = externalChanges.has(context.sourceUri) && externalChanges.get(context.sourceUri)!.has(context.sourceRev)
+                    this.addExternalChange(context.sourceUri, context.sourceRev)
+                    return !alreadyApplied
                 }
+            }
             return true
         })
 
-        // go through already applied syncs
-        let idx = 0
+        // apply local changes
         for (const localChange of localChanges) {
-            // synchronization change previously synced
-            if (
-                localChange.contexts &&
-                localChange.contexts[0].targetUri === target.uri &&
-                localChange.contexts[0].targetRev === target.rev
-            ) {
-                // bring original change at source and apply
-                if (idx >= sourceChanges.length) throw new Error('index out of bound')
-
-                const originalChange = sourceChanges[idx++]
-                if (!isEqual(originalChange.contexts![0].sourceRev, localChange.contexts[0].sourceRev))
-                    throw new Error('revisions mismatch')
-
-                ss.applyChange(originalChange, sourceBranchName)
-            } else {
-                ss.applyChange(localChange, '_')
-            }
+            ss.applyChange(localChange, '_')
         }
 
-        // apply rest and generate new sync records
+        // apply remote changes and generate new sync records
         const newLocalChanges: IDelta[] = []
-        for (; idx < sourceChanges.length; idx++) {
-            const newChange = ss.applyChange(sourceChanges[idx], sourceBranchName)
+        for(const sourceChange of sourceChanges) {
+            const newChange = ss.applyChange(sourceChange, sourceBranchName)
             newLocalChanges.push(newChange)
         }
 
@@ -261,7 +249,7 @@ export class Document {
 
     private changeShifted(change: IDelta, offset: number): IDelta {
         const shiftAmount = offset
-        const shiftedChange = new Delta(change.ops.concat(), change.contexts)
+        const shiftedChange = new Delta(change.ops.concat(), change.context)
         // adjust offset:
         // utilize first retain if it exists
         if (shiftedChange.ops.length > 0 && shiftedChange.ops[0].retain) {
@@ -285,5 +273,15 @@ export class Document {
             syncs.push({ uri, rev: firstRev++, change: changes[i], range: ranges[i] })
         }
         return syncs
+    }
+
+    private addExternalChange(docId:string, revision:number) {
+        if(!this.externalChanges.has(docId)) {
+            this.externalChanges.set(docId, new Set<number>([revision]))
+        }
+        else {
+            const set = this.externalChanges.get(docId)
+            set!.add(revision)
+        }
     }
 }

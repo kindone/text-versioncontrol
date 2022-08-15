@@ -15,10 +15,10 @@ import {
 } from './primitive'
 
 export class Delta implements IDelta {
-    constructor(public ops: Op[] = [], public contexts?: DeltaContext[]) {}
+    constructor(public ops: Op[] = [], public context?: DeltaContext) {}
 
     static clone(delta:IDelta) {
-        return new Delta(delta.ops.concat(), delta.contexts?.concat())
+        return new Delta(delta.ops.concat(), delta.context)
     }
 
     /* changes the object */
@@ -62,15 +62,15 @@ export class Delta implements IDelta {
     }
 
     public take(start: number, end: number): Delta {
-        return new Delta(cropContent(this, start, end).ops, this.contexts)
+        return new Delta(cropContent(this, start, end).ops, this.context)
     }
 
     public normalize(): Delta {
-        return new Delta(normalizeOps(this.ops), this.contexts)
+        return new Delta(normalizeOps(this.ops), this.context)
     }
 
     public compose(other: IDelta): Delta {
-        return new Delta(flattenDeltas(this, other).ops, this.contexts)
+        return new Delta(flattenDeltas(this, other).ops, this.context)
     }
 
     public apply(other: IDelta): Delta {
@@ -78,10 +78,10 @@ export class Delta implements IDelta {
     }
 
     public transform(other: IDelta, priority = false): Delta {
-        return new Delta(transformDeltas(this, other, priority).ops, this.contexts)
+        return new Delta(transformDeltas(this, other, priority).ops, this.context)
     }
 
     public invert(baseContent: IDelta): IDelta {
-        return new Delta(invertChange(baseContent, this).ops, this.contexts)
+        return new Delta(invertChange(baseContent, this).ops, this.context)
     }
 }

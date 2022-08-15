@@ -3,5 +3,5 @@ import { DeltaContext } from './DeltaContext'
 
 export interface IDelta {
     ops: Op[]
-    contexts?: DeltaContext[]
+    context?: DeltaContext
 }

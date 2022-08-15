@@ -152,7 +152,7 @@ describe('Excerpt', () => {
                 },
                 { insert: 'introduction here: Here comes the trouble. HAHAHAHA' },
             ],
-        })
+        }, JSONStringify(syncs))
 
         // do again and get same result
         doc2.syncExcerpt(excerpt1, { getDocument: (uri: String) => (uri === 'doc1' ? doc1 : doc2) })
@@ -302,7 +302,7 @@ describe('Mutual Excerpts', () => {
         expectEqual(textOnly(doc1.getContent()), 'aaPQbb') // added P by sync from doc 2(ab -> aQb  -> aPQb)
 
         doc2.syncExcerpt(excerpt1_to_2, docSet) // should bring (ab -> aabb -> aaQbb -> aaPQbb) on top of Xa[P]bY
-        expectEqual(textOnly(doc2.getContent()), 'XaPQbY')
+        expectEqual(textOnly(doc2.getContent()), 'XaPaQbbY')
         // should build up from XabY -> Xa[P]bY
         // and merge ab -> a[ab]b -> aa[Q]bb -> aa[P]Qbb
 
@@ -354,13 +354,19 @@ describe('Mutual Excerpts', () => {
 
         // converges
         doc3.syncExcerpt(excerpt2_to_3, docSet)
-        expectEqual(textOnly(doc3.getContent()), 'MaRPQbN')
+        expectEqual(textOnly(doc3.getContent()), 'MaRPaQbbN')
 
         doc1.syncExcerpt(excerpt3_to_1, docSet)
-        expectEqual(textOnly(doc1.getContent()), 'aaRPQbb')
+        expectEqual(textOnly(doc1.getContent()), 'aaPRQbb')
 
         doc2.syncExcerpt(excerpt1_to_2, docSet)
         expectEqual(textOnly(doc2.getContent()), 'XaPaRQbbY')
+
+        doc3.syncExcerpt(excerpt2_to_3, docSet)
+        expectEqual(textOnly(doc3.getContent()), 'MaRPaQbbN')
+
+        doc1.syncExcerpt(excerpt3_to_1, docSet)
+        expectEqual(textOnly(doc1.getContent()), 'aaPRQbb')
     })
 })
 

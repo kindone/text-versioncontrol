@@ -10,7 +10,7 @@ const initialRevGen = interval(0, 20)
 // content and change list of various lengths (list length at least 1)
 const contentChangeListGen = (initialLength:number, maxChanges:number) => interval(1, maxChanges+1).flatMap(listLength => ContentChangeListGen(initialLength, listLength, true))
 
-export function HistoryAndDeltaGen(initialLength:number = 4, maxChanges:number = 20) {
+export function GenHistoryAndDelta(initialLength:number = 4, maxChanges:number = 20) {
     return TupleGen(minSavepointRateGen, initialRevGen, contentChangeListGen(initialLength, maxChanges)).map((triple:[number, number, ContentChangeList]) => {
         const [minSavepointRate, initialRev, contentAndChanges] = triple
         const deltas = contentAndChanges.changeList.deltas
